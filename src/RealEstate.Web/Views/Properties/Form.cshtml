@@ -1,0 +1,76 @@
+@model PropertyFormViewModel
+@using RealEstate.Domain.Enums
+@{ var editing = Model.Id.HasValue; ViewData["Title"] = editing ? "Edit property" : "New property"; var locked = Model.StructureLocked; }
+<h1 class="h3 mb-1">@ViewData["Title"]</h1>
+<p class="text-muted">@Model.ProjectName</p>
+@if (locked) { <div class="alert alert-info">This property is @Model.CurrentStatus: physical details are locked. You can still edit remarks, flags, features and notes.</div> }
+<form asp-action="@(editing ? "Edit" : "Create")" asp-route-id="@Model.Id" method="post" data-loading-form>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" /><input type="hidden" asp-for="ProjectId" />
+    <div class="card mb-3"><div class="card-header fw-semibold">Property</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="PropertyCode" class="form-label"></label><input asp-for="PropertyCode" class="form-control" readonly="@editing" /><span asp-validation-for="PropertyCode" class="text-danger small"></span>
+            <div class="form-text">Unique within the project.</div></div>
+        <div class="col-12 col-lg-4"><label asp-for="PropertyNumber" class="form-label"></label><input asp-for="PropertyNumber" class="form-control" readonly="@locked" /><span asp-validation-for="PropertyNumber" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="PropertyTypeId" class="form-label"></label>
+            <select asp-for="PropertyTypeId" class="form-select" disabled="@locked" id="PropertyTypeId">@foreach (var t in Model.Types.Where(t => t.IsActive || t.Id == Model.PropertyTypeId)) { <option value="@t.Id" data-floor="@(t.RequiresFloor ? "1" : "0")" selected="@(t.Id == Model.PropertyTypeId)">@t.Name (@t.CategoryName)</option> }</select>
+            @if (locked) { <input type="hidden" asp-for="PropertyTypeId" /> }
+            <span asp-validation-for="PropertyTypeId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="BlockId" class="form-label"></label><select asp-for="BlockId" class="form-select" disabled="@locked"><option value="">- None -</option>@foreach (var z in Model.Blocks.Where(z => z.IsActive || z.Id == Model.BlockId)) { <option value="@z.Id" selected="@(z.Id == Model.BlockId)">@z.Name</option> }</select>@if (locked) { <input type="hidden" asp-for="BlockId" /> }</div>
+        <div class="col-12 col-lg-4"><label asp-for="SectorId" class="form-label"></label><select asp-for="SectorId" class="form-select" disabled="@locked"><option value="">- None -</option>@foreach (var z in Model.Sectors.Where(z => z.IsActive || z.Id == Model.SectorId)) { <option value="@z.Id" selected="@(z.Id == Model.SectorId)">@z.Name</option> }</select>@if (locked) { <input type="hidden" asp-for="SectorId" /> }</div>
+        <div class="col-12 col-lg-4"><label asp-for="StreetId" class="form-label"></label><select asp-for="StreetId" class="form-select" disabled="@locked"><option value="">- None -</option>@foreach (var z in Model.Streets.Where(z => z.IsActive || z.Id == Model.StreetId)) { <option value="@z.Id" selected="@(z.Id == Model.StreetId)">@z.Name</option> }</select>@if (locked) { <input type="hidden" asp-for="StreetId" /> }</div>
+        <div class="col-12 col-lg-4"><label asp-for="Size" class="form-label"></label><input asp-for="Size" type="number" step="0.0001" min="0" class="form-control" readonly="@locked" /><span asp-validation-for="Size" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="MeasurementUnit" class="form-label"></label><select asp-for="MeasurementUnit" asp-items="Html.GetEnumSelectList<MeasurementUnit>()" class="form-select" disabled="@locked"></select>@if (locked) { <input type="hidden" asp-for="MeasurementUnit" /> }</div>
+        <div class="col-12 col-lg-4" id="floorGroup"><label asp-for="FloorNumber" class="form-label"></label><input asp-for="FloorNumber" type="number" step="1" class="form-control" readonly="@locked" /><span asp-validation-for="FloorNumber" class="text-danger small"></span><div class="form-text">Required for apartments, shops and offices.</div></div>
+        <div class="col-12 col-lg-4"><label asp-for="DevelopmentStatus" class="form-label"></label><select asp-for="DevelopmentStatus" asp-items="Html.GetEnumSelectList<DevelopmentStatus>()" class="form-select"></select></div>
+        <div class="col-12 col-lg-8"><label asp-for="LocationDescription" class="form-label"></label><input asp-for="LocationDescription" class="form-control" /></div>
+        <div class="col-12 d-flex flex-wrap gap-4">
+            <div class="form-check"><input asp-for="IsCorner" class="form-check-input" /><label asp-for="IsCorner" class="form-check-label"></label></div>
+            <div class="form-check"><input asp-for="FacesMainRoad" class="form-check-input" /><label asp-for="FacesMainRoad" class="form-check-label"></label></div>
+            <div class="form-check"><input asp-for="FacesPark" class="form-check-input" /><label asp-for="FacesPark" class="form-check-label"></label></div></div>
+        <div class="col-12"><label asp-for="Remarks" class="form-label"></label><textarea asp-for="Remarks" class="form-control" rows="2"></textarea></div>
+    </div></div></div>
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Dimensions</span><button type="button" class="btn btn-sm btn-outline-primary" id="addDim">Add dimension</button></div>
+        <div class="card-body"><p class="text-muted small">Flexible measurements, e.g. Length, Width, Covered area, Bedrooms. Different property types use different sets.</p><div id="dimRows">
+        @for (var i = 0; i < Model.Dimensions.Count; i++)
+        {
+            <div class="row g-2 mb-2 dim-row"><div class="col-12 col-md-5"><input name="Dimensions[@i].Name" value="@Model.Dimensions[i].Name" class="form-control" placeholder="Name" aria-label="Dimension name" maxlength="60" /></div>
+                <div class="col-6 col-md-3"><input name="Dimensions[@i].Value" value="@Model.Dimensions[i].Value" type="number" step="0.0001" min="0" class="form-control" placeholder="Value" aria-label="Dimension value" /></div>
+                <div class="col-4 col-md-3"><input name="Dimensions[@i].Unit" value="@Model.Dimensions[i].Unit" class="form-control" placeholder="Unit" aria-label="Dimension unit" maxlength="20" /></div>
+                <div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove dimension">&times;</button></div></div>
+        }</div></div></div>
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Features</span><button type="button" class="btn btn-sm btn-outline-primary" id="addFeat">Add feature</button></div>
+        <div class="card-body"><div id="featRows">
+        @for (var i = 0; i < Model.Features.Count; i++)
+        {
+            <div class="row g-2 mb-2 feat-row"><div class="col-12 col-md-5"><input name="Features[@i].Name" value="@Model.Features[i].Name" class="form-control" placeholder="Feature (e.g. Gas, Boundary wall)" aria-label="Feature name" maxlength="100" /></div>
+                <div class="col-10 col-md-6"><input name="Features[@i].Value" value="@Model.Features[i].Value" class="form-control" placeholder="Details (optional)" aria-label="Feature details" maxlength="200" /></div>
+                <div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove feature">&times;</button></div></div>
+        }</div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save property</button>
+        <a class="btn btn-outline-secondary" href="@(editing ? Url.Action("Details", new { id = Model.Id }) : Url.Action("Index", new { projectId = Model.ProjectId }))">Cancel</a></div>
+</form>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  function renumber(container, prefix) {
+    container.querySelectorAll('.row').forEach(function (row, i) {
+      row.querySelectorAll('input').forEach(function (inp) { inp.name = inp.name.replace(new RegExp(prefix + '\\[\\d+\\]'), prefix + '[' + i + ']'); });
+    });
+  }
+  function add(containerId, prefix, html) {
+    var c = document.getElementById(containerId); var i = c.querySelectorAll('.row').length;
+    var d = document.createElement('div'); d.innerHTML = html.replace(/__i__/g, i); c.appendChild(d.firstElementChild);
+  }
+  var dimHtml = '<div class="row g-2 mb-2 dim-row"><div class="col-12 col-md-5"><input name="Dimensions[__i__].Name" class="form-control" placeholder="Name" aria-label="Dimension name" maxlength="60" /></div><div class="col-6 col-md-3"><input name="Dimensions[__i__].Value" type="number" step="0.0001" min="0" class="form-control" placeholder="Value" aria-label="Dimension value" /></div><div class="col-4 col-md-3"><input name="Dimensions[__i__].Unit" class="form-control" placeholder="Unit" aria-label="Dimension unit" maxlength="20" /></div><div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove dimension">&times;</button></div></div>';
+  var featHtml = '<div class="row g-2 mb-2 feat-row"><div class="col-12 col-md-5"><input name="Features[__i__].Name" class="form-control" placeholder="Feature (e.g. Gas, Boundary wall)" aria-label="Feature name" maxlength="100" /></div><div class="col-10 col-md-6"><input name="Features[__i__].Value" class="form-control" placeholder="Details (optional)" aria-label="Feature details" maxlength="200" /></div><div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove feature">&times;</button></div></div>';
+  document.getElementById('addDim').addEventListener('click', function () { add('dimRows', 'Dimensions', dimHtml); });
+  document.getElementById('addFeat').addEventListener('click', function () { add('featRows', 'Features', featHtml); });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.remove-row'); if (!b) return;
+    var row = b.closest('.row'); var c = row.parentElement; row.remove();
+    renumber(c, c.id === 'dimRows' ? 'Dimensions' : 'Features');
+  });
+})();
+</script>
+}

@@ -24,6 +24,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<LandDistributionHistory> LandDistributionHistories => Set<LandDistributionHistory>();
     public DbSet<LandDocument> LandDocuments => Set<LandDocument>();
 
+    public DbSet<PropertyCategory> PropertyCategories => Set<PropertyCategory>();
+    public DbSet<PropertyType> PropertyTypes => Set<PropertyType>();
+    public DbSet<ProjectBlock> ProjectBlocks => Set<ProjectBlock>();
+    public DbSet<ProjectSector> ProjectSectors => Set<ProjectSector>();
+    public DbSet<ProjectStreet> ProjectStreets => Set<ProjectStreet>();
+    public DbSet<Property> Properties => Set<Property>();
+    public DbSet<PropertyDimension> PropertyDimensions => Set<PropertyDimension>();
+    public DbSet<PropertyFeature> PropertyFeatures => Set<PropertyFeature>();
+    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
+    public DbSet<PropertyStatusHistory> PropertyStatusHistories => Set<PropertyStatusHistory>();
+    public DbSet<PropertyReservation> PropertyReservations => Set<PropertyReservation>();
+
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();

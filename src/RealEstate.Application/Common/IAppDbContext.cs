@@ -24,6 +24,17 @@ public interface IAppDbContext
     DbSet<LandDistribution> LandDistributions { get; }
     DbSet<LandDistributionHistory> LandDistributionHistories { get; }
     DbSet<LandDocument> LandDocuments { get; }
+    DbSet<PropertyCategory> PropertyCategories { get; }
+    DbSet<PropertyType> PropertyTypes { get; }
+    DbSet<ProjectBlock> ProjectBlocks { get; }
+    DbSet<ProjectSector> ProjectSectors { get; }
+    DbSet<ProjectStreet> ProjectStreets { get; }
+    DbSet<Property> Properties { get; }
+    DbSet<PropertyDimension> PropertyDimensions { get; }
+    DbSet<PropertyFeature> PropertyFeatures { get; }
+    DbSet<PropertyDocument> PropertyDocuments { get; }
+    DbSet<PropertyStatusHistory> PropertyStatusHistories { get; }
+    DbSet<PropertyReservation> PropertyReservations { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

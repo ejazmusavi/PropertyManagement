@@ -1,0 +1,119 @@
+@model PropertyDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Entities
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var p = Model.Property; ViewData["Title"] = p.PropertyCode; await Ui.LoadAsync();
+   var archived = p.ProjectStatus == ProjectStatus.Archived;
+   var next = Enum.GetValues<PropertyStatus>().Where(s => s != PropertyStatus.Reserved && Property.CanTransition(p.Status, s) && !(p.Status == PropertyStatus.Reserved && s == PropertyStatus.Available)).ToList();
+   var canReserve = Ui.Has("inventory.reserve") && !archived && p.Status == PropertyStatus.Available;
+   var canRelease = Ui.Has("inventory.reserve") && !archived && p.ActiveReservation is not null; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@p.PropertyCode <small class="text-muted fs-6">#@p.PropertyNumber</small> <partial name="_StatusBadge" model="p.Status" /></h1>
+        <div class="text-muted">@p.ProjectCode – @p.ProjectName &middot; @p.TypeName (@p.CategoryName)</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has("inventory.manage") && !archived) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@p.Id">Edit</a> }
+        @if (canReserve) { <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#reserveModal">Reserve</button> }
+        @if (canRelease) { <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#releaseModal">Release reservation</button> }
+        @if (Ui.Has("inventory.status") && !archived && next.Count > 0) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#statusModal">Change status</button> }
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-projectId="@p.ProjectId">Back to list</a>
+    </div>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-7"><div class="card h-100"><div class="card-header fw-semibold">Details</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Size</dt><dd class="col-sm-8">@p.Size.ToString("0.####") @p.Unit</dd>
+        <dt class="col-sm-4">Block / Sector / Street</dt><dd class="col-sm-8">@(p.Block ?? "-") / @(p.Sector ?? "-") / @(p.Street ?? "-")</dd>
+        @if (p.FloorNumber is { } fl) { <dt class="col-sm-4">Floor</dt><dd class="col-sm-8">@fl</dd> }
+        <dt class="col-sm-4">Location</dt><dd class="col-sm-8">@(p.LocationDescription ?? "-")</dd>
+        <dt class="col-sm-4">Development</dt><dd class="col-sm-8">@p.DevelopmentStatus</dd>
+        <dt class="col-sm-4">Characteristics</dt><dd class="col-sm-8">@(string.Join(", ", new[] { p.IsCorner ? "Corner" : null, p.FacesMainRoad ? "Main road facing" : null, p.FacesPark ? "Park facing" : null }.Where(x => x != null)) is { Length: > 0 } c ? c : "-")</dd>
+        <dt class="col-sm-4">Remarks</dt><dd class="col-sm-8">@(p.Remarks ?? "-")</dd>
+        <dt class="col-sm-4">Created</dt><dd class="col-sm-8">@p.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") by @p.CreatedBy</dd>
+        @if (p.ModifiedAtUtc is { } m) { <dt class="col-sm-4">Modified</dt><dd class="col-sm-8">@m.ToString("yyyy-MM-dd HH:mm") by @p.ModifiedBy</dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-5"><div class="card h-100"><div class="card-header fw-semibold">Dimensions &amp; features</div><div class="card-body">
+        @if (p.Dimensions.Count == 0 && p.Features.Count == 0) { <span class="text-muted">None recorded.</span> }
+        @if (p.Dimensions.Count > 0) { <h2 class="h6">Dimensions</h2><ul class="list-unstyled">@foreach (var d in p.Dimensions) { <li>@d.Name: <strong>@d.Value.ToString("0.####")</strong> @d.Unit</li> }</ul> }
+        @if (p.Features.Count > 0) { <h2 class="h6">Features</h2><ul class="list-unstyled mb-0">@foreach (var f in p.Features) { <li>@f.Name@(string.IsNullOrEmpty(f.Value) ? "" : ": " + f.Value)</li> }</ul> }
+    </div></div></div>
+</div>
+@if (p.ActiveReservation is { } r)
+{
+    <div class="alert @(r.ExpiryDate < Model.Today ? "alert-danger" : "alert-warning")"><strong>Reserved</strong> for @r.ReservedForName@(string.IsNullOrEmpty(r.ReservedForContact) ? "" : " (" + r.ReservedForContact + ")") &middot; amount @r.Amount.ToString("N2") &middot; @(r.ReservationDate.ToString("yyyy-MM-dd")) to @(r.ExpiryDate.ToString("yyyy-MM-dd")) &middot; approved by @r.ApprovedByName</div>
+}
+<div class="card mb-3"><div class="card-header fw-semibold">Reservations</div>
+@if (Model.Reservations.Count == 0) { <div class="card-body text-muted">No reservations yet.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Reserved for</th><th>From</th><th>Expiry</th><th class="text-end">Amount</th><th>Approved by</th><th>Status</th><th>Closed</th></tr></thead><tbody>
+@foreach (var x in Model.Reservations) { <tr><td data-label="Reserved for">@x.ReservedForName</td><td data-label="From">@(x.ReservationDate.ToString("yyyy-MM-dd"))</td><td data-label="Expiry">@(x.ExpiryDate.ToString("yyyy-MM-dd"))</td><td data-label="Amount" class="text-end">@x.Amount.ToString("N2")</td><td data-label="Approved by">@x.ApprovedByName</td><td data-label="Status">@x.Status</td><td data-label="Closed">@(x.ClosedAtUtc is { } cl ? cl.ToString("yyyy-MM-dd") + " – " + x.CloseReason : "-")</td></tr> }
+</tbody></table></div> }</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Property documents</div>
+@if (Model.Documents.Count == 0) { <div class="card-body text-muted">No documents uploaded.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Title</th><th>Type</th><th>File</th><th class="text-end">Size</th><th>Uploaded</th><th></th></tr></thead><tbody>
+@foreach (var d in Model.Documents) { <tr><td data-label="Title">@d.Title</td><td data-label="Type">@d.DocumentType</td><td data-label="File">@d.FileName</td><td data-label="Size" class="text-end">@((d.SizeBytes / 1024.0).ToString("N0")) KB</td><td data-label="Uploaded">@d.UploadedAtUtc.ToString("yyyy-MM-dd") by @d.UploadedBy</td>
+    <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="DownloadDocument" asp-route-id="@p.Id" asp-route-documentId="@d.Id">Download</a>
+    @if (Ui.Has("inventory.documents") && !archived) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal" data-doc-id="@d.Id" data-doc-title="@d.Title">Remove</button> }</td></tr> }
+</tbody></table></div> }
+@if (Ui.Has("inventory.documents") && !archived)
+{
+    <div class="card-body border-top"><form asp-action="UploadDocument" asp-route-id="@p.Id" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+        <div class="col-12 col-lg-4"><label class="form-label">File</label><input type="file" name="file" class="form-control" required /></div>
+        <div class="col-6 col-lg-3"><label class="form-label">Type</label><select name="type" asp-items="Html.GetEnumSelectList<PropertyDocumentType>()" class="form-select"></select></div>
+        <div class="col-6 col-lg-4"><label class="form-label">Title</label><input name="title" class="form-control" maxlength="200" /></div>
+        <div class="col-12 col-lg-1"><button class="btn btn-primary w-100" type="submit">Upload</button></div></form></div>
+}
+</div>
+<div class="card mb-3"><div class="card-header d-flex justify-content-between"><span class="fw-semibold">Status history</span><a asp-controller="Inventory" asp-action="History" asp-route-projectId="@p.ProjectId">Project history</a></div>
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>When (UTC)</th><th>From</th><th>To</th><th>Reason</th><th>By</th></tr></thead><tbody>
+@foreach (var h in Model.History.Items) { <tr><td data-label="When">@h.ChangedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td data-label="From">@(h.FromStatus?.ToString() ?? "-")</td><td data-label="To"><partial name="_StatusBadge" model="h.ToStatus" /></td><td data-label="Reason">@h.Reason</td><td data-label="By">@h.ChangedBy</td></tr> }
+</tbody></table></div></div>
+
+@if (canReserve)
+{
+<div class="modal fade" id="reserveModal" tabindex="-1" aria-labelledby="reserveTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="Reserve" asp-route-id="@p.Id" method="post">
+    <input type="hidden" name="RowVersion" value="@Model.Reserve.RowVersion" />
+    <div class="modal-header"><h2 class="modal-title fs-5" id="reserveTitle">Reserve @p.PropertyCode</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><div class="row g-3">
+        <div class="col-12"><label class="form-label">Reserved for (customer)</label><input name="ReservedForName" value="@Model.Reserve.ReservedForName" class="form-control" required maxlength="200" /></div>
+        <div class="col-12"><label class="form-label">Customer contact</label><input name="ReservedForContact" value="@Model.Reserve.ReservedForContact" class="form-control" maxlength="200" /></div>
+        <div class="col-6"><label class="form-label">Reservation date</label><input type="date" name="ReservationDate" value="@Model.Reserve.ReservationDate.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+        <div class="col-6"><label class="form-label">Expiry date</label><input type="date" name="ExpiryDate" value="@Model.Reserve.ExpiryDate.ToString("yyyy-MM-dd")" class="form-control" required /></div>
+        <div class="col-6"><label class="form-label">Reservation amount</label><input type="number" step="0.01" min="0" name="Amount" value="@Model.Reserve.Amount" class="form-control" required /></div>
+        <div class="col-6"><label class="form-label">Approved by</label><select name="ApprovedByUserId" class="form-select" required><option value="">- Select -</option>@foreach (var u in Model.Approvers) { <option value="@u.Id" selected="@(Model.Reserve.ApprovedByUserId == u.Id)">@u.FullName</option> }</select></div>
+    </div></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-warning">Reserve</button></div></form></div></div>
+}
+@if (canRelease)
+{
+<div class="modal fade" id="releaseModal" tabindex="-1" aria-labelledby="releaseTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="Release" asp-route-id="@p.Id" method="post">
+    <input type="hidden" name="rowVersion" value="@p.RowVersion" />
+    <div class="modal-header"><h2 class="modal-title fs-5" id="releaseTitle">Release reservation</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><p>The property returns to Available.</p><label class="form-label">Reason (required)</label><input name="reason" class="form-control" required minlength="3" maxlength="1000" /></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-warning">Release</button></div></form></div></div>
+}
+@if (Ui.Has("inventory.status") && !archived && next.Count > 0)
+{
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="ChangeStatus" asp-route-id="@p.Id" method="post">
+    <input type="hidden" name="rowVersion" value="@p.RowVersion" />
+    <div class="modal-header"><h2 class="modal-title fs-5" id="statusTitle">Change status</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><p>Current status: <strong>@p.Status</strong>. Only valid transitions are offered.</p>
+        <label class="form-label">New status</label><select name="status" class="form-select mb-3">@foreach (var s in next) { <option value="@s">@s</option> }</select>
+        <label class="form-label">Reason (required)</label><input name="reason" class="form-control" required minlength="3" maxlength="1000" /></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Change status</button></div></form></div></div>
+}
+<div class="modal fade" id="deleteDocModal" tabindex="-1" aria-labelledby="deleteDocTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="DeleteDocument" asp-route-id="@p.Id" method="post"><input type="hidden" name="documentId" id="deleteDocId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="deleteDocTitle">Remove document</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Remove <strong id="deleteDocName"></strong>? The file is archived and the removal is audited.</p><label class="form-label">Reason (required)</label><input name="reason" class="form-control" required maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Remove</button></div>
+    </form></div></div>
+@section Scripts {
+<script>
+document.getElementById('deleteDocModal')?.addEventListener('show.bs.modal', function (e) {
+  document.getElementById('deleteDocId').value = e.relatedTarget.dataset.docId;
+  document.getElementById('deleteDocName').textContent = e.relatedTarget.dataset.docTitle;
+});
+@if (!ViewData.ModelState.IsValid && canReserve) { <text>window.addEventListener('load', function () { new bootstrap.Modal(document.getElementById('reserveModal')).show(); });</text> }
+</script>
+}

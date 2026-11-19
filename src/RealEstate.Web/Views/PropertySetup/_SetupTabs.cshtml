@@ -1,0 +1,8 @@
+@model string
+@{ string A(string t) => Model == t ? "active" : ""; }
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link @A("Types")" asp-controller="PropertySetup" asp-action="Types">Types &amp; categories</a></li>
+    <li class="nav-item"><a class="nav-link @A("Blocks")" asp-controller="PropertySetup" asp-action="Blocks">Blocks</a></li>
+    <li class="nav-item"><a class="nav-link @A("Sectors")" asp-controller="PropertySetup" asp-action="Sectors">Sectors</a></li>
+    <li class="nav-item"><a class="nav-link @A("Streets")" asp-controller="PropertySetup" asp-action="Streets">Streets</a></li>
+</ul>

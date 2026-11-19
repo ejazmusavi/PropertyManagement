@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RealEstate.Domain.Common;
 using RealEstate.Domain.Entities;
+using RealEstate.Domain.Enums;
 using RealEstate.Infrastructure.Identity;
 
 namespace RealEstate.Infrastructure.Persistence;
@@ -61,6 +62,36 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
         var granted = (await db.RolePermissions.Where(rp => rp.RoleId == admin.Id).Select(rp => rp.PermissionId).ToListAsync(ct)).ToHashSet();
         foreach (var p in existing.Values.Where(p => !granted.Contains(p.Id)))
             db.RolePermissions.Add(new RolePermission { RoleId = admin.Id, PermissionId = p.Id });
+        await db.SaveChangesAsync(ct);
+
+        await SeedPropertyCatalogAsync(ct);
+    }
+
+    /// <summary>Seeds the standard property categories and types once (matched by code, so edits and custom entries are kept).</summary>
+    private async Task SeedPropertyCatalogAsync(CancellationToken ct)
+    {
+        var categories = await db.PropertyCategories.ToDictionaryAsync(c => c.Code, ct);
+        foreach (var (code, name) in new[] { ("RESIDENTIAL", "Residential"), ("COMMERCIAL", "Commercial") })
+        {
+            if (categories.ContainsKey(code)) continue;
+            var c = new PropertyCategory { Code = code, Name = name, IsSystem = true };
+            db.PropertyCategories.Add(c);
+            categories[code] = c;
+        }
+        await db.SaveChangesAsync(ct);
+
+        var types = await db.PropertyTypes.Select(t => t.Code).ToListAsync(ct);
+        (string Code, string Name, string Cat, PropertyForm Form, bool Floor)[] defaults =
+        [
+            ("RES-PLOT", "Residential Plot", "RESIDENTIAL", PropertyForm.Plot, false),
+            ("COM-PLOT", "Commercial Plot", "COMMERCIAL", PropertyForm.Plot, false),
+            ("HOUSE", "House", "RESIDENTIAL", PropertyForm.House, false),
+            ("APARTMENT", "Apartment", "RESIDENTIAL", PropertyForm.Apartment, true),
+            ("SHOP", "Shop", "COMMERCIAL", PropertyForm.Commercial, true),
+            ("OFFICE", "Office", "COMMERCIAL", PropertyForm.Commercial, true),
+        ];
+        foreach (var d in defaults.Where(d => !types.Contains(d.Code)))
+            db.PropertyTypes.Add(new PropertyType { Code = d.Code, Name = d.Name, CategoryId = categories[d.Cat].Id, Form = d.Form, RequiresFloor = d.Floor, IsSystem = true });
         await db.SaveChangesAsync(ct);
     }
 }

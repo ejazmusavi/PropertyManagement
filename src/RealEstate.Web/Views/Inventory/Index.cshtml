@@ -1,0 +1,44 @@
+@model InventoryDashboardViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Property dashboard"; await Ui.LoadAsync(); var s = Model.Summary; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Property dashboard</h1>
+    <div class="d-flex gap-2">
+        @if (Ui.Has("inventory.manage")) { <a class="btn btn-primary" asp-controller="Properties" asp-action="Create" asp-route-projectId="@s?.ProjectId">New property</a> }
+        <a class="btn btn-outline-primary" asp-controller="Properties" asp-action="Index" asp-route-projectId="@s?.ProjectId">Property list</a>
+        <a class="btn btn-outline-primary" asp-action="Reports" asp-route-projectId="@s?.ProjectId">Reports</a>
+    </div>
+</div>
+@if (Model.Projects.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No projects available. Projects you are assigned to appear here.</p></div>
+}
+else
+{
+    <form method="get" class="row g-2 mb-3"><div class="col-12 col-md-5"><select name="projectId" class="form-select" aria-label="Project" onchange="this.form.submit()">
+        @foreach (var p in Model.Projects) { <option value="@p.Id" selected="@(p.Id == s?.ProjectId)">@p.ProjectCode – @p.ProjectName</option> }</select></div>
+        <noscript><div class="col-auto"><button class="btn btn-outline-primary">Show</button></div></noscript></form>
+}
+@if (s is not null)
+{
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-xl-3"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">Total properties</div><div class="stat-value">@s.Total</div></div></div></div>
+        @foreach (var c in s.ByStatus.Where(x => x.Status is PropertyStatus.Available or PropertyStatus.Reserved or PropertyStatus.Booked or PropertyStatus.Sold))
+        {
+            <div class="col-6 col-xl-3"><a class="text-decoration-none" asp-controller="Properties" asp-action="Index" asp-route-projectId="@s.ProjectId" asp-route-status="@c.Status"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">@c.Status</div><div class="stat-value">@c.Count</div></div></div></a></div>
+        }
+    </div>
+    <div class="row g-3">
+        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">By status</div><div class="table-responsive-md"><table class="table mb-0"><tbody>
+            @foreach (var c in s.ByStatus) { <tr><td>@c.Status</td><td class="text-end">@c.Count</td></tr> }</tbody></table></div></div></div>
+        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">By type</div>
+            @if (s.ByType.Count == 0) { <div class="card-body text-muted">No properties yet.</div> } else {
+            <div class="table-responsive-md"><table class="table mb-0"><thead><tr><th>Type</th><th class="text-end">Total</th><th class="text-end">Available</th><th class="text-end">Sold</th></tr></thead><tbody>
+            @foreach (var r in s.ByType) { <tr><td>@r.Label</td><td class="text-end">@r.Total</td><td class="text-end">@r.Available</td><td class="text-end">@r.Sold</td></tr> }</tbody></table></div> }</div></div>
+    </div>
+    @if (Ui.Has("inventory.reserve"))
+    {
+        <form method="post" asp-action="ExpireReservations" asp-route-projectId="@s.ProjectId" class="mt-3"><button class="btn btn-outline-secondary" type="submit">Return expired reservations to stock</button></form>
+    }
+}
