@@ -1,0 +1,5 @@
+@model int
+@{ ViewData["Title"] = "Error " + Model; Layout = "_AuthLayout"; }
+<h1 class="h4">@(Model == 404 ? "Page not found" : "Error " + Model)</h1>
+<p class="text-muted">@(Model == 404 ? "The page you requested does not exist." : "The request could not be completed.")</p>
+<a class="btn btn-primary" href="/">Back to start</a>

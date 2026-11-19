@@ -1,0 +1,20 @@
+@model ProfileViewModel
+@{ ViewData["Title"] = "My profile"; }
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">My profile</h1>
+    <a class="btn btn-outline-secondary" asp-action="ChangePassword">Change password</a>
+</div>
+<div class="card"><div class="card-body">
+<form asp-action="Index" method="post" data-loading-form>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <div class="row g-3">
+        <div class="col-12 col-lg-4"><label class="form-label">Email</label><input class="form-control" value="@Model.Email" readonly /></div>
+        <div class="col-12 col-lg-4"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="PhoneNumber" class="form-label"></label><input asp-for="PhoneNumber" class="form-control" /><span asp-validation-for="PhoneNumber" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label class="form-label">Roles</label><input class="form-control" value="@(Model.Roles.Count == 0 ? "None" : string.Join(", ", Model.Roles))" readonly /></div>
+        <div class="col-12 col-lg-4"><label class="form-label">Last sign-in (UTC)</label><input class="form-control" value="@(Model.LastLoginAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")" readonly /></div>
+    </div>
+    <div class="mt-4"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save changes</button></div>
+</form>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
