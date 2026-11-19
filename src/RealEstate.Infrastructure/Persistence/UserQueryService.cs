@@ -42,6 +42,16 @@ public class UserQueryService(AppDbContext db) : IUserQueryService
         return new PagedResult<UserListItemDto>(items, request.Page, request.PageSize, total);
     }
 
+    public async Task<IReadOnlyList<UserLookupDto>> LookupAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
+        await db.Users.AsNoTracking().Where(u => ids.Contains(u.Id)).Select(u => new UserLookupDto(u.Id, u.FullName, u.Email!, u.IsActive)).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<UserLookupDto>> SearchActiveAsync(string? search, int take, CancellationToken ct = default)
+    {
+        var q = db.Users.AsNoTracking().Where(u => u.IsActive);
+        if (!string.IsNullOrWhiteSpace(search)) { var t = search.Trim(); q = q.Where(u => u.FullName.Contains(t) || u.Email!.Contains(t)); }
+        return await q.OrderBy(u => u.FullName).Take(take).Select(u => new UserLookupDto(u.Id, u.FullName, u.Email!, u.IsActive)).ToListAsync(ct);
+    }
+
     public async Task<DashboardSummaryDto> GetDashboardSummaryAsync(Guid userId, CancellationToken ct = default)
     {
         var company = await db.Companies.AsNoTracking().Select(c => c.Name).FirstOrDefaultAsync(ct);

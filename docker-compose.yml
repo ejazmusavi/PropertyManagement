@@ -37,8 +37,11 @@ services:
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?set in .env (min 32 chars)}
       Database__MigrateOnStartup: "true"
       Swagger__Enabled: "true"
+      FileStorage__RootPath: /var/realestate/storage
     ports:
       - "5008:8080"
+    volumes:
+      - document-storage:/var/realestate/storage
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /api/v1/health HTTP/1.0\r\n\r\n\" >&3 && grep -q \" 200 \" <&3'"]
       interval: 10s
@@ -58,8 +61,12 @@ services:
       ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=realestate;User=realestate;Password=${MYSQL_APP_PASSWORD};"
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?set in .env (min 32 chars)}
       REALESTATE_ADMIN_PASSWORD: ${REALESTATE_ADMIN_PASSWORD:-}
+      FileStorage__RootPath: /var/realestate/storage
     ports:
       - "5080:8080"
+    volumes:
+      - document-storage:/var/realestate/storage
 
 volumes:
   mysql-data:
+  document-storage:

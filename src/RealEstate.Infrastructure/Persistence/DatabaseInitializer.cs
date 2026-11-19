@@ -38,11 +38,25 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
         var admin = await db.Roles.FirstOrDefaultAsync(r => r.NormalizedName == RoleNames.Administrator.ToUpperInvariant(), ct);
         if (admin is null)
         {
-            admin = new ApplicationRole(RoleNames.Administrator) { NormalizedName = RoleNames.Administrator.ToUpperInvariant(), Description = "Full access to every function." };
+            admin = new ApplicationRole(RoleNames.Administrator) { NormalizedName = RoleNames.Administrator.ToUpperInvariant(), Description = "Super Admin: full access to every function.", IsSystem = true };
             db.Roles.Add(admin);
             await db.SaveChangesAsync(ct);
         }
 
+
+        if (!admin.IsSystem) { admin.IsSystem = true; await db.SaveChangesAsync(ct); }
+
+        // Seed the standard system roles once; permissions are granted only on creation so later edits are kept.
+        foreach (var def in DefaultRoles.All)
+        {
+            if (await db.Roles.AnyAsync(r => r.NormalizedName == def.Name.ToUpperInvariant(), ct)) continue;
+            var role = new ApplicationRole(def.Name) { NormalizedName = def.Name.ToUpperInvariant(), Description = def.Description, IsSystem = true };
+            db.Roles.Add(role);
+            await db.SaveChangesAsync(ct);
+            foreach (var code in def.Permissions.Where(existing.ContainsKey))
+                db.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionId = existing[code].Id });
+            await db.SaveChangesAsync(ct);
+        }
         // The Administrator role always holds the complete permission catalog.
         var granted = (await db.RolePermissions.Where(rp => rp.RoleId == admin.Id).Select(rp => rp.PermissionId).ToListAsync(ct)).ToHashSet();
         foreach (var p in existing.Values.Where(p => !granted.Contains(p.Id)))

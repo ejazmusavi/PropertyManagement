@@ -1,0 +1,93 @@
+@model ProjectDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Entities
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var p = Model.Project; ViewData["Title"] = p.ProjectName; await Ui.LoadAsync();
+   var next = Enum.GetValues<ProjectStatus>().Where(s => Project.CanTransition(p.Status, s)).ToList();
+   var readOnly = p.Status == ProjectStatus.Archived; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@p.ProjectName <small class="text-muted fs-6">@p.ProjectCode</small></h1>
+        <span class="badge text-bg-secondary">@p.Status</span> <span class="text-muted">@p.City</span></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has("land.view")) { <a class="btn btn-primary" asp-controller="Land" asp-action="Index" asp-route-projectId="@p.Id">Land management</a> }
+        @if (Ui.Has("projects.edit") && !readOnly) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@p.Id">Edit</a> }
+        @if (Ui.Has("projects.access.assign")) { <a class="btn btn-outline-primary" asp-action="Access" asp-route-id="@p.Id">Project access</a> }
+        @if (Ui.Has("projects.status") && next.Count > 0) { <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#statusModal">Change status</button> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back</a>
+    </div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-md-4"><div class="card h-100"><div class="card-body"><div class="stat-label">Current area</div><div class="stat-value fs-3">@p.CurrentArea.ToString("N4")</div><div class="text-muted small">@p.MeasurementUnit &middot; initial @p.InitialArea.ToString("N4")</div></div></div></div>
+    <div class="col-12 col-md-4"><div class="card h-100"><div class="card-body"><div class="stat-label">Project manager</div><div class="fs-5">@(p.ProjectManagerName ?? "Not assigned")</div></div></div></div>
+    <div class="col-12 col-md-4"><div class="card h-100"><div class="card-body"><div class="stat-label">Timeline</div><div>Start: @(p.StartDate?.ToString("yyyy-MM-dd") ?? "-")</div><div>Expected completion: @(p.ExpectedCompletionDate?.ToString("yyyy-MM-dd") ?? "-")</div></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Details</div><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Description</dt><dd class="col-sm-9">@(p.Description ?? "-")</dd>
+    <dt class="col-sm-3">Address</dt><dd class="col-sm-9">@(string.Join(", ", new[] { p.Address, p.AddressDetails?.AddressLine, p.AddressDetails?.Locality, p.City, p.AddressDetails?.Province, p.AddressDetails?.Country, p.AddressDetails?.PostalCode }.Where(x => !string.IsNullOrWhiteSpace(x))))</dd>
+    @if (p.AddressDetails?.Landmark is { } lm) { <dt class="col-sm-3">Landmark</dt><dd class="col-sm-9">@lm</dd> }
+    @if (p.AddressDetails?.Latitude is { } lat && p.AddressDetails.Longitude is { } lon) { <dt class="col-sm-3">Coordinates</dt><dd class="col-sm-9">@lat, @lon</dd> }
+    <dt class="col-sm-3">Created</dt><dd class="col-sm-9">@p.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC by @p.CreatedBy</dd>
+    @if (p.ModifiedAtUtc is { } m) { <dt class="col-sm-3">Last modified</dt><dd class="col-sm-9">@m.ToString("yyyy-MM-dd HH:mm") UTC by @p.ModifiedBy</dd> }
+</dl></div></div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Status history</div><ul class="list-group list-group-flush">
+        @foreach (var h in p.StatusHistory) { <li class="list-group-item"><strong>@(h.FromStatus?.ToString() ?? "-") &rarr; @h.ToStatus</strong><div class="small text-muted">@h.ChangedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC &middot; @h.ChangedBy</div><div class="small">@h.Reason</div></li> }
+    </ul></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Project manager history</div>
+        @if (p.ManagerHistory.Count == 0) { <div class="card-body text-muted">No manager has been assigned yet.</div> }
+        else { <ul class="list-group list-group-flush">@foreach (var h in p.ManagerHistory) { <li class="list-group-item"><strong>@(h.ManagerName ?? h.UserId.ToString())</strong><div class="small text-muted">@h.AssignedFromUtc.ToString("yyyy-MM-dd") &ndash; @(h.AssignedToUtc?.ToString("yyyy-MM-dd") ?? "present") &middot; by @h.AssignedBy</div></li> }</ul> }
+    </div></div>
+</div>
+<div class="card"><div class="card-header fw-semibold">Project documents</div>
+    @if (Model.Documents.Count == 0) { <div class="card-body text-muted">No documents uploaded.</div> }
+    else
+    {
+        <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Title</th><th>Type</th><th>File</th><th class="text-end">Size</th><th>Uploaded</th><th></th></tr></thead><tbody>
+        @foreach (var d in Model.Documents)
+        {
+            <tr><td data-label="Title">@d.Title</td><td data-label="Type">@d.DocumentType</td><td data-label="File">@d.FileName</td><td data-label="Size" class="text-end">@((d.SizeBytes / 1024.0).ToString("N0")) KB</td><td data-label="Uploaded">@d.UploadedAtUtc.ToString("yyyy-MM-dd") by @d.UploadedBy</td>
+            <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="DownloadDocument" asp-route-id="@p.Id" asp-route-documentId="@d.Id">Download</a>
+                @if (Ui.Has("projects.documents") && !readOnly) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal" data-doc-id="@d.Id" data-doc-title="@d.Title">Remove</button> }</td></tr>
+        }
+        </tbody></table></div>
+    }
+    @if (Ui.Has("projects.documents") && !readOnly)
+    {
+        <div class="card-body border-top"><form asp-action="UploadDocument" asp-route-id="@p.Id" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+            <div class="col-12 col-lg-3"><label class="form-label">File</label><input type="file" name="file" class="form-control" required /></div>
+            <div class="col-6 col-lg-2"><label class="form-label">Type</label><select name="type" asp-items="Html.GetEnumSelectList<ProjectDocumentType>()" class="form-select"></select></div>
+            <div class="col-6 col-lg-3"><label class="form-label">Title</label><input name="title" class="form-control" maxlength="200" /></div>
+            <div class="col-12 col-lg-3"><label class="form-label">Description</label><input name="description" class="form-control" maxlength="500" /></div>
+            <div class="col-12 col-lg-1"><button class="btn btn-primary w-100" type="submit">Upload</button></div>
+        </form></div>
+    }
+</div>
+
+@if (Ui.Has("projects.status") && next.Count > 0)
+{
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="ChangeStatus" method="post">
+        <input type="hidden" name="ProjectId" value="@p.Id" /><input type="hidden" name="RowVersion" value="@p.RowVersion" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="statusTitle">Change project status</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body">
+            <label class="form-label">New status</label><select name="Status" class="form-select mb-3">@foreach (var s in next) { <option value="@s">@s</option> }</select>
+            <label class="form-label">Reason (required)</label><textarea name="Reason" class="form-control" rows="3" required maxlength="1000"></textarea>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Change status</button></div>
+    </form></div></div>
+}
+<div class="modal fade" id="deleteDocModal" tabindex="-1" aria-labelledby="deleteDocTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="DeleteDocument" asp-route-id="@p.Id" method="post">
+        <input type="hidden" name="documentId" id="deleteDocId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="deleteDocTitle">Remove document</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Remove <strong id="deleteDocName"></strong>? The file is kept in the archive and the removal is audited.</p><label class="form-label">Reason (required)</label><input name="reason" class="form-control" required maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Remove</button></div>
+    </form></div></div>
+@section Scripts {
+<script>
+document.getElementById('deleteDocModal')?.addEventListener('show.bs.modal', function (e) {
+  document.getElementById('deleteDocId').value = e.relatedTarget.dataset.docId;
+  document.getElementById('deleteDocName').textContent = e.relatedTarget.dataset.docTitle;
+});
+</script>
+}

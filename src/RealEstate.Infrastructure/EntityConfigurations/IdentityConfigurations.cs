@@ -23,6 +23,7 @@ public class ApplicationRoleConfiguration : IEntityTypeConfiguration<Application
     {
         b.ToTable("Roles");
         b.Property(x => x.Description).HasMaxLength(500);
+        b.Property(x => x.IsSystem).HasDefaultValue(false);
     }
 }
 

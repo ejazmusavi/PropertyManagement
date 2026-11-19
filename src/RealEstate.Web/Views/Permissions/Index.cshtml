@@ -1,0 +1,26 @@
+@model RealEstate.Application.Administration.PermissionMatrixDto
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Permissions"; await Ui.LoadAsync(); var canManage = Ui.Has("roles.manage"); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Permission matrix</h1><a class="btn btn-outline-secondary" asp-controller="Roles" asp-action="Index">Roles</a>
+</div>
+<form asp-action="Index" method="post" data-loading-form>
+<div class="card"><div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0">
+    <thead class="table-light"><tr><th>Permission</th>@foreach (var r in Model.Roles) { <th class="text-center text-nowrap">@r.Name</th> }</tr></thead>
+    <tbody>
+    @foreach (var g in Model.Permissions.GroupBy(p => p.Module))
+    {
+        <tr class="table-secondary"><th colspan="@(Model.Roles.Count + 1)">@g.Key</th></tr>
+        @foreach (var p in g)
+        {
+            <tr><td>@p.Name<div class="small text-muted">@p.Code</div></td>
+            @foreach (var r in Model.Roles)
+            {
+                var admin = r.Name == "Administrator";
+                <td class="text-center"><input type="checkbox" class="form-check-input" name="grant" value="@r.Id|@p.Code" checked="@(admin || r.PermissionCodes.Contains(p.Code))" disabled="@(admin || !canManage)" aria-label="@r.Name: @p.Name" />@if (admin) { <input type="hidden" name="grant" value="@r.Id|@p.Code" /> }</td>
+            }</tr>
+        }
+    }
+    </tbody></table></div></div>
+@if (canManage) { <div class="mt-3"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save permissions</button></div> }
+</form>

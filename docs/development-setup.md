@@ -30,3 +30,6 @@ dotnet user-secrets set TestMySql "Server=localhost;Port=3306;User=<user>;Passwo
 
 ## Docker
 Copy `.env.example` to `.env`, fill values, then `docker compose up --build` (MySQL 3307, API 5008, Web 5080). Create the admin with the command shown at the top of `docker-compose.yml`.
+
+## Document storage (Phase 1)
+Uploaded files (company logo, project and land documents) are stored on disk **outside the web root** under `FileStorage:RootPath` (default `App_Data/storage` beside the application; Docker uses the `document-storage` volume mounted at `/var/realestate/storage`). Files are served only through authorized controller actions, never as static files. The API and the Web app must point `FileStorage:RootPath` at the same directory when both are run, and the directory must be included in backups together with the database.

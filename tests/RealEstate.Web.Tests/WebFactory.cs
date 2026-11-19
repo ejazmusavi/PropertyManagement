@@ -59,9 +59,26 @@ public sealed class WebFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return c;
     }
 
+    public async Task<HttpClient> LoggedInAsRoleAsync(string role)
+    {
+        using var scope = Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = new ApplicationUser { UserName = email, Email = email, FullName = "Role Tester", IsActive = true, CreatedAtUtc = DateTime.UtcNow };
+        Assert.True((await users.CreateAsync(user, Password)).Succeeded);
+        Assert.True((await users.AddToRoleAsync(user, role)).Succeeded);
+        var c = NewClient();
+        var r = await c.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string> { ["Email"] = email, ["Password"] = Password, ["__RequestVerificationToken"] = await TokenAsync(c, "/Account/Login") }));
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, r.StatusCode);
+        return c;
+    }
+
     async Task IAsyncLifetime.DisposeAsync()
     {
         await base.DisposeAsync();
         await db.DisposeAsync();
     }
 }
+
+[CollectionDefinition("web")]
+public class WebCollection : ICollectionFixture<WebFactory>;

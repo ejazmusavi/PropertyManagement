@@ -7,7 +7,8 @@ using RealEstate.Tests.Support;
 
 namespace RealEstate.Api.Tests;
 
-public class AuthApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
+[Collection("api")]
+public class AuthApiTests(ApiFactory factory)
 {
     private HttpClient Client() => factory.CreateClient();
 

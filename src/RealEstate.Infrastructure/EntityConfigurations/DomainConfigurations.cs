@@ -16,6 +16,17 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         b.Property(x => x.Email).HasMaxLength(256);
         b.Property(x => x.Phone).HasMaxLength(30);
         b.Property(x => x.Address).HasMaxLength(500);
+        b.Property(x => x.Website).HasMaxLength(250);
+        b.Property(x => x.City).HasMaxLength(100);
+        b.Property(x => x.Country).HasMaxLength(100);
+        b.Property(x => x.PostalCode).HasMaxLength(20);
+        b.Property(x => x.LogoStorageKey).HasMaxLength(300);
+        b.Property(x => x.LogoContentType).HasMaxLength(100);
+        b.Property(x => x.CurrencyCode).HasMaxLength(3).IsRequired();
+        b.Property(x => x.CurrencySymbol).HasMaxLength(8).IsRequired();
+        b.Property(x => x.TimeZoneId).HasMaxLength(100).IsRequired();
+        b.Property(x => x.AllowedFileExtensions).HasMaxLength(300).IsRequired();
+        b.Property(x => x.RoundingMode).HasConversion<string>().HasMaxLength(20);
         b.Property(x => x.CreatedBy).HasMaxLength(256);
         b.Property(x => x.ModifiedBy).HasMaxLength(256);
         b.Property(x => x.CreatedAtUtc).HasPrecision(6);
@@ -57,7 +68,7 @@ public class UserProjectConfiguration : IEntityTypeConfiguration<UserProject>
         b.Property(x => x.CreatedAtUtc).HasPrecision(6);
         b.Property(x => x.ModifiedAtUtc).HasPrecision(6);
         b.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
-        // ProjectId gets its foreign key to Project in Phase 1.
+        b.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
         b.HasIndex(x => new { x.UserId, x.ProjectId }).IsUnique();
         b.HasIndex(x => x.ProjectId);
     }

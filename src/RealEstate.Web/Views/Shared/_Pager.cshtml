@@ -1,0 +1,12 @@
+@* Model: (int Page, int TotalPages, int TotalCount, string Label, Dictionary<string,string?> Route, string PageParam) *@
+@model (int Page, int TotalPages, int TotalCount, string Label, Dictionary<string, string?> Route, string PageParam)
+@{
+    string Url(int page) { var r = new Dictionary<string, string?>(Model.Route) { [Model.PageParam] = page.ToString() }; return "?" + string.Join("&", r.Where(x => !string.IsNullOrEmpty(x.Value)).Select(x => $"{Uri.EscapeDataString(x.Key)}={Uri.EscapeDataString(x.Value!)}")); }
+}
+<nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Pagination">
+    <span class="text-muted small">Page @Model.Page of @Math.Max(Model.TotalPages, 1) &middot; @Model.TotalCount @Model.Label</span>
+    <div class="btn-group">
+        <a class="btn btn-outline-secondary @(Model.Page > 1 ? "" : "disabled")" href="@Url(Model.Page - 1)" aria-disabled="@(Model.Page <= 1)">Previous</a>
+        <a class="btn btn-outline-secondary @(Model.Page < Model.TotalPages ? "" : "disabled")" href="@Url(Model.Page + 1)" aria-disabled="@(Model.Page >= Model.TotalPages)">Next</a>
+    </div>
+</nav>

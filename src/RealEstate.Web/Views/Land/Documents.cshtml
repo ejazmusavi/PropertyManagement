@@ -1,0 +1,46 @@
+@model LandDocumentsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Land documents"; await Ui.LoadAsync(); var o = Model.Overview; var canEdit = Ui.Has("land.manage") && o.Status != ProjectStatus.Archived; }
+<partial name="_LandNav" model='(o.ProjectId, o.ProjectName, "Documents")' />
+<div class="card"><div class="card-header fw-semibold">Land documents</div>
+@if (Model.Documents.Count == 0) { <div class="card-body text-muted">No land documents uploaded.</div> }
+else
+{
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Title</th><th>Type</th><th>Linked to</th><th>File</th><th class="text-end">Size</th><th>Uploaded</th><th></th></tr></thead><tbody>
+    @foreach (var d in Model.Documents)
+    {
+        var parcel = o.Parcels.FirstOrDefault(p => p.Id == d.ParcelId)?.ParcelCode;
+        <tr><td data-label="Title">@d.Title</td><td data-label="Type">@d.DocumentType</td>
+            <td data-label="Linked to">@(d.AdjustmentId is { } a ? $"Adjustment #{a}" : d.AcquisitionId is { } q ? $"Acquisition #{q}" : parcel is not null ? $"Parcel {parcel}" : "Project")</td>
+            <td data-label="File">@d.FileName</td><td data-label="Size" class="text-end">@((d.SizeBytes / 1024.0).ToString("N0")) KB</td><td data-label="Uploaded">@d.UploadedAtUtc.ToString("yyyy-MM-dd") by @d.UploadedBy</td>
+            <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="DownloadDocument" asp-route-projectId="@o.ProjectId" asp-route-documentId="@d.Id">Download</a>
+            @if (canEdit) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal" data-doc-id="@d.Id" data-doc-title="@d.Title">Remove</button> }</td></tr>
+    }
+    </tbody></table></div>
+}
+@if (canEdit)
+{
+    <div class="card-body border-top"><form asp-action="UploadDocument" asp-route-projectId="@o.ProjectId" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+        <div class="col-12 col-lg-3"><label class="form-label">File</label><input type="file" name="file" class="form-control" required /></div>
+        <div class="col-6 col-lg-2"><label class="form-label">Type</label><select name="type" asp-items="Html.GetEnumSelectList<LandDocumentType>()" class="form-select"></select></div>
+        <div class="col-6 col-lg-3"><label class="form-label">Title</label><input name="title" class="form-control" maxlength="200" /></div>
+        <div class="col-12 col-lg-3"><label class="form-label">Link to parcel (optional)</label><select name="parcelId" class="form-select"><option value="">Project (general)</option>@foreach (var p in o.Parcels) { <option value="@p.Id">@p.ParcelCode</option> }</select></div>
+        <div class="col-12 col-lg-1"><button class="btn btn-primary w-100" type="submit">Upload</button></div>
+    </form></div>
+}
+</div>
+<div class="modal fade" id="deleteDocModal" tabindex="-1" aria-labelledby="deleteDocTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="DeleteDocument" asp-route-projectId="@o.ProjectId" method="post"><input type="hidden" name="documentId" id="deleteDocId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="deleteDocTitle">Remove document</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Remove <strong id="deleteDocName"></strong>? The file is archived and the removal is audited.</p><label class="form-label">Reason (required)</label><input name="reason" class="form-control" required maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Remove</button></div>
+    </form></div></div>
+@section Scripts {
+<script>
+document.getElementById('deleteDocModal')?.addEventListener('show.bs.modal', function (e) {
+  document.getElementById('deleteDocId').value = e.relatedTarget.dataset.docId;
+  document.getElementById('deleteDocName').textContent = e.relatedTarget.dataset.docTitle;
+});
+</script>
+}

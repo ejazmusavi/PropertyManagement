@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using RealEstate.Application.Administration;
 using RealEstate.Application.Audit;
+using RealEstate.Application.Documents;
+using RealEstate.Infrastructure.Storage;
 using RealEstate.Application.Auth;
 using RealEstate.Application.Common;
 using RealEstate.Application.Users;
@@ -53,6 +56,10 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IUserQueryService, UserQueryService>();
+        services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IAdministrationStore, AdministrationStore>();
+        services.AddOptions<FileStorageOptions>().Bind(config.GetSection(FileStorageOptions.Section));
+        services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<AdminBootstrapper>();
 

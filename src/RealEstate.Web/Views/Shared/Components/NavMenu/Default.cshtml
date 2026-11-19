@@ -1,13 +1,26 @@
 @model IReadOnlyList<string>
 @{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
-    string Active(string c) => string.Equals(controller, c, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    string Active(params string[] c) => c.Any(x => string.Equals(controller, x, StringComparison.OrdinalIgnoreCase)) ? "active" : "";
 }
 <ul class="nav nav-pills flex-column gap-1">
     <li class="nav-item"><a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index">Dashboard</a></li>
+    @if (Model.Contains("projects.view"))
+    {
+        <li class="nav-item"><a class="nav-link @Active("Projects", "Land")" asp-controller="Projects" asp-action="Index">Projects</a></li>
+    }
+    @if (Model.Contains("company.view"))
+    {
+        <li class="nav-item"><a class="nav-link @Active("Company")" asp-controller="Company" asp-action="Index">Company</a></li>
+    }
     @if (Model.Contains("users.view"))
     {
         <li class="nav-item"><a class="nav-link @Active("Users")" asp-controller="Users" asp-action="Index">Users</a></li>
+    }
+    @if (Model.Contains("roles.view"))
+    {
+        <li class="nav-item"><a class="nav-link @Active("Roles")" asp-controller="Roles" asp-action="Index">Roles</a></li>
+        <li class="nav-item"><a class="nav-link @Active("Permissions")" asp-controller="Permissions" asp-action="Index">Permissions</a></li>
     }
     <li class="nav-item"><a class="nav-link @Active("Profile")" asp-controller="Profile" asp-action="Index">My profile</a></li>
 </ul>

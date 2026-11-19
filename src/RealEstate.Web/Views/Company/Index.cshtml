@@ -1,0 +1,50 @@
+@model CompanyViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Company profile"; await Ui.LoadAsync(); var canEdit = Ui.Has("company.manage"); var ro = canEdit ? null : "readonly"; }
+<h1 class="h3 mb-3">Company profile</h1>
+<div class="card mb-3"><div class="card-body d-flex flex-wrap align-items-center gap-3">
+    @if (Model.HasLogo) { <img src="@Url.Action("Logo", "Company")" alt="Company logo" style="max-height:72px;max-width:220px" /> }
+    else { <div class="text-muted">No logo uploaded.</div> }
+    @if (canEdit)
+    {
+        <form asp-action="UploadLogo" method="post" enctype="multipart/form-data" class="d-flex gap-2 ms-auto align-items-center">
+            <input type="file" name="logo" class="form-control" accept=".png,.jpg,.jpeg" aria-label="Logo file" required />
+            <button class="btn btn-outline-primary" type="submit">Upload logo</button>
+        </form>
+        @if (Model.HasLogo)
+        {
+            <form asp-action="RemoveLogo" method="post" onsubmit="return confirm('Remove the company logo?');"><button class="btn btn-outline-danger" type="submit">Remove</button></form>
+        }
+    }
+</div></div>
+<form asp-action="Index" method="post" data-loading-form>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-header fw-semibold">Profile and contact</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="LegalName" class="form-label"></label><input asp-for="LegalName" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="LegalName" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="TaxNumber" class="form-label"></label><input asp-for="TaxNumber" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="TaxNumber" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Phone" class="form-label"></label><input asp-for="Phone" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="Phone" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Website" class="form-label"></label><input asp-for="Website" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="Website" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-6"><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="Address" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-2"><label asp-for="City" class="form-label"></label><input asp-for="City" class="form-control" readonly="@(!canEdit)" /></div>
+        <div class="col-12 col-lg-2"><label asp-for="Country" class="form-label"></label><input asp-for="Country" class="form-control" readonly="@(!canEdit)" /></div>
+        <div class="col-12 col-lg-2"><label asp-for="PostalCode" class="form-label"></label><input asp-for="PostalCode" class="form-control" readonly="@(!canEdit)" /></div>
+    </div></div></div>
+    <div class="card mb-3"><div class="card-header fw-semibold">Currency, fiscal year and financial settings</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-3"><label asp-for="CurrencyCode" class="form-label"></label><input asp-for="CurrencyCode" class="form-control" maxlength="3" readonly="@(!canEdit)" /><span asp-validation-for="CurrencyCode" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-3"><label asp-for="CurrencySymbol" class="form-label"></label><input asp-for="CurrencySymbol" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="CurrencySymbol" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-3"><label asp-for="CurrencyDecimalPlaces" class="form-label"></label><input asp-for="CurrencyDecimalPlaces" type="number" min="0" max="4" class="form-control" readonly="@(!canEdit)" /></div>
+        <div class="col-12 col-lg-3"><label asp-for="RoundingMode" class="form-label"></label><select asp-for="RoundingMode" asp-items="Html.GetEnumSelectList<RoundingMode>()" class="form-select" disabled="@(!canEdit)"></select>@if (!canEdit) { <input type="hidden" asp-for="RoundingMode" /> }</div>
+        <div class="col-12 col-lg-4"><label asp-for="FiscalYearStartMonth" class="form-label"></label><input asp-for="FiscalYearStartMonth" type="number" min="1" max="12" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="FiscalYearStartMonth" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="TimeZoneId" class="form-label"></label><input asp-for="TimeZoneId" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="TimeZoneId" class="text-danger small"></span></div>
+    </div></div></div>
+    <div class="card mb-3"><div class="card-header fw-semibold">Document settings</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="MaxUploadSizeMb" class="form-label"></label><input asp-for="MaxUploadSizeMb" type="number" min="1" max="100" class="form-control" readonly="@(!canEdit)" /><span asp-validation-for="MaxUploadSizeMb" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-8"><label asp-for="AllowedFileExtensions" class="form-label"></label><input asp-for="AllowedFileExtensions" class="form-control" readonly="@(!canEdit)" /><div class="form-text">Comma-separated, e.g. pdf,jpg,png,docx</div><span asp-validation-for="AllowedFileExtensions" class="text-danger small"></span></div>
+    </div></div></div>
+    @if (canEdit) { <button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save company</button> }
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

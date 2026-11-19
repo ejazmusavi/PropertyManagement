@@ -201,9 +201,16 @@ public class DatabaseTests(InfrastructureFixture fx)
         using var s = fx.Scope();
         var db = s.ServiceProvider.GetRequiredService<AppDbContext>();
         var u = await CreateUserAsync(s);
-        db.UserProjects.Add(new UserProject { UserId = u.Id, ProjectId = 7 });
+        // Phase 1 added the foreign key to Projects: an unknown project is rejected, a real one is accepted once per user.
+        db.UserProjects.Add(new UserProject { UserId = u.Id, ProjectId = 999999 });
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+        db.ChangeTracker.Clear();
+        var project = RealEstate.Domain.Entities.Project.Create("UQ" + Guid.NewGuid().ToString("N")[..8], "Unique test", null, "City", null, null, null, 10m, RealEstate.Domain.Enums.MeasurementUnit.Kanal, null);
+        db.Projects.Add(project);
         await db.SaveChangesAsync();
-        db.UserProjects.Add(new UserProject { UserId = u.Id, ProjectId = 7 });
+        db.UserProjects.Add(new UserProject { UserId = u.Id, ProjectId = project.Id });
+        await db.SaveChangesAsync();
+        db.UserProjects.Add(new UserProject { UserId = u.Id, ProjectId = project.Id });
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
 
