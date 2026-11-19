@@ -1,0 +1,21 @@
+@model AcquireLandViewModel
+@{ ViewData["Title"] = "Record land acquisition"; }
+<partial name="_LandNav" model='(Model.ProjectId, Model.ProjectName, "Acquire")' />
+<div class="card"><div class="card-body">
+<p class="text-muted">Recording an acquisition increases the project area by the acquired amount and writes an area history record.</p>
+<form asp-action="Acquire" method="post" enctype="multipart/form-data" data-loading-form>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="ProjectId" /><input type="hidden" asp-for="RowVersion" />
+    <div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="AcquisitionDate" class="form-label"></label><input asp-for="AcquisitionDate" type="date" class="form-control" /><span asp-validation-for="AcquisitionDate" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="SellerName" class="form-label"></label><input asp-for="SellerName" class="form-control" /><span asp-validation-for="SellerName" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Area" class="form-label">Area acquired (@Model.Unit)</label><input asp-for="Area" type="number" step="0.0001" min="0.0001" class="form-control" /><span asp-validation-for="Area" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Cost" class="form-label"></label><input asp-for="Cost" type="number" step="0.01" min="0" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="ReferenceNumber" class="form-label"></label><input asp-for="ReferenceNumber" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="ParcelCode" class="form-label"></label><input asp-for="ParcelCode" class="form-control" /><div class="form-text">Generated automatically when empty.</div></div>
+        <div class="col-12 col-lg-8"><label asp-for="Notes" class="form-label"></label><input asp-for="Notes" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="Document" class="form-label">Supporting document (optional)</label><input asp-for="Document" type="file" class="form-control" /></div>
+    </div>
+    <div class="mt-4 d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Record acquisition</button><a class="btn btn-outline-secondary" asp-action="Index" asp-route-projectId="@Model.ProjectId">Cancel</a></div>
+</form></div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,24 @@
+@model RoleFormViewModel
+@{ var editing = Model.Id.HasValue; ViewData["Title"] = editing ? "Edit role" : "New role"; var locked = Model.IsAdministrator; }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form asp-action="@(editing ? "Edit" : "Create")" asp-route-id="@Model.Id" method="post" data-loading-form>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    @if (locked) { <div class="alert alert-info">The Administrator (Super Admin) role always holds every permission and cannot be changed.</div> }
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" readonly="@Model.IsSystem" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-8"><label asp-for="Description" class="form-label"></label><input asp-for="Description" class="form-control" readonly="@locked" /></div>
+    </div></div></div>
+    <div class="row g-3 mb-3">
+    @foreach (var g in Model.AllPermissions.GroupBy(p => p.Module))
+    {
+        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">@g.Key</div><div class="card-body">
+        @foreach (var p in g)
+        {
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="PermissionCodes" value="@p.Code" id="p-@p.Id" checked="@(locked || Model.PermissionCodes.Contains(p.Code))" disabled="@locked" /><label class="form-check-label" for="p-@p.Id">@p.Name <span class="text-muted small">(@p.Code)</span></label></div>
+        }
+        </div></div></div>
+    }
+    </div>
+    <div class="d-flex gap-2">@if (!locked) { <button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save role</button> }<a class="btn btn-outline-secondary" asp-action="Index">@(locked ? "Back" : "Cancel")</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

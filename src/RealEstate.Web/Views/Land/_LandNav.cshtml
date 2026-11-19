@@ -1,0 +1,15 @@
+@model (long ProjectId, string ProjectName, string Active)
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); string A(string t) => Model.Active == t ? "active" : ""; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h1 class="h3 mb-0">Land &ndash; @Model.ProjectName</h1>
+    <a class="btn btn-outline-secondary" asp-controller="Projects" asp-action="Details" asp-route-id="@Model.ProjectId">Back to project</a>
+</div>
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link @A("Index")" asp-action="Index" asp-route-projectId="@Model.ProjectId">Overview</a></li>
+    <li class="nav-item"><a class="nav-link @A("Distribution")" asp-action="Distribution" asp-route-projectId="@Model.ProjectId">Distribution</a></li>
+    <li class="nav-item"><a class="nav-link @A("History")" asp-action="History" asp-route-projectId="@Model.ProjectId">Area adjustment history</a></li>
+    <li class="nav-item"><a class="nav-link @A("Documents")" asp-action="Documents" asp-route-projectId="@Model.ProjectId">Documents</a></li>
+    @if (Ui.Has("land.manage")) { <li class="nav-item"><a class="nav-link @A("Acquire")" asp-action="Acquire" asp-route-projectId="@Model.ProjectId">Record acquisition</a></li> }
+    @if (Ui.Has("land.adjust")) { <li class="nav-item"><a class="nav-link @A("Adjust")" asp-action="Adjust" asp-route-projectId="@Model.ProjectId">Adjust area</a></li> }
+</ul>

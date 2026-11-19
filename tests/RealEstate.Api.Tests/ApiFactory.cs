@@ -41,9 +41,24 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return email;
     }
 
+    public async Task<string> CreateUserInRoleAsync(string role)
+    {
+        using var scope = Services.CreateScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var email = $"{Guid.NewGuid():N}@example.com";
+        var user = new ApplicationUser { UserName = email, Email = email, FullName = "Role Tester", IsActive = true, CreatedAtUtc = DateTime.UtcNow };
+        Assert.True((await users.CreateAsync(user, Password)).Succeeded);
+        Assert.True((await users.AddToRoleAsync(user, role)).Succeeded);
+        return email;
+    }
+
     async Task IAsyncLifetime.DisposeAsync()
     {
         await base.DisposeAsync();
         await db.DisposeAsync();
     }
 }
+
+/// <summary>One shared host for all API tests (two hosts in one process conflict on Serilog's global logger).</summary>
+[CollectionDefinition("api")]
+public class ApiCollection : ICollectionFixture<ApiFactory>;

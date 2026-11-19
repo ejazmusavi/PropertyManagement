@@ -9,8 +9,21 @@ using RealEstate.Infrastructure.Identity;
 namespace RealEstate.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? currentUser = null, TimeProvider? clock = null)
-    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
+    : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options), IAppDbContext
 {
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectAddress> ProjectAddresses => Set<ProjectAddress>();
+    public DbSet<ProjectDocument> ProjectDocuments => Set<ProjectDocument>();
+    public DbSet<ProjectManagerAssignment> ProjectManagerAssignments => Set<ProjectManagerAssignment>();
+    public DbSet<ProjectAreaHistory> ProjectAreaHistories => Set<ProjectAreaHistory>();
+    public DbSet<ProjectStatusHistory> ProjectStatusHistories => Set<ProjectStatusHistory>();
+    public DbSet<LandParcel> LandParcels => Set<LandParcel>();
+    public DbSet<LandAcquisition> LandAcquisitions => Set<LandAcquisition>();
+    public DbSet<LandAdjustment> LandAdjustments => Set<LandAdjustment>();
+    public DbSet<LandDistribution> LandDistributions => Set<LandDistribution>();
+    public DbSet<LandDistributionHistory> LandDistributionHistories => Set<LandDistributionHistory>();
+    public DbSet<LandDocument> LandDocuments => Set<LandDocument>();
+
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();

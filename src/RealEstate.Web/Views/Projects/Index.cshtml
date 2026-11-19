@@ -1,0 +1,40 @@
+@model ProjectListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Projects"; await Ui.LoadAsync(); var p = Model.Projects;
+   var route = new Dictionary<string, string?> { ["search"] = Model.Search, ["status"] = Model.Status?.ToString(), ["city"] = Model.City, ["sortBy"] = Model.SortBy, ["desc"] = Model.Descending ? "true" : null };
+   string Sort(string key) => Url.Action("Index", new { search = Model.Search, status = Model.Status, city = Model.City, sortBy = key, desc = Model.SortBy == key && !Model.Descending })!; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Projects</h1>
+    @if (Ui.Has("projects.create")) { <a class="btn btn-primary" asp-action="Create">New project</a> }
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-md-4"><input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Search code, name or city" aria-label="Search projects" /></div>
+    <div class="col-6 col-md-3"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<ProjectStatus>()) { <option value="@s" selected="@(Model.Status == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-3"><select name="city" class="form-select" aria-label="City"><option value="">All cities</option>@foreach (var c in Model.Cities) { <option value="@c" selected="@(Model.City == c)">@c</option> }</select></div>
+    <div class="col-12 col-md-2 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary" asp-action="Index">Clear</a></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No projects found@(Ui.Has("projects.create") ? ". Create the first project to get started." : ".")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th><a href="@Sort("code")">Code</a></th><th>Name</th><th><a href="@Sort("city")">City</a></th><th><a href="@Sort("status")">Status</a></th><th class="text-end"><a href="@Sort("area")">Current area</a></th><th>Manager</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr>
+                <td data-label="Code">@x.ProjectCode</td>
+                <td data-label="Name">@x.ProjectName</td>
+                <td data-label="City">@x.City</td>
+                <td data-label="Status"><span class="badge @(x.Status switch { ProjectStatus.Active => "text-bg-success", ProjectStatus.Planning => "text-bg-info", ProjectStatus.OnHold => "text-bg-warning", ProjectStatus.Completed => "text-bg-primary", _ => "text-bg-secondary" })">@x.Status</span></td>
+                <td data-label="Current area" class="text-end">@x.CurrentArea.ToString("N4") @x.MeasurementUnit</td>
+                <td data-label="Manager">@(x.ProjectManagerName ?? "-")</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Details</a></td>
+            </tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "projects", route, "page")' />
+}

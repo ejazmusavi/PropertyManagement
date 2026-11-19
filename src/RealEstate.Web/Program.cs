@@ -47,6 +47,7 @@ try
         });
     builder.Services.AddAuthorization(o => o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
+    builder.Services.AddScoped<RealEstate.Web.Services.UiPermissions>();
     builder.Services.AddControllersWithViews(o =>
     {
         o.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());

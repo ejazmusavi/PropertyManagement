@@ -1,0 +1,31 @@
+@model IReadOnlyList<RealEstate.Application.Administration.RoleDto>
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Roles"; await Ui.LoadAsync(); var canManage = Ui.Has("roles.manage"); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Roles</h1>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-controller="Permissions" asp-action="Index">Permission matrix</a>@if (canManage) { <a class="btn btn-primary" asp-action="Create">New role</a> }</div>
+</div>
+<div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+    <thead><tr><th>Role</th><th>Description</th><th class="text-end">Users</th><th class="text-end">Permissions</th><th></th></tr></thead><tbody>
+    @foreach (var r in Model)
+    {
+        <tr><td data-label="Role">@r.Name @if (r.Name == "Administrator") { <span class="badge text-bg-dark">Super Admin</span> } else if (r.IsSystem) { <span class="badge text-bg-secondary">System</span> }</td>
+            <td data-label="Description">@r.Description</td><td data-label="Users" class="text-end">@r.UserCount</td><td data-label="Permissions" class="text-end">@r.PermissionCount</td>
+            <td class="text-end text-nowrap">@if (canManage) { <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@r.Id">@(r.Name == "Administrator" ? "View" : "Edit")</a>
+                @if (!r.IsSystem) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteRoleModal" data-role-id="@r.Id" data-role-name="@r.Name">Delete</button> } }</td></tr>
+    }
+    </tbody></table></div></div>
+<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-labelledby="deleteRoleTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="Delete" method="post"><input type="hidden" name="id" id="deleteRoleId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="deleteRoleTitle">Delete role</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body">Delete the role <strong id="deleteRoleName"></strong>? Roles that are still assigned to users cannot be deleted.</div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Delete</button></div>
+    </form></div></div>
+@section Scripts {
+<script>
+document.getElementById('deleteRoleModal')?.addEventListener('show.bs.modal', function (e) {
+  document.getElementById('deleteRoleId').value = e.relatedTarget.dataset.roleId;
+  document.getElementById('deleteRoleName').textContent = e.relatedTarget.dataset.roleName;
+});
+</script>
+}

@@ -40,3 +40,18 @@ public static class ModelStateExtensions
             foreach (var m in messages) state.AddModelError(string.IsNullOrEmpty(key) ? string.Empty : key, m);
     }
 }
+
+public static class ControllerErrorExtensions
+{
+    /// <summary>Shows validation and business-rule errors inline. Forbidden/not-found are rethrown for the global filter. Returns false when not handled.</summary>
+    public static bool TryAddError(this Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary state, Exception ex)
+    {
+        switch (ex)
+        {
+            case RequestValidationException v: state.AddErrors(v); return true;
+            case ForbiddenException or NotFoundException: return false;
+            case DomainException d: state.AddModelError(string.Empty, d.Message); return true;
+            default: return false;
+        }
+    }
+}

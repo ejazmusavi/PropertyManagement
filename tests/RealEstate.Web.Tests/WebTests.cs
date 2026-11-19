@@ -3,7 +3,8 @@ using RealEstate.Tests.Support;
 
 namespace RealEstate.Web.Tests;
 
-public class WebTests(WebFactory f) : IClassFixture<WebFactory>
+[Collection("web")]
+public class WebTests(WebFactory f)
 {
     private static FormUrlEncodedContent Form(params (string, string)[] kv) =>
         new(kv.ToDictionary(x => x.Item1, x => x.Item2));

@@ -1,0 +1,42 @@
+@model DistributionViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Entities
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Land distribution"; await Ui.LoadAsync(); var canEdit = Ui.Has("land.manage"); }
+<partial name="_LandNav" model='(Model.ProjectId, Model.ProjectName, "Distribution")' />
+<div class="card"><div class="card-body">
+<p class="text-muted">Distribute the project area (@Model.TotalArea.ToString("N4") @Model.Unit) across categories. Whatever is not classified is shown explicitly as <strong>Unclassified</strong>; the total can never exceed the project area.</p>
+<form asp-action="Distribution" method="post" data-loading-form id="distForm">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="ProjectId" /><input type="hidden" asp-for="DistributionVersion" />
+    <div class="row g-3">
+    @foreach (var c in LandRules.ClassifiedCategories)
+    {
+        <div class="col-12 col-lg-4"><label class="form-label">@c</label><input name="Areas[@c]" value="@Model.Areas.GetValueOrDefault(c)" type="number" step="0.0001" min="0" class="form-control dist-input" readonly="@(!canEdit)" /></div>
+    }
+        <div class="col-12 col-lg-4"><label class="form-label">Unclassified (remainder)</label><input id="unclassified" class="form-control" readonly value="@Model.Unclassified" /></div>
+        <div class="col-12 col-lg-4"><label class="form-label">Saleable (Residential + Commercial)</label><input id="saleable" class="form-control" readonly /></div>
+    </div>
+    @if (canEdit)
+    {
+        <div class="row g-3 mt-1"><div class="col-12"><label asp-for="Reason" class="form-label"></label><input asp-for="Reason" class="form-control" /><span asp-validation-for="Reason" class="text-danger small"></span></div></div>
+        <div class="mt-4"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save distribution</button></div>
+    }
+</form></div></div>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  var total = @Model.TotalArea.ToString(System.Globalization.CultureInfo.InvariantCulture);
+  var inputs = document.querySelectorAll('.dist-input');
+  function recalc() {
+    var sum = 0; inputs.forEach(function (i) { sum += parseFloat(i.value) || 0; });
+    var u = document.getElementById('unclassified'); u.value = (total - sum).toFixed(4);
+    u.classList.toggle('is-invalid', total - sum < 0);
+    var sale = (parseFloat(inputs[0].value) || 0) + (parseFloat(inputs[1].value) || 0);
+    document.getElementById('saleable').value = sale.toFixed(4);
+  }
+  inputs.forEach(function (i) { i.addEventListener('input', recalc); }); recalc();
+})();
+</script>
+}

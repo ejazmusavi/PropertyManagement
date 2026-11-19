@@ -1,0 +1,47 @@
+@model RealEstate.Application.LandManagement.LandOverviewDto
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Land management"; await Ui.LoadAsync(); var o = Model; var u = o.MeasurementUnit; }
+<partial name="_LandNav" model='(o.ProjectId, o.ProjectName, "Index")' />
+@if (!o.IsReconciled) { <div class="alert alert-warning">The recorded history does not reconcile with the current area. Contact an administrator.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Total project area</div><div class="stat-value fs-3">@o.TotalProjectArea.ToString("N4")</div><div class="small text-muted">@u</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Original land</div><div class="stat-value fs-3">@o.OriginalArea.ToString("N4")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Acquired / added</div><div class="stat-value fs-3">@((o.AcquiredArea + o.AddedArea).ToString("N4"))</div><div class="small text-muted">acquired @o.AcquiredArea.ToString("N4") &middot; added @o.AddedArea.ToString("N4")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="stat-label">Reduced land</div><div class="stat-value fs-3">@o.ReducedArea.ToString("N4")</div></div></div></div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-5"><div class="card h-100"><div class="card-header fw-semibold d-flex justify-content-between"><span>Distribution</span><a asp-action="Distribution" asp-route-projectId="@o.ProjectId">Manage</a></div>
+        <table class="table mb-0"><tbody>
+        @foreach (var d in o.Distribution) { <tr class="@(d.Category == LandCategory.Unclassified ? "table-light" : "")"><td>@(d.Category == LandCategory.Unclassified ? "Unclassified (remainder)" : d.Category.ToString())</td><td class="text-end">@d.Area.ToString("N4")</td><td class="text-end text-muted">@d.Percentage.ToString("0.##")%</td></tr> }
+        <tr class="fw-semibold"><td>Saleable (Residential + Commercial)</td><td class="text-end">@o.SaleableArea.ToString("N4")</td><td></td></tr>
+        </tbody></table></div></div>
+    <div class="col-12 col-lg-7"><div class="card h-100"><div class="card-header fw-semibold">Land parcels</div>
+        @if (o.Parcels.Count == 0) { <div class="card-body text-muted">No parcels recorded.</div> }
+        else { <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Code</th><th>Type</th><th>Title ref.</th><th class="text-end">Area</th></tr></thead><tbody>
+            @foreach (var p in o.Parcels) { <tr><td data-label="Code">@p.ParcelCode<div class="small text-muted">@p.Description</div></td><td data-label="Type">@p.ParcelType</td><td data-label="Title ref.">@(p.TitleReference ?? "-")</td><td data-label="Area" class="text-end">@p.Area.ToString("N4")</td></tr> }
+        </tbody></table></div> }
+        @if (Ui.Has("land.manage") && o.Status != ProjectStatus.Completed && o.Status != ProjectStatus.Archived)
+        {
+            <div class="card-body border-top"><form asp-action="AddParcel" method="post" class="row g-2 align-items-end"><input type="hidden" name="ProjectId" value="@o.ProjectId" />
+                <div class="col-6 col-lg-3"><label class="form-label">Code</label><input name="ParcelCode" class="form-control" required maxlength="50" /></div>
+                <div class="col-6 col-lg-3"><label class="form-label">Area (@u)</label><input name="Area" type="number" step="0.0001" min="0.0001" class="form-control" required /></div>
+                <div class="col-6 col-lg-3"><label class="form-label">Title ref.</label><input name="TitleReference" class="form-control" maxlength="200" /></div>
+                <div class="col-6 col-lg-3"><label class="form-label">Location</label><input name="Location" class="form-control" maxlength="300" /></div>
+                <div class="col-12 col-lg-9"><input name="Description" class="form-control" placeholder="Description (optional)" maxlength="1000" /></div>
+                <div class="col-12 col-lg-3"><button class="btn btn-primary w-100" type="submit">Add original parcel</button></div></form></div>
+        }
+    </div></div>
+</div>
+<div class="row g-3">
+    <div class="col-12 col-xl-6"><div class="card h-100"><div class="card-header fw-semibold">Acquisitions</div>
+        @if (o.Acquisitions.Count == 0) { <div class="card-body text-muted">No land has been acquired.</div> }
+        else { <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Date</th><th>Seller</th><th>Parcel</th><th class="text-end">Area</th></tr></thead><tbody>
+            @foreach (var a in o.Acquisitions) { <tr><td data-label="Date">@a.AcquisitionDate.ToString("yyyy-MM-dd")</td><td data-label="Seller">@a.SellerName</td><td data-label="Parcel">@a.ParcelCode</td><td data-label="Area" class="text-end">@a.Area.ToString("N4")</td></tr> }
+        </tbody></table></div> }</div></div>
+    <div class="col-12 col-xl-6"><div class="card h-100"><div class="card-header fw-semibold">Area adjustments</div>
+        @if (o.Adjustments.Count == 0) { <div class="card-body text-muted">No adjustments recorded.</div> }
+        else { <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Date</th><th>Type</th><th class="text-end">Previous</th><th class="text-end">Adjustment</th><th class="text-end">New</th></tr></thead><tbody>
+            @foreach (var a in o.Adjustments) { <tr><td data-label="Date">@a.AdjustmentDate.ToString("yyyy-MM-dd")</td><td data-label="Type">@a.Type</td><td data-label="Previous" class="text-end">@a.PreviousArea.ToString("N4")</td><td data-label="Adjustment" class="text-end">@a.AdjustmentArea.ToString("+0.####;-0.####")</td><td data-label="New" class="text-end">@a.NewArea.ToString("N4")</td></tr> }
+        </tbody></table></div> }</div></div>
+</div>

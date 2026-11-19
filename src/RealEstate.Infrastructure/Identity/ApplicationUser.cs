@@ -15,4 +15,6 @@ public class ApplicationRole : IdentityRole<Guid>
     public ApplicationRole() { }
     public ApplicationRole(string name) : base(name) { }
     public string? Description { get; set; }
+    /// <summary>System roles cannot be renamed or deleted.</summary>
+    public bool IsSystem { get; set; }
 }

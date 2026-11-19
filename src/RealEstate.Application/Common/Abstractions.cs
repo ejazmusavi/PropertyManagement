@@ -26,3 +26,22 @@ public static class PermissionServiceExtensions
             throw new ForbiddenException();
     }
 }
+
+public static class ConcurrencyExtensions
+{
+    /// <summary>Applies the client-supplied row version (base64) so stale edits fail instead of overwriting.</summary>
+    public static void UseRowVersion<T>(this IAppDbContext db, T entity, string? rowVersion) where T : class
+    {
+        if (string.IsNullOrWhiteSpace(rowVersion)) return;
+        try { db.Entry(entity).Property("RowVersion").OriginalValue = Convert.FromBase64String(rowVersion); }
+        catch (FormatException) { throw new RequestValidationException(new Dictionary<string, string[]> { ["RowVersion"] = ["Invalid row version."] }); }
+    }
+
+    public static string ToToken(this byte[] rowVersion) => Convert.ToBase64String(rowVersion);
+
+    public static async Task<int> SaveWithConcurrencyAsync(this IAppDbContext db, CancellationToken ct = default)
+    {
+        try { return await db.SaveChangesAsync(ct); }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException) { throw new ConcurrencyException(); }
+    }
+}
