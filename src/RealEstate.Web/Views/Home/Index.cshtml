@@ -1,0 +1,12 @@
+@model DashboardViewModel
+@{ ViewData["Title"] = "Dashboard"; var s = Model.Summary; }
+<div class="mb-4">
+    <h1 class="h3 mb-1">Welcome, @Model.FullName</h1>
+    <p class="text-muted mb-0">@(s.CompanyName ?? "Company not configured")</p>
+</div>
+<div class="row g-3">
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">Active users</div><div class="stat-value">@s.ActiveUsers</div></div></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">Roles</div><div class="stat-value">@s.Roles</div></div></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">My assigned projects</div><div class="stat-value">@s.AssignedProjects</div></div></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">Last sign-in (UTC)</div><div class="stat-value fs-6">@(s.LastLoginAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</div></div></div></div>
+</div>

@@ -83,3 +83,17 @@ These are related but must not be treated as interchangeable.
 ## New decisions log
 
 _None yet. Format: date, phase, decision, reason._
+
+| Date | Phase | Decision | Reason |
+|---|---|---|---|
+| 2026-11-19 | 0 | Target `net10.0` but use EF Core **9.0.23** + **Pomelo.EntityFrameworkCore.MySql 9.0.0** (MySQL 8.4 server). Package `MySqlConnector` pinned to 2.6.2. | Pomelo has no EF Core 10 release; EF 9 runs on the .NET 10 runtime. Pin fixes advisory GHSA-473q-m89c-ghf8 in the transitive 2.4.0. Revisit when Pomelo ships EF 10. |
+| 2026-11-19 | 0 | Central package management (`Directory.Packages.props`) and shared `Directory.Build.props` (nullable, warnings as errors). | One place for versions. |
+| 2026-11-19 | 0 | `ApplicationUser`/`ApplicationRole` (ASP.NET Identity) live in Infrastructure; Domain stays dependency-free. Identity's join entity is the `UserRole` table (`UserRoles`). `Permission`, `RolePermission`, `UserProject` are Domain entities linked by Guid ids. Identity tables renamed `Users`, `Roles`, `UserRoles`, ... | Architecture rule: Domain depends on nothing. |
+| 2026-11-19 | 0 | Added `RefreshToken` entity (not in the phase list). API refresh tokens are opaque, stored as SHA-256 hashes, rotated on every use, with family revocation on reuse. Access tokens are HS256 JWTs (15 min), refresh 14 days. | Needed for `/auth/refresh` and `/auth/logout`; spec leaves token format open (spec-issues #8). |
+| 2026-11-19 | 0 | Permission checks are evaluated against the database on every request (`[HasPermission]` policy + service-level `EnsureAsync`), not embedded in tokens. Inactive users hold no permissions. | Immediate revocation; enforcement in backend services as required. |
+| 2026-11-19 | 0 | Phase 0 = schema + auth + permission catalog + one seeded `Administrator` role holding every permission (spec-issues #3). Roles list/management UI is Phase 1. | Resolves spec-issues #3 as assumed there. |
+| 2026-11-19 | 0 | Initial administrator is created by the CLI `create-admin` (Web project) which refuses to run once an administrator exists; password comes from `REALESTATE_ADMIN_PASSWORD` or a hidden prompt, never an argument or file. | "Created securely" with no credentials in source. |
+| 2026-11-19 | 0 | Swagger: built-in `Microsoft.AspNetCore.OpenApi` document at `/openapi/v1.json` plus Swashbuckle SwaggerUI at `/swagger`, enabled by `Swagger:Enabled` (on in Development). | Swashbuckle's generator conflicts with the OpenApi 2.x types used by .NET 10. |
+| 2026-11-19 | 0 | Validation with FluentValidation in Application services; `RequestValidationException` -> HTTP 400 ValidationProblemDetails (API) / ModelState (MVC). | Server-side validation shared by MVC and API. |
+| 2026-11-19 | 0 | MVC uses cookie authentication; API uses JWT bearer only. Login/refresh endpoints rate-limited per IP; Identity lockout (5 attempts / 15 min). | Per architecture.md. |
+| 2026-11-19 | 0 | Tests use a real MySQL server (throw-away `realestate_test_*` databases) configured via env `REALESTATE_TEST_MYSQL` or user-secret `TestMySql`; they report Skipped when not configured. | Provider-faithful database tests. |
