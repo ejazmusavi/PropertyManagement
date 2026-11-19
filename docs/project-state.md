@@ -6,7 +6,7 @@ Repository evidence at documentation setup: no application source, solution, mig
 
 Status values: Not Started · In Progress · Blocked · Needs Review · Complete
 
-| Phase | Name | Status | Depends on | Commit | Build | Tests |
+| Phase | Name | Status | Depends on | Backup | Build | Tests |
 |---|---|---|---|---|---|---|
 | 0 | Technical Foundation | Not Started | – | – | – | – |
 | 1 | Company, Projects, Land and Access Control | Not Started | 0 | – | – | – |
@@ -31,14 +31,14 @@ Add one block per phase when work starts; keep each under ~15 lines.
 Status:
 Implementation summary:
 Important decisions:
-Files/modules affected:
+Files/modules affected (complete list; replaces git history):
 Database changes (migrations):
 APIs / MVC screens:
 Build result:
 Test result (command, passed/failed counts):
 Acceptance criteria met / unmet:
 Outstanding issues:
-Commit(s):
+Backup taken before phase (name/date):
 ```
 
 ## Open issues
