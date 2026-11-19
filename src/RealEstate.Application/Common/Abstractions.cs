@@ -43,5 +43,14 @@ public static class ConcurrencyExtensions
     {
         try { return await db.SaveChangesAsync(ct); }
         catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException) { throw new ConcurrencyException(); }
+        // Two writers racing on the same rows can be resolved by MySQL as a deadlock (the loser is rolled back): same outcome as a stale edit.
+        catch (Exception ex) when (ex is Microsoft.EntityFrameworkCore.DbUpdateException or InvalidOperationException && IsDeadlock(ex)) { throw new ConcurrencyException(); }
+    }
+
+    private static bool IsDeadlock(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException)
+            if (e.Message.Contains("Deadlock found", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 }

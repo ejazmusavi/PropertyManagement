@@ -1,0 +1,10 @@
+@model IReadOnlyList<RealEstate.Application.Projects.ProjectListItemDto>
+@{ ViewData["Title"] = "New property"; }
+<h1 class="h3 mb-3">New property</h1>
+@if (Model.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No projects available.</p></div> }
+else
+{
+    <form method="get" class="card card-body" style="max-width:520px"><label class="form-label" for="projectId">Project</label>
+        <select id="projectId" name="projectId" class="form-select mb-3">@foreach (var p in Model) { <option value="@p.Id">@p.ProjectCode – @p.ProjectName (@p.Status)</option> }</select>
+        <div class="d-flex gap-2"><button class="btn btn-primary" type="submit">Continue</button><a class="btn btn-outline-secondary" asp-action="Index">Cancel</a></div></form>
+}

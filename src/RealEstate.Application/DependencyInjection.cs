@@ -7,6 +7,7 @@ using RealEstate.Application.Common;
 using RealEstate.Application.Companies;
 using RealEstate.Application.Documents;
 using RealEstate.Application.LandManagement;
+using RealEstate.Application.Inventory;
 using RealEstate.Application.Projects;
 
 namespace RealEstate.Application;
@@ -23,6 +24,9 @@ public static class DependencyInjection
         services.AddScoped<CompanyService>();
         services.AddScoped<ProjectService>();
         services.AddScoped<LandService>();
+        services.AddScoped<PropertySetupService>();
+        services.AddScoped<PropertyService>();
+        services.AddScoped<InventoryReportService>();
         services.AddScoped<UserAdministrationService>();
         services.AddScoped<RoleService>();
         services.AddScoped<ProjectAccessAdminService>();

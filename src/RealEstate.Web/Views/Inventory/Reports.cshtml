@@ -1,0 +1,29 @@
+@model InventoryReportsViewModel
+@using RealEstate.Application.Inventory
+@{ ViewData["Title"] = "Inventory reports"; var r = Model.Report; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Inventory reports</h1>
+    <a class="btn btn-outline-secondary" asp-action="History" asp-route-projectId="@Model.ProjectId">Inventory history</a>
+</div>
+<form method="get" class="row g-2 mb-3"><div class="col-12 col-md-5"><select name="projectId" class="form-select" aria-label="Project" onchange="this.form.submit()"><option value="">All my projects</option>
+    @foreach (var p in Model.Projects) { <option value="@p.Id" selected="@(p.Id == Model.ProjectId)">@p.ProjectCode – @p.ProjectName</option> }</select></div>
+    <noscript><div class="col-auto"><button class="btn btn-outline-primary">Show</button></div></noscript></form>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">Total inventory</div><div class="stat-value">@r.Total</div></div></div></div>
+    @foreach (var c in r.ByStatus.Where(x => x.Count > 0)) { <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body"><div class="stat-label">@c.Status</div><div class="stat-value">@c.Count</div></div></div></div> }
+</div>
+@foreach (var (title, rows) in new[] { ("Properties by project", r.ByProject), ("Properties by block", r.ByBlock), ("Properties by type", r.ByType) })
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">@title</div>
+    @if (rows.Count == 0) { <div class="card-body text-muted">No data.</div> }
+    else {
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Name</th><th class="text-end">Total</th><th class="text-end">Available</th><th class="text-end">Reserved</th><th class="text-end">Booked</th><th class="text-end">Sold</th><th class="text-end">Other</th></tr></thead><tbody>
+    @foreach (var x in rows) { <tr><td data-label="Name">@x.Label</td><td data-label="Total" class="text-end">@x.Total</td><td data-label="Available" class="text-end">@x.Available</td><td data-label="Reserved" class="text-end">@x.Reserved</td><td data-label="Booked" class="text-end">@x.Booked</td><td data-label="Sold" class="text-end">@x.Sold</td><td data-label="Other" class="text-end">@x.Other</td></tr> }
+    </tbody></table></div> }</div>
+}
+<div class="card mb-3"><div class="card-header fw-semibold">Properties by size</div>
+@if (r.BySize.Count == 0) { <div class="card-body text-muted">No data.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th class="text-end">Size</th><th>Unit</th><th class="text-end">Total</th><th class="text-end">Available</th><th class="text-end">Sold</th></tr></thead><tbody>
+@foreach (var x in r.BySize) { <tr><td data-label="Size" class="text-end">@x.Size.ToString("0.####")</td><td data-label="Unit">@x.Unit</td><td data-label="Total" class="text-end">@x.Total</td><td data-label="Available" class="text-end">@x.Available</td><td data-label="Sold" class="text-end">@x.Sold</td></tr> }
+</tbody></table></div> }</div>

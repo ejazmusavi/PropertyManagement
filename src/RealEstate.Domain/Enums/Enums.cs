@@ -21,3 +21,19 @@ public enum ProjectDocumentType { Layout = 1, Approval = 2, Legal = 3, Financial
 public enum LandDocumentType { TitleDeed = 1, Registry = 2, Survey = 3, Mutation = 4, Agreement = 5, AdjustmentSupport = 6, Other = 7 }
 
 public enum RoundingMode { Nearest = 1, Bankers = 2, Up = 3, Down = 4 }
+
+public enum PropertyForm { Plot = 1, House = 2, Apartment = 3, Commercial = 4, Other = 5 }
+
+public enum DevelopmentStatus { Undeveloped = 1, UnderDevelopment = 2, Developed = 3 }
+
+public enum PropertyStatus
+{
+    Available = 1, Reserved = 2, Booked = 3, Sold = 4, Allocated = 5,
+    PossessionReady = 6, PossessionDelivered = 7, Transferred = 8, Cancelled = 9
+}
+
+public enum ReservationStatus { Active = 1, Released = 2, Expired = 3, Converted = 4 }
+
+public enum PropertyDocumentType { Plan = 1, Ownership = 2, Allotment = 3, Photo = 4, Legal = 5, Other = 6 }
+
+public enum ZoneKind { Block = 1, Sector = 2, Street = 3 }

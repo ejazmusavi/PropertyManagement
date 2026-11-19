@@ -10,7 +10,7 @@ Status values: Not Started · In Progress · Blocked · Needs Review · Complete
 |---|---|---|---|---|---|---|
 | 0 | Technical Foundation | Complete (Docker unverified, accepted by user) | – | Yes (user-confirmed) | Pass | 84 pass |
 | 1 | Company, Projects, Land and Access Control | Complete | 0 | Yes (user-confirmed) | Pass | 158 pass |
-| 2 | Property Inventory Management | Not Started | 0, 1 | – | – | – |
+| 2 | Property Inventory Management | Needs Review (manual browser check pending) | 0, 1 | Yes (user-confirmed) | Pass | 246 pass |
 | 3 | Dynamic Property Pricing | Not Started | 1, 2 | – | – | – |
 | 4 | Customers, Bookings and Agreements | Not Started | 1, 2, 3 | – | – | – |
 | 5 | Installment and Payment Agreement Engine | Not Started | 4 | – | – | – |
@@ -21,7 +21,7 @@ Status values: Not Started · In Progress · Blocked · Needs Review · Complete
 | 10 | Flutter Customer Application | Not Started | 4, 5, 6 | – | – | – |
 | 11 | Notifications, Automation and GIS Foundation | Not Started | 5, 6, 10 | – | – | – |
 
-**Next phase:** Phase 2. Open item: verify Docker compose (Phase 0/1 volume `document-storage`) when Docker is available.
+**Next phase:** Phase 3 (after Phase 2 review). Open item: verify Docker compose (Phase 0/1 volume `document-storage`) when Docker is available.
 
 ## Per-phase records
 Add one block per phase when work starts; keep each under ~15 lines.
@@ -70,6 +70,27 @@ Acceptance criteria met / unmet: Met - multiple projects managed; area changes o
 Outstanding issues: Docker compose still unverified. No admin password reset / user self-registration (not in scope). Uploaded files are validated by extension and size, not by content sniffing/antivirus. A throw-away dev database `realestate_ui_check` was left on the local MySQL server by the manual UI check and can be dropped. Project documents have no per-type permission beyond `projects.documents`.
 Backup taken before phase (name/date): confirmed by user in chat, 2026-11-19 (name not recorded).
 
+
+### Phase 2 – Property Inventory Management
+Status: Needs Review. Build, all automated tests and every acceptance criterion pass; the only open item is a manual visual check of the new screens in a real browser (desktop and 375px mobile), which was not done in this session (screens were verified via rendered-HTML integration tests). Docker compose remains unverified (no Docker). Mark Complete after the browser check.
+Implementation summary: property categories and types (Residential/Commercial and Residential Plot, Commercial Plot, House, Apartment, Shop, Office seeded; custom ones allowed), project blocks/sectors/streets, properties with flexible dimensions and features, floor/corner/main-road/park/development status, documents, controlled availability state machine with append-only status history, reservations (date, expiry, amount, customer, approver) with release and automatic expiry, double-booking protection (status + row version + unique active-reservation index), project-scoped access, audit for every change, inventory summary/reports/history.
+Important decisions: see decisions log (property code unique per project - resolves spec-issues #6 for Phase 2; categories/types as data; zone tables; flexible dimensions; status transition table; reservation model and expiry; edit rules; new permissions; deadlock mapped to ConcurrencyException).
+Files/modules affected (complete list; replaces git history):
+- Domain: Common/Permissions.cs (inventory.* + default role grants), Enums/Enums.cs (PropertyForm, DevelopmentStatus, PropertyStatus, ReservationStatus, PropertyDocumentType, ZoneKind), Entities/Property.cs (PropertyCategory, PropertyType, ProjectZone/Block/Sector/Street, Property, PropertyDimension, PropertyFeature, PropertyDocument, PropertyStatusHistory, PropertyReservation)
+- Application: Common/IAppDbContext.cs (new DbSets), Common/Abstractions.cs (deadlock -> ConcurrencyException), Inventory (InventoryModels incl. validators, PropertySetupService, PropertyService, InventoryReportService), DependencyInjection
+- Infrastructure: Persistence (AppDbContext, DatabaseInitializer property catalog seeding, Migrations/Phase02_PropertyInventory + snapshot), EntityConfigurations/Phase02Configurations.cs
+- Api: Controllers/PropertiesController.cs, Controllers/InventoryController.cs
+- Web: Controllers (Properties, Inventory + PropertySetup in InventoryController.cs), ViewModels/Phase02ViewModels.cs, Views (Inventory: Index/Reports/History; Properties: Index/Details/Form/ChooseProject; PropertySetup: Types/Zones/_SetupTabs; Shared/_StatusBadge; NavMenu; Projects/Details link)
+- tests: Domain (Phase02DomainTests), Application (Phase02ValidatorTests), Infrastructure (Phase02Tests), Api (Phase02ApiTests), Web (Phase02WebTests)
+- docs: project-state.md, decisions/architecture-decisions.md, decisions/spec-issues.md (#6 note)
+Database changes (migrations): Phase02_PropertyInventory - PropertyCategories, PropertyTypes, ProjectBlocks, ProjectSectors, ProjectStreets, Properties, PropertyDimensions, PropertyFeatures, PropertyDocuments, PropertyStatusHistories, PropertyReservations (unique (ProjectId, PropertyCode), unique ActivePropertyId, check constraints, DECIMAL(18,4) sizes, DECIMAL(18,2) amounts).
+APIs / MVC screens: GET/POST /api/v1/properties, GET/PUT /properties/{id}, GET /properties/available, POST /properties/{id}/reserve|release-reservation|status, GET /properties/{id}/reservations|history, property documents (list/upload/download/delete), GET /projects/{id}/inventory-summary, GET /inventory/reports|history|approvers, POST /inventory/expire-reservations, property-categories and property-types (GET/POST/PUT), projects/{id}/blocks|sectors|streets (GET/POST/PUT). MVC: property dashboard, property types and categories, blocks, sectors, streets, property list, create/edit, details (reservations, documents, status history, reserve/release/status dialogs), inventory reports, inventory history.
+Build result: Succeeded, 0 warnings, 0 errors (`dotnet build RealEstate.slnx --no-incremental`).
+Test result (`dotnet test RealEstate.slnx`): Domain 70, Application 48, Infrastructure 68, Api 34, Web 26 = 246 passed, 0 failed, 0 skipped (local MySQL 8.4); 88 new in Phase 2.
+UI verification: all screens exercised through rendered-HTML integration tests (render, create, reserve, release, status change, setup forms, validation errors, anti-forgery, authorization). Real-browser visual check NOT done.
+Acceptance criteria met / unmet: Met - all property categories supported (six seeded + custom); properties belong to valid, accessible projects; property codes unique per project; reservation expiry works (tested with moved expiry, history + audit); double booking prevented (concurrent test: 1 of 6 succeeds; DB unique-index test); property history retained (append-only, filtered report). Unmet/unverified - none functionally; manual browser check pending.
+Outstanding issues: Docker compose unverified. Existing databases do not get the new inventory.* permissions on default roles (granted only on role creation): grant via the permission matrix (Administrator has all). Reservation `CustomerId` has no FK until Phase 4. Expiry is lazy/on-demand until Phase 11 adds a scheduler. Phase 1 test ConcurrentAdjustments_NeverLoseAnUpdate exposed a MySQL deadlock after the model grew; fixed in SaveWithConcurrencyAsync.
+Backup taken before phase (name/date): confirmed by user in chat, 2026-11-19 (name not recorded).
 
 ```
 ### Phase N – Name

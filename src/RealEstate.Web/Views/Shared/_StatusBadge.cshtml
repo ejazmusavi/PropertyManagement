@@ -1,0 +1,4 @@
+@model RealEstate.Domain.Enums.PropertyStatus
+@{ var cls = Model switch { RealEstate.Domain.Enums.PropertyStatus.Available => "text-bg-success", RealEstate.Domain.Enums.PropertyStatus.Reserved => "text-bg-warning",
+    RealEstate.Domain.Enums.PropertyStatus.Booked => "text-bg-info", RealEstate.Domain.Enums.PropertyStatus.Sold => "text-bg-primary", RealEstate.Domain.Enums.PropertyStatus.Cancelled => "text-bg-danger", _ => "text-bg-secondary" }; }
+<span class="badge @cls">@Model</span>

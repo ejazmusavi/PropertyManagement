@@ -1,0 +1,39 @@
+@model PropertyListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Properties"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Properties;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["blockId"] = f.BlockId?.ToString(), ["typeId"] = f.TypeId?.ToString(), ["status"] = f.Status?.ToString(),
+       ["minSize"] = f.MinSize?.ToString(), ["maxSize"] = f.MaxSize?.ToString(), ["sortBy"] = f.SortBy, ["desc"] = Model.Descending ? "true" : null };
+   string Sort(string key) => Url.Action("Index", new { search = f.Search, projectId = f.ProjectId, blockId = f.BlockId, typeId = f.TypeId, status = f.Status, minSize = f.MinSize, maxSize = f.MaxSize, sortBy = key, desc = f.SortBy == key && !Model.Descending })!; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Properties</h1>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-controller="Inventory" asp-action="Index">Dashboard</a>
+    @if (Ui.Has("inventory.manage")) { <a class="btn btn-primary" asp-action="Create" asp-route-projectId="@f.ProjectId">New property</a> }</div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-md-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Code, number or location" aria-label="Search properties" /></div>
+    <div class="col-6 col-md-3"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-md-2"><select name="blockId" class="form-select" aria-label="Block"><option value="">All blocks</option>@foreach (var b in Model.Blocks) { <option value="@b.Id" selected="@(f.BlockId == b.Id)">@b.Name</option> }</select></div>
+    <div class="col-6 col-md-2"><select name="typeId" class="form-select" aria-label="Type"><option value="">All types</option>@foreach (var t in Model.Types) { <option value="@t.Id" selected="@(f.TypeId == t.Id)">@t.Name</option> }</select></div>
+    <div class="col-6 col-md-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<PropertyStatus>()) { <option value="@s" selected="@(f.Status == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-2"><input type="number" step="0.0001" min="0" name="minSize" value="@f.MinSize" class="form-control" placeholder="Min size" aria-label="Minimum size" /></div>
+    <div class="col-6 col-md-2"><input type="number" step="0.0001" min="0" name="maxSize" value="@f.MaxSize" class="form-control" placeholder="Max size" aria-label="Maximum size" /></div>
+    <div class="col-12 col-md-3 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary" asp-action="Index">Clear</a></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No properties found@(Ui.Has("inventory.manage") ? ". Add the first property to get started." : ".")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th><a href="@Sort("code")">Code</a></th><th>Project</th><th><a href="@Sort("number")">No.</a></th><th>Block</th><th>Type</th><th class="text-end"><a href="@Sort("size")">Size</a></th><th><a href="@Sort("status")">Status</a></th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Code">@x.PropertyCode</td><td data-label="Project">@x.ProjectCode</td><td data-label="No.">@x.PropertyNumber</td><td data-label="Block">@(x.Block ?? "-")</td><td data-label="Type">@x.TypeName</td>
+                <td data-label="Size" class="text-end">@x.Size.ToString("0.####") @x.Unit</td><td data-label="Status"><partial name="_StatusBadge" model="x.Status" /></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Details</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "properties", route, "page")' />
+}

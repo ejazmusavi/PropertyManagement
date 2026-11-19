@@ -28,6 +28,14 @@ public static class Permissions
     public const string LandAdjust = "land.adjust";
     public const string LandApprove = "land.approve";
 
+    // Phase 2
+    public const string InventoryView = "inventory.view";
+    public const string InventoryManage = "inventory.manage";
+    public const string InventorySetup = "inventory.setup";
+    public const string InventoryDocuments = "inventory.documents";
+    public const string InventoryReserve = "inventory.reserve";
+    public const string InventoryStatus = "inventory.status";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -50,6 +58,12 @@ public static class Permissions
         new(LandManage, "Manage land parcels, acquisitions, distribution and documents", "Land"),
         new(LandAdjust, "Record land area adjustments", "Land"),
         new(LandApprove, "Approve land area adjustments", "Land"),
+        new(InventoryView, "View property inventory, history and reports", "Inventory"),
+        new(InventoryManage, "Create and edit properties, dimensions and features", "Inventory"),
+        new(InventorySetup, "Manage property types, categories, blocks, sectors and streets", "Inventory"),
+        new(InventoryDocuments, "Upload and remove property documents", "Inventory"),
+        new(InventoryReserve, "Reserve properties and release reservations", "Inventory"),
+        new(InventoryStatus, "Change property availability status", "Inventory"),
     ];
 }
 
@@ -77,14 +91,18 @@ public static class DefaultRoles
         new(RoleNames.Director, "Company director with access to all projects.",
             [Permissions.UsersView, Permissions.RolesView, Permissions.AuditView, Permissions.SettingsView, Permissions.CompanyView,
              Permissions.ProjectsView, Permissions.ProjectsCreate, Permissions.ProjectsEdit, Permissions.ProjectsStatus, Permissions.ProjectsDocuments,
-             Permissions.ProjectsAccessAll, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust, Permissions.LandApprove]),
+             Permissions.ProjectsAccessAll, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust, Permissions.LandApprove,
+             Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments, Permissions.InventoryReserve, Permissions.InventoryStatus]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
-            [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust]),
-        new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView]),
-        new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView]),
+            [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
+             Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments]),
+        new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve]),
+        new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView]),
         new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView]),
         new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView]),
-        new(RoleNames.InventoryManager, "Maintains property inventory.", [Permissions.ProjectsView, Permissions.LandView]),
-        new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView]),
+        new(RoleNames.InventoryManager, "Maintains property inventory.",
+            [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
+             Permissions.InventoryReserve, Permissions.InventoryStatus]),
+        new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView]),
     ];
 }
