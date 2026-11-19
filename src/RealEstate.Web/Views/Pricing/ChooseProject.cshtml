@@ -1,0 +1,12 @@
+@model RealEstate.Web.Controllers.ChooseProjectModel
+@{ ViewData["Title"] = Model.Title; }
+<h1 class="h3 mb-3">@Model.Title</h1>
+@if (Model.Projects.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No projects available to you.</p></div> }
+else
+{
+    <form method="get" asp-action="@Model.Action" class="card card-body" style="max-width:32rem">
+        <label class="form-label" for="projectId">Project</label>
+        <select id="projectId" name="projectId" class="form-select mb-3">@foreach (var p in Model.Projects) { <option value="@p.Id">@p.ProjectCode – @p.ProjectName</option> }</select>
+        <button class="btn btn-primary" type="submit">Continue</button>
+    </form>
+}

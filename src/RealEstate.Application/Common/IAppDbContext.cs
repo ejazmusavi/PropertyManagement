@@ -35,6 +35,13 @@ public interface IAppDbContext
     DbSet<PropertyDocument> PropertyDocuments { get; }
     DbSet<PropertyStatusHistory> PropertyStatusHistories { get; }
     DbSet<PropertyReservation> PropertyReservations { get; }
+    DbSet<PricingRule> PricingRules { get; }
+    DbSet<PricingRuleCondition> PricingRuleConditions { get; }
+    DbSet<DiscountRule> DiscountRules { get; }
+    DbSet<PropertyPrice> PropertyPrices { get; }
+    DbSet<PropertyPriceHistory> PropertyPriceHistories { get; }
+    DbSet<PropertyPriceAdjustment> PropertyPriceAdjustments { get; }
+    DbSet<PricingApproval> PricingApprovals { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

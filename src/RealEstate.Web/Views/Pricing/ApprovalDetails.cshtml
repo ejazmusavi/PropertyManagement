@@ -1,0 +1,50 @@
+@model ApprovalDetailsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var a = Model.Approval; ViewData["Title"] = "Approval " + a.Id; await Ui.LoadAsync();
+   var pending = a.Status == PricingApprovalStatus.Pending; var mine = a.RequestedByUserId == Model.CurrentUserId;
+   var canDecide = pending && !mine && Ui.Has("pricing.approve"); var canCancel = pending && (mine ? Ui.Has("pricing.request") : Ui.Has("pricing.approve")); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Request #@a.Id <span class="badge @(a.Status == PricingApprovalStatus.Approved ? "text-bg-success" : pending ? "text-bg-warning" : a.Status == PricingApprovalStatus.Rejected ? "text-bg-danger" : "text-bg-secondary")">@a.Status</span></h1><div class="text-muted">@a.Type · @a.ProjectCode</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canDecide) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">Approve</button><button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button> }
+        @if (canCancel) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancel request</button> }
+        @if (a.PropertyId is { } pid) { <a class="btn btn-outline-secondary" asp-action="Property" asp-route-id="@pid">Property pricing</a> }
+        @if (a.PricingRuleId is { } rid) { <a class="btn btn-outline-secondary" asp-action="RuleDetails" asp-route-id="@rid">Pricing rule</a> }
+        <a class="btn btn-outline-secondary" asp-action="Approvals">Back to approvals</a>
+    </div>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+@if (pending && mine) { <div class="alert alert-info">You made this request, so a different approver must decide it.</div> }
+<div class="card mb-3"><div class="card-header fw-semibold">Request</div><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Property</dt><dd class="col-sm-9">@(a.PropertyCode ?? "Customer-negotiated pricing rule")</dd>
+    <dt class="col-sm-3">Customer</dt><dd class="col-sm-9">@(a.CustomerId is { } c ? c + (a.CustomerReference != null ? " (" + a.CustomerReference + ")" : "") : "All customers")</dd>
+    <dt class="col-sm-3">Requested change</dt><dd class="col-sm-9">@(a.AdjustmentKind?.ToString() ?? "Rule"): @a.Value.ToString("0.####")@(a.Method == PricingMethod.Percentage ? "%" : "")@(a.AdjustmentKind == AdjustmentKind.Override ? " (price)" : "")</dd>
+    <dt class="col-sm-3">Price when requested</dt><dd class="col-sm-9">@(a.OriginalPrice?.ToString("N2") ?? "-") → indicative @(a.ProposedPrice?.ToString("N2") ?? "-")</dd>
+    <dt class="col-sm-3">Effective</dt><dd class="col-sm-9">@a.EffectiveFrom.ToString("yyyy-MM-dd") – @(a.EffectiveTo?.ToString("yyyy-MM-dd") ?? "open")</dd>
+    <dt class="col-sm-3">Reason</dt><dd class="col-sm-9">@a.Reason</dd>
+    <dt class="col-sm-3">Requested</dt><dd class="col-sm-9">@a.RequestedAtUtc.ToString("yyyy-MM-dd HH:mm") by @a.RequestedByName</dd>
+    @if (a.DecidedAtUtc is { } d) { <dt class="col-sm-3">Decided</dt><dd class="col-sm-9">@d.ToString("yyyy-MM-dd HH:mm") by @a.DecidedByName@(a.DecisionComment != null ? " – " + a.DecisionComment : "")</dd> }
+    @if (a.AdjustmentId is { } adj) { <dt class="col-sm-3">Resulting adjustment</dt><dd class="col-sm-9">#@adj</dd> }
+</dl></div></div>
+@if (canDecide)
+{
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="Decide" asp-route-id="@a.Id" method="post">
+        <input type="hidden" name="approve" value="true" /><input type="hidden" name="rowVersion" value="@a.RowVersion" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="approveTitle">Approve request</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Approving applies the change immediately and records you as the approver.</p><label class="form-label" for="apprComment">Comment (optional)</label><input id="apprComment" name="comment" class="form-control" maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success">Approve</button></div></form></div></div>
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="Decide" asp-route-id="@a.Id" method="post">
+        <input type="hidden" name="approve" value="false" /><input type="hidden" name="rowVersion" value="@a.RowVersion" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="rejectTitle">Reject request</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><label class="form-label" for="rejComment">Comment (required)</label><input id="rejComment" name="comment" class="form-control" required maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Reject</button></div></form></div></div>
+}
+@if (canCancel)
+{
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="CancelApproval" asp-route-id="@a.Id" method="post">
+        <input type="hidden" name="rowVersion" value="@a.RowVersion" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="cancelTitle">Cancel request</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><label class="form-label" for="canComment">Comment (optional)</label><input id="canComment" name="comment" class="form-control" maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep request</button><button type="submit" class="btn btn-danger">Cancel request</button></div></form></div></div>
+}

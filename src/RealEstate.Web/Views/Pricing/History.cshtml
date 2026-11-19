@@ -1,0 +1,29 @@
+@model PriceHistoryViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = "Price history"; var f = Model.Filter; var p = Model.History;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["propertyId"] = f.PropertyId?.ToString(), ["source"] = f.Source?.ToString(), ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") }; }
+<h1 class="h3 mb-3">Pricing</h1>
+<partial name="_PricingTabs" model='"History"' />
+<form method="get" class="row g-2 mb-3" role="search">
+    <input type="hidden" name="propertyId" value="@f.PropertyId" />
+    <div class="col-12 col-md-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Property code or reason" aria-label="Search history" /></div>
+    <div class="col-6 col-md-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-md-2"><select name="source" class="form-select" aria-label="Source"><option value="">All sources</option>@foreach (var s in Enum.GetValues<PriceChangeSource>()) { <option value="@s" selected="@(f.Source == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-2"><input type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" aria-label="From date" /></div>
+    <div class="col-6 col-md-2"><input type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" aria-label="To date" /></div>
+    <div class="col-12 col-md-1 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit">Go</button></div>
+</form>
+@if (p.Items.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No price changes recorded yet.</p></div> }
+else
+{
+<div class="card"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>When (UTC)</th><th>Property</th><th class="text-end">Previous</th><th class="text-end">New</th><th>Source</th><th>By</th><th>Reason</th></tr></thead><tbody>
+    @foreach (var x in p.Items)
+    {
+        <tr><td data-label="When">@x.ChangedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td data-label="Property"><a asp-action="Property" asp-route-id="@x.PropertyId">@x.PropertyCode</a></td>
+            <td data-label="Previous" class="text-end">@(x.PreviousPrice?.ToString("N2") ?? "-")</td><td data-label="New" class="text-end">@x.NewPrice.ToString("N2")</td><td data-label="Source">@x.Source</td><td data-label="By">@x.ChangedBy</td>
+            <td data-label="Reason">@x.Reason@(x.ApprovalId is { } a ? " " : "")@if (x.ApprovalId is { } aid) { <a asp-action="ApprovalDetails" asp-route-id="@aid">(approval @aid)</a> }</td></tr>
+    }
+    </tbody></table></div></div>
+<partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "changes", route, "page")' />
+}

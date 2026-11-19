@@ -1,0 +1,40 @@
+@model RealEstate.Application.Pricing.DiscountRuleDto
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = Model.Code; await Ui.LoadAsync(); var canManage = Ui.Has("pricing.manage"); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@Model.Code <span class="badge @(Model.Status == PricingRuleStatus.Active ? "text-bg-success" : "text-bg-secondary")">@Model.Status</span></h1><div class="text-muted">@Model.Name · @Model.ProjectCode</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canManage && Model.Status == PricingRuleStatus.Active) { <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#retireModal">Retire discount</button> }
+        <a class="btn btn-outline-secondary" asp-action="Discounts" asp-route-projectId="@Model.ProjectId">Back to discounts</a>
+    </div>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+<div class="card mb-3"><div class="card-header fw-semibold">Discount</div><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Applies at</dt><dd class="col-sm-9">@Model.Scope@(Model.BlockName != null ? ": " + Model.BlockName : "")@(Model.StreetName != null ? ": " + Model.StreetName : "")@(Model.CategoryName != null ? ": " + Model.CategoryName : "")@(Model.PropertyCode != null ? ": " + Model.PropertyCode : "")</dd>
+    <dt class="col-sm-3">Value</dt><dd class="col-sm-9">@Model.Value.ToString("0.####")@(Model.Method == PricingMethod.Percentage ? "%" : " (fixed amount)")</dd>
+    <dt class="col-sm-3">Stacking</dt><dd class="col-sm-9">@(Model.IsStackable ? "Stackable: applies together with other discounts" : "Exclusive: competes with other exclusive discounts")</dd>
+    <dt class="col-sm-3">Priority</dt><dd class="col-sm-9">@Model.Priority</dd>
+    <dt class="col-sm-3">Effective</dt><dd class="col-sm-9">@Model.EffectiveFrom.ToString("yyyy-MM-dd") – @(Model.EffectiveTo?.ToString("yyyy-MM-dd") ?? "open")</dd>
+    <dt class="col-sm-3">Description</dt><dd class="col-sm-9">@(Model.Description ?? "-")</dd>
+    @if (Model.StatusReason != null) { <dt class="col-sm-3">Retire reason</dt><dd class="col-sm-9">@Model.StatusReason</dd> }
+    <dt class="col-sm-3">Created</dt><dd class="col-sm-9">@Model.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") by @Model.CreatedBy</dd>
+</dl></div></div>
+@if (canManage)
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Name and description</div><div class="card-body">
+        <form asp-action="UpdateDiscount" asp-route-id="@Model.Id" method="post" class="row g-2">
+            <input type="hidden" name="rowVersion" value="@Model.RowVersion" />
+            <div class="col-12 col-lg-4"><label class="form-label" for="dName">Name</label><input id="dName" name="name" value="@Model.Name" class="form-control" required maxlength="150" /></div>
+            <div class="col-12 col-lg-6"><label class="form-label" for="dDesc">Description</label><input id="dDesc" name="description" value="@Model.Description" class="form-control" maxlength="1000" /></div>
+            <div class="col-12 col-lg-2 d-flex align-items-end"><button class="btn btn-outline-primary w-100" type="submit">Save</button></div>
+        </form></div></div>
+}
+@if (canManage && Model.Status == PricingRuleStatus.Active)
+{
+    <div class="modal fade" id="retireModal" tabindex="-1" aria-labelledby="retireTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="RetireDiscount" asp-route-id="@Model.Id" method="post">
+        <input type="hidden" name="rowVersion" value="@Model.RowVersion" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="retireTitle">Retire discount @Model.Code</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>The discount stops applying from today. Earlier calculations are unaffected.</p><label class="form-label" for="retireReason">Reason</label><input id="retireReason" name="reason" class="form-control" required maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Retire discount</button></div></form></div></div>
+}

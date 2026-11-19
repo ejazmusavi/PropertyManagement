@@ -1,0 +1,30 @@
+@model DiscountsListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Discounts"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Discounts;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["status"] = f.Status?.ToString() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h1 class="h3 mb-0">Pricing</h1>
+    @if (Ui.Has("pricing.manage")) { <a class="btn btn-primary" asp-action="CreateDiscount" asp-route-projectId="@f.ProjectId">New discount</a> }</div>
+<partial name="_PricingTabs" model='"Discounts"' />
+<p class="text-muted small">Discount rules apply automatically. Customer-specific discounts are requested per property on the property pricing page and need approval.</p>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-md-4"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Code or name" aria-label="Search discounts" /></div>
+    <div class="col-6 col-md-3"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-md-3"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in new[] { PricingRuleStatus.Active, PricingRuleStatus.Retired }) { <option value="@s" selected="@(f.Status == s)">@s</option> }</select></div>
+    <div class="col-12 col-md-2 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary" asp-action="Discounts">Clear</a></div>
+</form>
+@if (p.Items.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No discounts configured.</p></div> }
+else
+{
+<div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+    <thead><tr><th>Code</th><th>Name</th><th>Project</th><th>Level</th><th class="text-end">Value</th><th>Stacking</th><th>Effective</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var x in p.Items)
+    {
+        <tr><td data-label="Code">@x.Code</td><td data-label="Name">@x.Name</td><td data-label="Project">@x.ProjectCode</td><td data-label="Level">@x.Scope</td><td data-label="Value" class="text-end">@x.Value.ToString("0.####")@(x.Method == PricingMethod.Percentage ? "%" : "")</td>
+            <td data-label="Stacking">@(x.IsStackable ? "Stackable" : "Exclusive")</td><td data-label="Effective">@x.EffectiveFrom.ToString("yyyy-MM-dd") – @(x.EffectiveTo?.ToString("yyyy-MM-dd") ?? "open")</td>
+            <td data-label="Status"><span class="badge @(x.Status == PricingRuleStatus.Active ? "text-bg-success" : "text-bg-secondary")">@x.Status</span></td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="DiscountDetails" asp-route-id="@x.Id">Details</a></td></tr>
+    }
+    </tbody></table></div></div>
+<partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "discounts", route, "page")' />
+}

@@ -36,6 +36,12 @@ public static class Permissions
     public const string InventoryReserve = "inventory.reserve";
     public const string InventoryStatus = "inventory.status";
 
+    // Phase 3
+    public const string PricingView = "pricing.view";
+    public const string PricingManage = "pricing.manage";
+    public const string PricingRequest = "pricing.request";
+    public const string PricingApprove = "pricing.approve";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -64,6 +70,10 @@ public static class Permissions
         new(InventoryDocuments, "Upload and remove property documents", "Inventory"),
         new(InventoryReserve, "Reserve properties and release reservations", "Inventory"),
         new(InventoryStatus, "Change property availability status", "Inventory"),
+        new(PricingView, "View pricing rules, prices, history and use the price calculator", "Pricing"),
+        new(PricingManage, "Manage pricing rules and discounts and publish property prices", "Pricing"),
+        new(PricingRequest, "Request price overrides, customer discounts, special pricing and exceptions", "Pricing"),
+        new(PricingApprove, "Approve or reject pricing requests and revoke adjustments", "Pricing"),
     ];
 }
 
@@ -92,17 +102,19 @@ public static class DefaultRoles
             [Permissions.UsersView, Permissions.RolesView, Permissions.AuditView, Permissions.SettingsView, Permissions.CompanyView,
              Permissions.ProjectsView, Permissions.ProjectsCreate, Permissions.ProjectsEdit, Permissions.ProjectsStatus, Permissions.ProjectsDocuments,
              Permissions.ProjectsAccessAll, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust, Permissions.LandApprove,
-             Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments, Permissions.InventoryReserve, Permissions.InventoryStatus]),
+             Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments, Permissions.InventoryReserve, Permissions.InventoryStatus,
+             Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.PricingApprove]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
-             Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments]),
-        new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve]),
-        new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView]),
+             Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
+             Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest]),
+        new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest]),
+        new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.PricingView]),
         new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView]),
         new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView]),
         new(RoleNames.InventoryManager, "Maintains property inventory.",
             [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
-             Permissions.InventoryReserve, Permissions.InventoryStatus]),
-        new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView]),
+             Permissions.InventoryReserve, Permissions.InventoryStatus, Permissions.PricingView]),
+        new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView, Permissions.PricingView]),
     ];
 }

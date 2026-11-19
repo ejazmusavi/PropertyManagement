@@ -1,0 +1,50 @@
+@model RateCardViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Application.Pricing
+@{ ViewData["Title"] = "Rate cards"; }
+<h1 class="h3 mb-3">Pricing</h1>
+<partial name="_PricingTabs" model='"RateCards"' />
+@if (Model.Projects.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No projects available.</p></div> }
+else
+{
+<form method="get" class="row g-2 mb-3">
+    <div class="col-12 col-md-5"><select name="projectId" class="form-select" aria-label="Project" onchange="this.form.submit()">@foreach (var p in Model.Projects) { <option value="@p.Id" selected="@(p.Id == Model.ProjectId)">@p.ProjectCode – @p.ProjectName</option> }</select></div>
+    <div class="col-6 col-md-3"><input type="date" name="asOf" value="@Model.AsOf?.ToString("yyyy-MM-dd")" class="form-control" aria-label="As of date" /></div>
+    <div class="col-6 col-md-2"><button class="btn btn-outline-primary w-100" type="submit">Show</button></div>
+</form>
+@if (Model.Card is { } c)
+{
+    <p class="text-muted">Rates in force on <strong>@c.AsOfDate.ToString("yyyy-MM-dd")</strong> for @c.ProjectCode – @c.ProjectName.</p>
+    <div class="card mb-3"><div class="card-header fw-semibold">Base rates</div>
+    @if (c.BaseRates.Count == 0) { <div class="card-body text-muted">No base rate configured. Properties cannot be priced until one exists.</div> }
+    else {
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Level</th><th>Applies to</th><th>Code</th><th class="text-end">Rate</th><th>Conditions</th><th>Priority</th><th></th></tr></thead><tbody>
+    @foreach (var r in c.BaseRates) {
+        <tr><td data-label="Level">@r.Scope</td><td data-label="Applies to">@(r.BlockName ?? r.StreetName ?? r.CategoryName ?? r.PropertyCode ?? (r.CustomerId != null ? "Customer " + r.CustomerId : "Whole project"))</td><td data-label="Code">@r.Code</td>
+            <td data-label="Rate" class="text-end">@r.Value.ToString("N2")@(r.Method == PricingMethod.PerUnit ? " / " + r.Unit : " total")</td>
+            <td data-label="Conditions">@(r.Conditions.Count == 0 ? "-" : string.Join(", ", r.Conditions.Select(x => x.Field + " " + x.Value)))</td><td data-label="Priority">@r.Priority</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="RuleDetails" asp-route-id="@r.Id">Details</a></td></tr> }
+    </tbody></table></div> }</div>
+    @foreach (var (title, list) in new[] { ("Premiums", c.Premiums), ("Additional charges", c.Charges) })
+    {
+        <div class="card mb-3"><div class="card-header fw-semibold">@title</div>
+        @if (list.Count == 0) { <div class="card-body text-muted">None configured.</div> }
+        else {
+        <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Code</th><th>Name</th><th>Factor</th><th>Level</th><th class="text-end">Value</th><th>Conditions</th><th></th></tr></thead><tbody>
+        @foreach (var r in list) {
+            <tr><td data-label="Code">@r.Code</td><td data-label="Name">@r.Name</td><td data-label="Factor">@r.Factor</td><td data-label="Level">@r.Scope</td>
+                <td data-label="Value" class="text-end">@r.Value.ToString("0.####")@(r.Method == PricingMethod.Percentage ? "%" : r.Method == PricingMethod.PerUnit ? " / " + r.Unit : "")</td>
+                <td data-label="Conditions">@(r.Conditions.Count == 0 ? "-" : string.Join(", ", r.Conditions.Select(x => x.Field + " " + x.Value)))</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="RuleDetails" asp-route-id="@r.Id">Details</a></td></tr> }
+        </tbody></table></div> }</div>
+    }
+    <div class="card mb-3"><div class="card-header fw-semibold">Discounts</div>
+    @if (c.Discounts.Count == 0) { <div class="card-body text-muted">None configured.</div> }
+    else {
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Code</th><th>Name</th><th>Level</th><th class="text-end">Value</th><th>Stacking</th><th></th></tr></thead><tbody>
+    @foreach (var d in c.Discounts) {
+        <tr><td data-label="Code">@d.Code</td><td data-label="Name">@d.Name</td><td data-label="Level">@d.Scope</td><td data-label="Value" class="text-end">@d.Value.ToString("0.####")@(d.Method == PricingMethod.Percentage ? "%" : "")</td>
+            <td data-label="Stacking">@(d.IsStackable ? "Stackable" : "Exclusive")</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="DiscountDetails" asp-route-id="@d.Id">Details</a></td></tr> }
+    </tbody></table></div> }</div>
+}
+}

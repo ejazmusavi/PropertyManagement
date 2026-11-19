@@ -11,7 +11,7 @@ Status values: Not Started · In Progress · Blocked · Needs Review · Complete
 | 0 | Technical Foundation | Complete (Docker unverified, accepted by user) | – | Yes (user-confirmed) | Pass | 84 pass |
 | 1 | Company, Projects, Land and Access Control | Complete | 0 | Yes (user-confirmed) | Pass | 158 pass |
 | 2 | Property Inventory Management | Needs Review (manual browser check pending) | 0, 1 | Yes (user-confirmed) | Pass | 246 pass |
-| 3 | Dynamic Property Pricing | Not Started | 1, 2 | – | – | – |
+| 3 | Dynamic Property Pricing | Needs Review (manual browser check pending) | 1, 2 | Yes (user-confirmed) | Pass | 339 pass |
 | 4 | Customers, Bookings and Agreements | Not Started | 1, 2, 3 | – | – | – |
 | 5 | Installment and Payment Agreement Engine | Not Started | 4 | – | – | – |
 | 6 | Payments, Allocation and Customer Ledgers | Not Started | 4, 5 | – | – | – |
@@ -21,7 +21,7 @@ Status values: Not Started · In Progress · Blocked · Needs Review · Complete
 | 10 | Flutter Customer Application | Not Started | 4, 5, 6 | – | – | – |
 | 11 | Notifications, Automation and GIS Foundation | Not Started | 5, 6, 10 | – | – | – |
 
-**Next phase:** Phase 3 (after Phase 2 review). Open item: verify Docker compose (Phase 0/1 volume `document-storage`) when Docker is available.
+**Next phase:** Phase 4 (after Phase 2 and 3 reviews). Open item: verify Docker compose (Phase 0/1 volume `document-storage`) when Docker is available.
 
 ## Per-phase records
 Add one block per phase when work starts; keep each under ~15 lines.
@@ -90,6 +90,27 @@ Test result (`dotnet test RealEstate.slnx`): Domain 70, Application 48, Infrastr
 UI verification: all screens exercised through rendered-HTML integration tests (render, create, reserve, release, status change, setup forms, validation errors, anti-forgery, authorization). Real-browser visual check NOT done.
 Acceptance criteria met / unmet: Met - all property categories supported (six seeded + custom); properties belong to valid, accessible projects; property codes unique per project; reservation expiry works (tested with moved expiry, history + audit); double booking prevented (concurrent test: 1 of 6 succeeds; DB unique-index test); property history retained (append-only, filtered report). Unmet/unverified - none functionally; manual browser check pending.
 Outstanding issues: Docker compose unverified. Existing databases do not get the new inventory.* permissions on default roles (granted only on role creation): grant via the permission matrix (Administrator has all). Reservation `CustomerId` has no FK until Phase 4. Expiry is lazy/on-demand until Phase 11 adds a scheduler. Phase 1 test ConcurrentAdjustments_NeverLoseAnUpdate exposed a MySQL deadlock after the model grew; fixed in SaveWithConcurrencyAsync.
+Backup taken before phase (name/date): confirmed by user in chat, 2026-11-19 (name not recorded).
+
+### Phase 3 – Dynamic Property Pricing
+Status: Needs Review. Build, all automated tests and every acceptance criterion pass; open items: manual visual check of the new Pricing screens in a real browser (desktop and 375px mobile) was not done (screens verified through rendered-HTML integration tests), and Phase 3 was started while Phase 2 was still Needs Review (user-approved exception, 2026-11-19). Docker compose remains unverified.
+Implementation summary: pricing rules (base rate, premium, additional charge) at six levels (project, block, street, property category, property, customer-negotiated) with conditions (size band, type, sector, development status, corner/road/park, floor); factors size, location, corner, road, park, commercial, development status, other; discount rules (exclusive/stackable); pure deterministic `PricingEngine` behind `PricingCalculationService` returning base price, size-based price, premiums, discounts, charges, final price and applied rules; canonical immutable snapshot (JSON + SHA-256) for Phase 4 bookings; published `PropertyPrice` with append-only `PropertyPriceHistory` and idempotent publish (single property or whole project); maker-checker `PricingApproval` for price overrides, customer discounts, special pricing and exceptions creating `PropertyPriceAdjustment`s (revocable); booked/sold properties frozen; project-scoped access, audit for every change.
+Important decisions: see decisions log (precedence policy, price formula and rounding, immutable rules/retire-and-replace, no past-dated rules, approvals, frozen prices, customer ids without FK).
+Files/modules affected (complete list; replaces git history):
+- Domain: Enums/Enums.cs (pricing enums), Common/Permissions.cs (pricing.* + default role grants), Entities/Pricing.cs (PricingRule, PricingRuleCondition, DiscountRule, PropertyPrice, PropertyPriceHistory, PropertyPriceAdjustment, PricingApproval), Pricing/MoneyRounding.cs (rounding + area conversion), Pricing/PricingEngine.cs
+- Application: Common/IAppDbContext.cs, DependencyInjection.cs, Pricing (PricingModels incl. validators, PricingSupport, PricingRuleService [rules, discounts, rate cards], PricingCalculationService + PricingSnapshot, PropertyPricingService, PricingApprovalService)
+- Infrastructure: Persistence/AppDbContext.cs, EntityConfigurations/Phase03Configurations.cs, Persistence/Migrations/Phase03_DynamicPricing (+ model snapshot updated)
+- Api: Controllers/PricingController.cs
+- Web: Controllers/PricingController.cs, ViewModels/Phase03ViewModels.cs, Views/Pricing (Rules, RuleForm, RuleDetails, RateCards, Discounts, DiscountForm, DiscountDetails, Calculator, Properties, Property, History, Approvals, ApprovalDetails, ChooseProject, _PricingTabs, _CalcResult), Views/Shared/Components/NavMenu/Default.cshtml, Views/Properties/Details.cshtml (Pricing button)
+- tests: Domain (Phase03DomainTests), Application (Phase03ValidatorTests), Infrastructure (Phase03Tests), Api (Phase03ApiTests), Web (Phase03WebTests)
+- docs: project-state.md, decisions/architecture-decisions.md
+Database changes (migrations): Phase03_DynamicPricing - PricingRules, PricingRuleConditions, DiscountRules, PropertyPrices (unique PropertyId), PropertyPriceHistories, PropertyPriceAdjustments (unique ApprovalId, CHECK Value > 0), PricingApprovals; DECIMAL(18,4) rates/percentages, DECIMAL(18,2) money, RowVersion on rules, discounts, prices, adjustments, approvals.
+APIs / MVC screens: GET/POST /api/v1/pricing/rules, GET/PUT /pricing/rules/{id}, POST /pricing/rules/{id}/retire, GET /pricing/rate-cards/{projectId}, GET/POST /pricing/discounts (+ GET/PUT/{id}, POST {id}/retire), POST /pricing/calculate, POST /pricing/snapshot, GET /properties/{id}/price, POST /properties/{id}/price/publish, POST /projects/{id}/pricing/publish, GET /pricing/prices, GET /pricing/history (+ /{id}/snapshot), GET /properties/{id}/price-adjustments, POST /pricing/adjustments/{id}/revoke, GET/POST /pricing/approvals, GET /pricing/approvals/{id}, POST /pricing/approvals/{id}/decision|cancel. MVC: pricing rules (list/create/details/retire), rate cards, discount configuration, property pricing list and property price page (calculation, publish, adjustments, approval requests), price history, pricing approvals (list/details/approve/reject/cancel), price calculator.
+Build result: Succeeded, 0 warnings, 0 errors (`dotnet build RealEstate.slnx --no-incremental`).
+Test result (`dotnet test RealEstate.slnx`): Domain 107, Application 73, Infrastructure 91, Api 39, Web 29 = 339 passed, 0 failed, 0 skipped (local MySQL 8.4); 93 new in Phase 3.
+UI verification: all screens exercised through rendered-HTML integration tests (render, create, validation errors, publish, approval request/approve/reject, retire, anti-forgery, authorization). Real-browser visual check NOT done.
+Acceptance criteria met / unmet: Met - configurable pricing works (rules, premiums, discounts, charges, hierarchy, conditions); customer-specific pricing works (approved customer rules, discounts and special prices apply only to that customer); calculations are reproducible (deterministic engine, input-order independent, snapshot hash verified, tamper detected); existing agreements unaffected (past windows immutable, stored snapshots never recalculated, booked/sold properties frozen); approval workflows enforced (maker-checker, permission, comment on rejection, concurrent decision test). Unmet/unverified - none functionally; manual browser check pending.
+Outstanding issues: Docker compose unverified. Existing databases do not get the new pricing.* permissions on default roles (granted only on role creation): grant via the permission matrix (Administrator has all). Customer ids are not validated until Phase 4 (no customer table); customer selection is a numeric id field. Pricing rules and discounts cannot be edited (only name/description); change a price by retiring and creating a new rule. Property and project pickers on pricing forms list up to 100 properties (a numeric id field is shown for larger projects). The booking-side `BookingPricingSnapshot` entity and its use of `PriceSnapshotDto` are Phase 4.
 Backup taken before phase (name/date): confirmed by user in chat, 2026-11-19 (name not recorded).
 
 ```

@@ -1,0 +1,30 @@
+@model ApprovalsViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = "Pricing approvals"; var f = Model.Filter; var p = Model.Approvals;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["propertyId"] = f.PropertyId?.ToString(), ["status"] = f.Status?.ToString(), ["type"] = f.Type?.ToString() }; }
+<h1 class="h3 mb-3">Pricing</h1>
+<partial name="_PricingTabs" model='"Approvals"' />
+<form method="get" class="row g-2 mb-3" role="search">
+    <input type="hidden" name="propertyId" value="@f.PropertyId" />
+    <div class="col-12 col-md-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Reason or requester" aria-label="Search approvals" /></div>
+    <div class="col-6 col-md-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-md-3"><select name="type" class="form-select" aria-label="Type"><option value="">All types</option>@foreach (var s in Enum.GetValues<PricingApprovalType>()) { <option value="@s" selected="@(f.Type == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<PricingApprovalStatus>()) { <option value="@s" selected="@(f.Status == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-2 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary" asp-action="Approvals">Clear</a></div>
+</form>
+@if (p.Items.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No pricing requests. Requests are made from a property's pricing page.</p></div> }
+else
+{
+<div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+    <thead><tr><th>#</th><th>Type</th><th>Property</th><th>Customer</th><th class="text-end">Original</th><th class="text-end">Proposed</th><th>Requested by</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var x in p.Items)
+    {
+        <tr><td data-label="#">@x.Id</td><td data-label="Type">@x.Type</td><td data-label="Property">@(x.PropertyCode ?? "(rule)")</td><td data-label="Customer">@(x.CustomerId?.ToString() ?? "-")</td>
+            <td data-label="Original" class="text-end">@(x.OriginalPrice?.ToString("N2") ?? "-")</td><td data-label="Proposed" class="text-end">@(x.ProposedPrice?.ToString("N2") ?? "-")</td>
+            <td data-label="Requested by">@x.RequestedByName</td>
+            <td data-label="Status"><span class="badge @(x.Status == PricingApprovalStatus.Approved ? "text-bg-success" : x.Status == PricingApprovalStatus.Pending ? "text-bg-warning" : x.Status == PricingApprovalStatus.Rejected ? "text-bg-danger" : "text-bg-secondary")">@x.Status</span></td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="ApprovalDetails" asp-route-id="@x.Id">Details</a></td></tr>
+    }
+    </tbody></table></div></div>
+<partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "requests", route, "page")' />
+}

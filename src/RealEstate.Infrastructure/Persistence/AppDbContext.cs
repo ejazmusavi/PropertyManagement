@@ -35,6 +35,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
     public DbSet<PropertyStatusHistory> PropertyStatusHistories => Set<PropertyStatusHistory>();
     public DbSet<PropertyReservation> PropertyReservations => Set<PropertyReservation>();
+    public DbSet<PricingRule> PricingRules => Set<PricingRule>();
+    public DbSet<PricingRuleCondition> PricingRuleConditions => Set<PricingRuleCondition>();
+    public DbSet<DiscountRule> DiscountRules => Set<DiscountRule>();
+    public DbSet<PropertyPrice> PropertyPrices => Set<PropertyPrice>();
+    public DbSet<PropertyPriceHistory> PropertyPriceHistories => Set<PropertyPriceHistory>();
+    public DbSet<PropertyPriceAdjustment> PropertyPriceAdjustments => Set<PropertyPriceAdjustment>();
+    public DbSet<PricingApproval> PricingApprovals => Set<PricingApproval>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();

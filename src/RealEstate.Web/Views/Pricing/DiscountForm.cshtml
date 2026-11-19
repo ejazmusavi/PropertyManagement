@@ -1,0 +1,39 @@
+@model DiscountFormViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = "New discount"; }
+<h1 class="h3 mb-1">New discount</h1>
+<p class="text-muted">@Model.ProjectName</p>
+<div class="alert alert-info small">Discounts cannot be edited once created, so earlier prices stay reproducible: retire and replace instead. Exclusive discounts compete (the most specific wins); stackable discounts all apply. Total discount never exceeds the price.</div>
+<form asp-action="CreateDiscount" method="post" data-loading-form>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="ProjectId" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Scope" class="form-label">Applies at level</label><select asp-for="Scope" class="form-select">@foreach (var s in Enum.GetValues<PricingScope>().Where(s => s != PricingScope.Customer)) { <option value="@s" selected="@(s == Model.Scope)">@s</option> }</select></div>
+        <div class="col-12 col-lg-4 scope-field" data-scope="Block"><label asp-for="BlockId" class="form-label">Block</label><select asp-for="BlockId" class="form-select"><option value="">- Choose -</option>@foreach (var z in Model.Blocks) { <option value="@z.Id">@z.Name</option> }</select></div>
+        <div class="col-12 col-lg-4 scope-field" data-scope="Street"><label asp-for="StreetId" class="form-label">Street</label><select asp-for="StreetId" class="form-select"><option value="">- Choose -</option>@foreach (var z in Model.Streets) { <option value="@z.Id">@z.Name</option> }</select></div>
+        <div class="col-12 col-lg-4 scope-field" data-scope="PropertyCategory"><label asp-for="CategoryId" class="form-label">Property category</label><select asp-for="CategoryId" class="form-select"><option value="">- Choose -</option>@foreach (var c in Model.Categories) { <option value="@c.Id">@c.Name</option> }</select></div>
+        <div class="col-12 col-lg-4 scope-field" data-scope="Property"><label asp-for="PropertyId" class="form-label">Property</label>
+            @if (Model.Properties.Count < 100) { <select asp-for="PropertyId" class="form-select"><option value="">- Choose -</option>@foreach (var x in Model.Properties) { <option value="@x.PropertyId">@x.PropertyCode</option> }</select> }
+            else { <input asp-for="PropertyId" type="number" min="1" class="form-control" placeholder="Property ID" /> }</div>
+        <div class="col-12 col-lg-4"><label asp-for="Method" class="form-label"></label><select asp-for="Method" class="form-select"><option value="Percentage" selected="@(Model.Method == PricingMethod.Percentage)">Percentage</option><option value="FixedAmount" selected="@(Model.Method == PricingMethod.FixedAmount)">Fixed amount</option></select></div>
+        <div class="col-12 col-lg-4"><label asp-for="Value" class="form-label"></label><input asp-for="Value" type="number" step="0.0001" min="0" class="form-control" /><span asp-validation-for="Value" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Priority" class="form-label"></label><input asp-for="Priority" type="number" min="0" max="1000" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="EffectiveFrom" class="form-label">Effective from</label><input asp-for="EffectiveFrom" type="date" class="form-control" /><span asp-validation-for="EffectiveFrom" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="EffectiveTo" class="form-label">Effective to (optional)</label><input asp-for="EffectiveTo" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-4 d-flex align-items-end"><div class="form-check"><input asp-for="IsStackable" class="form-check-input" /><label asp-for="IsStackable" class="form-check-label">Stackable with other discounts</label></div></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="2"></textarea></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Create discount</button><a class="btn btn-outline-secondary" asp-action="Discounts" asp-route-projectId="@Model.ProjectId">Cancel</a></div>
+</form>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  var scope = document.getElementById('Scope');
+  function sync() { document.querySelectorAll('.scope-field').forEach(function (e) { e.style.display = e.dataset.scope === scope.value ? '' : 'none'; }); }
+  scope.addEventListener('change', sync); sync();
+})();
+</script>
+}

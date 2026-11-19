@@ -1,0 +1,20 @@
+@model RealEstate.Application.Pricing.PriceCalculationDto
+@using RealEstate.Application.Pricing
+@functions { static string M(decimal v) => v.ToString("N2"); }
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Base price (per @Model.Unit)</div><div class="fs-5 fw-semibold">@M(Model.BasePrice)</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Size-based price (@Model.Size.ToString("0.####") @Model.Unit)</div><div class="fs-5 fw-semibold">@M(Model.SizeBasedPrice)</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Premiums / Discounts / Charges</div><div class="fw-semibold">+@M(Model.TotalPremiums) / -@M(Model.TotalDiscounts) / +@M(Model.TotalCharges)</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100 border-primary"><div class="card-body"><div class="text-muted small">Final price@(Model.IsOverridden ? " (approved override)" : "")</div><div class="fs-4 fw-bold" data-final-price>@M(Model.FinalPrice)</div></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Applied pricing rules <span class="text-muted small ms-2">as of @Model.AsOfDate.ToString("yyyy-MM-dd")@(Model.CustomerId is { } c ? $" · customer {c}" : "")</span></div>
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Source</th><th>Code</th><th>Name</th><th>Level</th><th>Type</th><th>Method</th><th class="text-end">Value</th><th class="text-end">Amount</th></tr></thead><tbody>
+@foreach (var l in Model.AppliedRules)
+{
+    <tr><td data-label="Source">@l.Source</td><td data-label="Code">@l.Code</td><td data-label="Name">@l.Name</td><td data-label="Level">@(l.Scope?.ToString() ?? "-")</td>
+        <td data-label="Type">@(l.Kind?.ToString() ?? (l.Source == "Discount" ? "Discount" : "Adjustment"))@(l.Kind == RealEstate.Domain.Enums.PricingRuleKind.Premium ? " (" + l.Factor + ")" : "")</td>
+        <td data-label="Method">@l.Method</td><td data-label="Value" class="text-end">@l.Value.ToString("0.####")</td>
+        <td data-label="Amount" class="text-end">@(l.Source == "Discount" ? "-" : "")@M(l.Amount)</td></tr>
+}
+</tbody></table></div>
+<div class="card-footer small text-muted">Precedence: Customer &gt; Property &gt; Property category &gt; Street &gt; Block &gt; Project; then priority, then newest start date. Rounded to @Model.DecimalPlaces decimals (@Model.Rounding).</div></div>

@@ -1,0 +1,16 @@
+@model CalculatorViewModel
+@{ ViewData["Title"] = "Price calculator"; }
+<h1 class="h3 mb-3">Pricing</h1>
+<partial name="_PricingTabs" model='"Calculator"' />
+<form method="get" class="card card-body mb-3"><div class="row g-3">
+    <div class="col-12 col-lg-3"><label class="form-label" for="projectId">Project</label><select id="projectId" name="projectId" class="form-select" onchange="document.getElementById('propertyId').selectedIndex = 0; this.form.submit()">@foreach (var p in Model.Projects) { <option value="@p.Id" selected="@(p.Id == Model.ProjectId)">@p.ProjectCode</option> }</select></div>
+    <div class="col-12 col-lg-3"><label class="form-label" for="propertyId">Property</label>
+        @if (Model.Properties.Count < 100) { <select id="propertyId" name="propertyId" class="form-select"><option value="">- Choose -</option>@foreach (var x in Model.Properties) { <option value="@x.PropertyId" selected="@(x.PropertyId == Model.PropertyId)">@x.PropertyCode (@x.Size.ToString("0.####") @x.Unit)</option> }</select> }
+        else { <input id="propertyId" name="propertyId" type="number" min="1" value="@Model.PropertyId" class="form-control" placeholder="Property ID" /> }</div>
+    <div class="col-6 col-lg-2"><label class="form-label" for="customerId">Customer ID (optional)</label><input id="customerId" name="customerId" type="number" min="1" value="@Model.CustomerId" class="form-control" /></div>
+    <div class="col-6 col-lg-2"><label class="form-label" for="asOf">As of date</label><input id="asOf" name="asOf" type="date" value="@Model.AsOf?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-12 col-lg-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Calculate</button></div>
+</div></form>
+@if (Model.Error != null) { <div class="alert alert-warning" role="alert">@Model.Error</div> }
+@if (Model.Result is { } r) { <partial name="_CalcResult" model="r" /> }
+else if (Model.PropertyId is null) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">Choose a property to calculate its price. Nothing is stored by the calculator.</p></div> }

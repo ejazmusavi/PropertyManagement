@@ -16,6 +16,11 @@
         <li class="nav-item"><a class="nav-link @Active("Properties")" asp-controller="Properties" asp-action="Index">Properties</a></li>
         <li class="nav-item"><a class="nav-link @Active("PropertySetup")" asp-controller="PropertySetup" asp-action="Types">Types &amp; blocks</a></li>
     }
+    @if (Model.Contains("pricing.view"))
+    {
+        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Pricing</li>
+        <li class="nav-item"><a class="nav-link @Active("Pricing")" asp-controller="Pricing" asp-action="Rules">Pricing engine</a></li>
+    }
     @if (Model.Contains("company.view"))
     {
         <li class="nav-item"><a class="nav-link @Active("Company")" asp-controller="Company" asp-action="Index">Company</a></li>

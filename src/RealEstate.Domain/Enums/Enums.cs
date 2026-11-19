@@ -37,3 +37,28 @@ public enum ReservationStatus { Active = 1, Released = 2, Expired = 3, Converted
 public enum PropertyDocumentType { Plan = 1, Ownership = 2, Allotment = 3, Photo = 4, Legal = 5, Other = 6 }
 
 public enum ZoneKind { Block = 1, Sector = 2, Street = 3 }
+
+// ---------- Phase 3: pricing ----------
+/// <summary>Where a pricing rule applies. The numeric order IS the precedence policy: a higher value overrides a lower one.</summary>
+public enum PricingScope { Project = 1, Block = 2, Street = 3, PropertyCategory = 4, Property = 5, Customer = 6 }
+
+public enum PricingRuleKind { BaseRate = 1, Premium = 2, AdditionalCharge = 3 }
+
+public enum PricingFactor { Size = 1, Location = 2, Corner = 3, RoadFacing = 4, ParkFacing = 5, Commercial = 6, DevelopmentStatus = 7, Other = 8 }
+
+/// <summary>PerUnit = amount per measurement unit of size; FixedAmount = flat money; Percentage = percent of the size-based price (discounts: of price before discount).</summary>
+public enum PricingMethod { PerUnit = 1, FixedAmount = 2, Percentage = 3 }
+
+public enum PricingRuleStatus { PendingApproval = 1, Active = 2, Retired = 3, Rejected = 4 }
+
+public enum PricingConditionField { MinSize = 1, MaxSize = 2, PropertyType = 3, Sector = 4, DevelopmentStatus = 5, Corner = 6, MainRoad = 7, Park = 8, MinFloor = 9, MaxFloor = 10 }
+
+public enum PricingApprovalType { PriceOverride = 1, CustomerDiscount = 2, SpecialPricing = 3, PricingException = 4 }
+
+public enum PricingApprovalStatus { Pending = 1, Approved = 2, Rejected = 3, Cancelled = 4 }
+
+public enum AdjustmentKind { Override = 1, Discount = 2, Surcharge = 3 }
+
+public enum AdjustmentStatus { Active = 1, Revoked = 2 }
+
+public enum PriceChangeSource { Published = 1, ApprovalApplied = 2, AdjustmentRevoked = 3 }

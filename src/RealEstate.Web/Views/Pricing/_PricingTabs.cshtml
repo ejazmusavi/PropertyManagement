@@ -1,0 +1,12 @@
+@model string
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); string A(string t) => Model == t ? "active" : ""; }
+<ul class="nav nav-tabs mb-3 flex-wrap">
+    <li class="nav-item"><a class="nav-link @A("Rules")" asp-controller="Pricing" asp-action="Rules">Pricing rules</a></li>
+    <li class="nav-item"><a class="nav-link @A("RateCards")" asp-controller="Pricing" asp-action="RateCards">Rate cards</a></li>
+    <li class="nav-item"><a class="nav-link @A("Discounts")" asp-controller="Pricing" asp-action="Discounts">Discounts</a></li>
+    <li class="nav-item"><a class="nav-link @A("Properties")" asp-controller="Pricing" asp-action="Properties">Property pricing</a></li>
+    <li class="nav-item"><a class="nav-link @A("Calculator")" asp-controller="Pricing" asp-action="Calculator">Price calculator</a></li>
+    <li class="nav-item"><a class="nav-link @A("History")" asp-controller="Pricing" asp-action="History">Price history</a></li>
+    <li class="nav-item"><a class="nav-link @A("Approvals")" asp-controller="Pricing" asp-action="Approvals">Approvals</a></li>
+</ul>

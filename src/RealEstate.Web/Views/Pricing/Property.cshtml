@@ -1,0 +1,101 @@
+@model PropertyPriceViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var v = Model.View; ViewData["Title"] = "Pricing " + v.PropertyCode; await Ui.LoadAsync();
+   var canRequest = Ui.Has("pricing.request") && !v.PriceFrozen; var canManage = Ui.Has("pricing.manage") && !v.PriceFrozen; var canApprove = Ui.Has("pricing.approve") && !v.PriceFrozen; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@v.PropertyCode <partial name="_StatusBadge" model="v.PropertyStatus" /></h1><div class="text-muted">@v.ProjectCode – @v.ProjectName</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canManage && v.Calculation is not null) { <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#publishModal">Publish price</button> }
+        @if (canRequest) { <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#requestModal">Request override / discount</button> }
+        @if (Ui.Has("inventory.view")) { <a class="btn btn-outline-secondary" asp-controller="Properties" asp-action="Details" asp-route-id="@v.PropertyId">Property</a> }
+        <a class="btn btn-outline-secondary" asp-action="History" asp-route-propertyId="@v.PropertyId">Price history</a>
+        <a class="btn btn-outline-secondary" asp-action="Approvals" asp-route-propertyId="@v.PropertyId">Approvals</a>
+    </div>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+@if (v.PriceFrozen) { <div class="alert alert-info">This property is @v.PropertyStatus: its price is frozen. Bookings keep the pricing snapshot taken when they were made, so rule changes never affect them.</div> }
+<div class="card mb-3"><div class="card-header fw-semibold">Published price</div><div class="card-body">
+    @if (v.Published is { } pub)
+    {
+        <div class="row g-3"><div class="col-6 col-lg-3"><div class="text-muted small">Final price</div><div class="fs-4 fw-bold" data-published-price>@pub.FinalPrice.ToString("N2")@(pub.IsOverridden ? " *" : "")</div></div>
+            <div class="col-6 col-lg-3"><div class="text-muted small">Size-based price</div><div>@pub.SizeBasedPrice.ToString("N2")</div></div>
+            <div class="col-6 col-lg-3"><div class="text-muted small">Premiums / Discounts / Charges</div><div>+@pub.TotalPremiums.ToString("N2") / -@pub.TotalDiscounts.ToString("N2") / +@pub.TotalCharges.ToString("N2")</div></div>
+            <div class="col-6 col-lg-3"><div class="text-muted small">Published</div><div>@pub.PublishedAtUtc.ToString("yyyy-MM-dd HH:mm") by @pub.PublishedBy</div></div></div>
+    }
+    else { <span class="text-muted">No price has been published for this property yet.</span> }
+</div></div>
+<form method="get" class="card card-body mb-3"><div class="row g-2 align-items-end">
+    <input type="hidden" name="id" value="@v.PropertyId" />
+    <div class="col-6 col-lg-3"><label class="form-label" for="customerId">Calculate for customer ID (optional)</label><input id="customerId" name="customerId" type="number" min="1" value="@Model.CustomerId" class="form-control" /></div>
+    <div class="col-6 col-lg-3"><label class="form-label" for="asOf">As of date</label><input id="asOf" name="asOf" type="date" value="@Model.AsOf?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Recalculate</button></div>
+</div></form>
+@if (v.CalculationError != null) { <div class="alert alert-warning" role="alert">@v.CalculationError</div> }
+@if (v.Calculation is { } calc) { <partial name="_CalcResult" model="calc" /> }
+<div class="card mb-3"><div class="card-header fw-semibold">Approved adjustments</div>
+@if (v.Adjustments.Count == 0) { <div class="card-body text-muted">No approved overrides, discounts or surcharges.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Type</th><th class="text-end">Value</th><th>Customer</th><th>Effective</th><th>Status</th><th>Reason</th><th></th></tr></thead><tbody>
+@foreach (var a in v.Adjustments)
+{
+    <tr><td data-label="Type">@a.Kind</td><td data-label="Value" class="text-end">@a.Value.ToString("0.####")@(a.Method == PricingMethod.Percentage ? "%" : "")</td><td data-label="Customer">@(a.CustomerId?.ToString() ?? "All")</td>
+        <td data-label="Effective">@a.EffectiveFrom.ToString("yyyy-MM-dd") – @(a.EffectiveTo?.ToString("yyyy-MM-dd") ?? "open")</td><td data-label="Status">@a.Status@(a.RevokeReason != null ? " (" + a.RevokeReason + ")" : "")</td><td data-label="Reason">@a.Reason</td>
+        <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-secondary" asp-action="ApprovalDetails" asp-route-id="@a.ApprovalId">Approval</a>
+        @if (canApprove && a.Status == AdjustmentStatus.Active) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#revokeModal" data-adj-id="@a.Id" data-adj-rv="@a.RowVersion">Revoke</button> }</td></tr>
+}
+</tbody></table></div> }</div>
+@if (canManage)
+{
+    <div class="modal fade" id="publishModal" tabindex="-1" aria-labelledby="publishTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="Publish" asp-route-id="@v.PropertyId" method="post">
+        <div class="modal-header"><h2 class="modal-title fs-5" id="publishTitle">Publish price</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Stores today's calculated price (without customer-specific terms) as the property's current price and records it in the price history.</p><label class="form-label" for="pubReason">Reason (optional)</label><input id="pubReason" name="reason" class="form-control" maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Publish price</button></div></form></div></div>
+}
+@if (canApprove)
+{
+    <div class="modal fade" id="revokeModal" tabindex="-1" aria-labelledby="revokeTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="RevokeAdjustment" method="post">
+        <input type="hidden" name="propertyId" value="@v.PropertyId" /><input type="hidden" name="id" id="revokeId" /><input type="hidden" name="rowVersion" id="revokeRv" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="revokeTitle">Revoke adjustment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><label class="form-label" for="revokeReason">Reason</label><input id="revokeReason" name="reason" class="form-control" required maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Revoke</button></div></form></div></div>
+}
+@if (canRequest)
+{
+    var r = Model.Request;
+    <div class="modal fade" id="requestModal" tabindex="-1" aria-labelledby="requestTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-lg"><form class="modal-content" asp-action="RequestApproval" method="post">
+        <input type="hidden" name="PropertyId" value="@v.PropertyId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="requestTitle">Request approval</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p class="small text-muted">Nothing changes until another user with approval rights approves the request.</p><div class="row g-3">
+            <div class="col-12 col-md-6"><label class="form-label" for="reqType">Request type</label><select id="reqType" name="Type" class="form-select">
+                <option value="PriceOverride" selected="@(r.Type == PricingApprovalType.PriceOverride)">Price override</option><option value="CustomerDiscount" selected="@(r.Type == PricingApprovalType.CustomerDiscount)">Customer-specific discount</option>
+                <option value="SpecialPricing" selected="@(r.Type == PricingApprovalType.SpecialPricing)">Special pricing (negotiated customer price)</option><option value="PricingException" selected="@(r.Type == PricingApprovalType.PricingException)">Pricing exception (property-wide)</option></select></div>
+            <div class="col-12 col-md-6 req-exception"><label class="form-label" for="reqKind">Exception kind</label><select id="reqKind" name="AdjustmentKind" class="form-select"><option value="Discount">Discount</option><option value="Surcharge">Surcharge</option></select></div>
+            <div class="col-12 col-md-6 req-method"><label class="form-label" for="reqMethod">Method</label><select id="reqMethod" name="Method" class="form-select"><option value="FixedAmount">Fixed amount</option><option value="Percentage">Percentage</option></select></div>
+            <div class="col-12 col-md-6"><label class="form-label" for="reqValue" id="reqValueLabel">Value</label><input id="reqValue" name="Value" type="number" step="0.01" min="0" value="@r.Value" class="form-control" required /></div>
+            <div class="col-6 col-md-3 req-customer"><label class="form-label" for="reqCust">Customer ID</label><input id="reqCust" name="CustomerId" type="number" min="1" value="@r.CustomerId" class="form-control" /></div>
+            <div class="col-6 col-md-3 req-customer"><label class="form-label" for="reqCustRef">Customer name</label><input id="reqCustRef" name="CustomerReference" value="@r.CustomerReference" class="form-control" maxlength="200" /></div>
+            <div class="col-6 col-md-3"><label class="form-label" for="reqFrom">Effective from</label><input id="reqFrom" name="EffectiveFrom" type="date" value="@(r.EffectiveFrom?.ToString("yyyy-MM-dd") ?? Model.Today.ToString("yyyy-MM-dd"))" class="form-control" /></div>
+            <div class="col-6 col-md-3"><label class="form-label" for="reqTo">Effective to</label><input id="reqTo" name="EffectiveTo" type="date" value="@r.EffectiveTo?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+            <div class="col-12"><label class="form-label" for="reqReason">Reason</label><textarea id="reqReason" name="Reason" class="form-control" rows="2" required minlength="5" maxlength="1000">@r.Reason</textarea></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Submit request</button></div></form></div></div>
+}
+@section Scripts {
+<script>
+(function () {
+  var rv = document.getElementById('revokeModal');
+  if (rv) rv.addEventListener('show.bs.modal', function (e) { var d = e.relatedTarget.dataset; revokeId.value = d.adjId; revokeRv.value = d.adjRv; });
+  var type = document.getElementById('reqType'); if (!type) return;
+  function sync() {
+    var t = type.value;
+    document.querySelectorAll('.req-exception').forEach(function (e) { e.style.display = t === 'PricingException' ? '' : 'none'; });
+    document.querySelectorAll('.req-method').forEach(function (e) { e.style.display = (t === 'CustomerDiscount' || t === 'PricingException') ? '' : 'none'; });
+    document.querySelectorAll('.req-customer').forEach(function (e) { e.style.display = t === 'PricingException' ? 'none' : ''; });
+    document.getElementById('reqValueLabel').textContent = (t === 'PriceOverride' || t === 'SpecialPricing') ? 'Requested price' : 'Amount or percentage';
+  }
+  type.addEventListener('change', sync); sync();
+  @if (ViewData.ModelState.ErrorCount > 0 && canRequest) { <text>new bootstrap.Modal(document.getElementById('requestModal')).show();</text> }
+})();
+</script>
+}
