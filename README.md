@@ -22,11 +22,11 @@ Clean Architecture, Modular Monolith (no microservices). Projects: `RealEstate.D
 | [docs/decisions/spec-issues.md](docs/decisions/spec-issues.md) | Specification ambiguities/conflicts (and original Parts 9–10) |
 | [docs/project-state.md](docs/project-state.md) | Live progress tracker |
 | [docs/model-allocation.md](docs/model-allocation.md) | Opus/Sonnet/Haiku guidance |
-| [docs/git-workflow.md](docs/git-workflow.md) | Git rules |
+| [docs/change-safety.md](docs/change-safety.md) | Backup and change-safety rules (no git) |
 | [docs/prompts/phase-execution.md](docs/prompts/phase-execution.md) | Reusable implementation prompt |
 | [docs/prompts/phase-review.md](docs/prompts/phase-review.md) | Reusable phase verification prompt |
 
-The original single-file specification is preserved in git history (commit `7f37aa2`, `README.md`).
+The original single-file specification is preserved unchanged in [docs/original-specification.md](docs/original-specification.md) (reference only; use the phase files for work).
 
 ## Development phases
 Follow this order; do not skip or combine phases in a way that compromises testing and acceptance. Status is tracked in [project-state.md](docs/project-state.md) (all Not Started initially).

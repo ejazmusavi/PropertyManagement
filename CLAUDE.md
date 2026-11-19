@@ -12,7 +12,7 @@ ASP.NET Core 10 / C# 14 · MVC (Bootstrap 5) · Web API (`/api/v1`, Swagger) · 
 
 ## Security (mandatory)
 - Permission-based authorization enforced in backend services and API, plus project-level, data-level and customer-level access. Never trust client-supplied customer/project IDs.
-- Files outside web root, authorized downloads. No secrets or credentials in code or git. Audit all sensitive changes (who/when/old/new/reason).
+- Files outside web root, authorized downloads. No secrets or credentials in project files. Audit all sensitive changes (who/when/old/new/reason).
 
 ## Database and migrations (`docs/database-design.md`)
 - EF Core migrations for every schema change; never edit applied migrations. DECIMAL(18,2) money, DECIMAL(18,4) rates, no floats.
@@ -31,6 +31,6 @@ Every phase: domain, application, integration, API, database, authorization test
 - Requirements are authoritative; never simplify or drop them to save effort. If ambiguity materially affects accounting, ownership or financial correctness, ask one focused question; log choices in the decisions file. Known spec issues: `docs/decisions/spec-issues.md`.
 - Run relevant build/tests once, fix what you broke, avoid redundant runs. Keep reports short.
 - After finishing, update `docs/project-state.md` accurately (never mark Complete unless done-criteria are met).
-- Git: follow `docs/git-workflow.md` (check status first, never overwrite others' changes, no secrets, no reset/rebase/force-push without authorization).
+- No git: follow `docs/change-safety.md` (user backs up before each phase; change only in-scope files; ask before deleting/overwriting anything else; never edit applied migrations; list changed files in project-state.md).
 - Models: `docs/model-allocation.md` (user chooses the model; recommend escalation, don't assume you can switch).
 - Prompts: `docs/prompts/phase-execution.md`, `docs/prompts/phase-review.md`.

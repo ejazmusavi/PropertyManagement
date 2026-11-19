@@ -10,7 +10,7 @@ PHASE_DOC: docs/phases/phase-{PHASE}.md
 Independently verify whether this phase is actually complete. **Review only: do not modify code, migrations or tests, and do not fix anything.** The only file you may change is the review result in `docs/project-state.md` (status/notes), and only if I ask.
 
 1. Read `CLAUDE.md`, `PHASE_DOC`, `docs/project-state.md`, `docs/global-requirements.md`, and the relevant parts of `docs/architecture.md` / `docs/database-design.md`. Do not trust project-state.md claims; verify them.
-2. Inspect the code, migrations and tests for this phase (use `git log`/`git diff` against the pre-phase commit to scope).
+2. Inspect the code, migrations and tests for this phase (scope it using the files and migrations listed for this phase in project-state.md, and flag any in-scope file missing from that list or any change outside the listed scope you can detect).
 3. Build and run the tests yourself; report actual output.
 4. Check, item by item, with file/line evidence:
    - Every functional requirement, entity, screen and endpoint in the phase document.
