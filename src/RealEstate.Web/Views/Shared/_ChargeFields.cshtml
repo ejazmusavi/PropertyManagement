@@ -1,0 +1,21 @@
+@* Fields shared by plan components and agreement charges (the date/amount specifics live in the calling form). *@
+@model RealEstate.Web.ViewModels.ChargeFieldsBase
+@using RealEstate.Domain.Enums
+<div class="col-12 col-lg-4"><label asp-for="ChargeTypeId" class="form-label"></label>
+    <select asp-for="ChargeTypeId" class="form-select"><option value="0">- Select -</option>@foreach (var t in Model.ChargeTypes) { <option value="@t.Id" selected="@(Model.ChargeTypeId == t.Id)">@t.Name</option> }</select><span asp-validation-for="ChargeTypeId" class="text-danger small"></span></div>
+<div class="col-12 col-lg-4"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" maxlength="200" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+<div class="col-12 col-lg-4"><label asp-for="Category" class="form-label"></label><select asp-for="Category" class="form-select" asp-items="EnumText.Options<ChargeCategory>()"></select></div>
+<div class="col-12 col-lg-4"><label asp-for="Frequency" class="form-label"></label><select asp-for="Frequency" class="form-select freq-select" asp-items="EnumText.Options<ScheduleFrequency>()"></select></div>
+<div class="col-12 col-lg-4" data-show-when-freq="Monthly,Quarterly,HalfYearly,Annual"><label asp-for="NumberOfInstallments" class="form-label"></label><input asp-for="NumberOfInstallments" type="number" min="1" class="form-control" /><div class="form-text">Give the number of installments or the installment amount.</div></div>
+<div class="col-12 col-lg-4" data-show-when-freq="Monthly,Quarterly,HalfYearly,Annual"><label asp-for="InstallmentAmount" class="form-label"></label><input asp-for="InstallmentAmount" type="number" step="0.01" min="0" class="form-control" /></div>
+<div class="col-12 col-lg-4" data-show-when-freq="Monthly,Quarterly,HalfYearly,Annual"><label asp-for="DueDayOfMonth" class="form-label"></label><input asp-for="DueDayOfMonth" type="number" min="1" max="31" class="form-control" /></div>
+<div class="col-12 col-lg-4"><label asp-for="GracePeriodDays" class="form-label"></label><input asp-for="GracePeriodDays" type="number" min="0" max="365" class="form-control" /><span asp-validation-for="GracePeriodDays" class="text-danger small"></span></div>
+<div class="col-12 col-lg-4"><label asp-for="LateFeeRuleId" class="form-label"></label>
+    <select asp-for="LateFeeRuleId" class="form-select"><option value="">- None -</option>@foreach (var r in Model.LateFeeRules) { <option value="@r.Id" selected="@(Model.LateFeeRuleId == r.Id)">@r.Code – @r.Name</option> }</select></div>
+<div class="col-12 col-lg-4 d-flex align-items-end"><div class="form-check mb-2"><input asp-for="WaiverAllowed" class="form-check-input waiver-check" /><label asp-for="WaiverAllowed" class="form-check-label"></label></div></div>
+<div class="col-12 col-lg-4"><label asp-for="MaxWaiverPercent" class="form-label"></label><input asp-for="MaxWaiverPercent" type="number" step="0.01" min="0" max="100" class="form-control waiver-pct" /></div>
+<div class="col-12 col-lg-4"><label asp-for="TaxTreatment" class="form-label"></label><select asp-for="TaxTreatment" class="form-select" asp-items="EnumText.Options<TaxTreatment>()"></select></div>
+<div class="col-12 col-lg-4"><label asp-for="TaxRatePercent" class="form-label"></label><input asp-for="TaxRatePercent" type="number" step="0.0001" min="0" max="100" class="form-control" /></div>
+<div class="col-12 col-lg-4"><label asp-for="RoundingUnit" class="form-label"></label><input asp-for="RoundingUnit" type="number" step="0.01" min="0" class="form-control" /><div class="form-text">Optional, e.g. 1000 to round installments.</div></div>
+<div class="col-12 col-lg-4"><label asp-for="SortOrder" class="form-label"></label><input asp-for="SortOrder" type="number" min="1" class="form-control" /><div class="form-text">Blank = add at the end.</div></div>
+<div class="col-12 col-lg-8"><label asp-for="Remarks" class="form-label"></label><input asp-for="Remarks" class="form-control" maxlength="1000" /></div>

@@ -172,7 +172,7 @@ public class Phase04DomainTests
     private static AgreementData Data(int version = 1, string owner = "Ali Khan") => new("Serene Estates", "AGR-000001", version, "Agreement generated", new DateTime(2026, 11, 19, 10, 0, 0, DateTimeKind.Utc),
         "BK-000001", new DateOnly(2026, 11, 19), "P1", "Serene City", PaymentMode.Installment, "Rs",
         [new AgreementOwner("CUS-000001", owner, "3520212345671", 100m, true)],
-        [new AgreementLine("PLT-1", "1", 5m, MeasurementUnit.Marla, 5_000_000m, 0m, 5_000_000m, "abc123")], [new AgreementCharge("Registration: fee", 25_000m)],
+        [new AgreementLine("PLT-1", "1", 5m, MeasurementUnit.Marla, 5_000_000m, 0m, 5_000_000m, "abc123")], [new AgreementChargeLine("Registration: fee", 25_000m)],
         5_000_000m, 0m, 25_000m, 5_025_000m, 500_000m, null);
 
     [Fact]

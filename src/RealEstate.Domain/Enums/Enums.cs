@@ -88,4 +88,54 @@ public enum AgreementStatus { Active = 1, Cancelled = 2 }
 
 public enum AgreementDocumentType { Signed = 1, Supporting = 2, Other = 3 }
 
-public enum AmendmentType { Transfer = 1, OwnershipChange = 2 }
+public enum AmendmentType
+{
+    Transfer = 1, OwnershipChange = 2,
+    // Phase 5 schedule amendments (spec 5.6)
+    Reschedule = 3, Deferment = 4, InstallmentReduction = 5, AdditionalInstallments = 6, DueDateChange = 7, PenaltyChange = 8, Waiver = 9, AdditionalCharge = 10
+}
+
+// ---------- Phase 5: installment and payment agreement engine ----------
+public enum AmendmentStatus { Pending = 1, Approved = 2, Rejected = 3, Cancelled = 4 }
+
+/// <summary>Plan scope (spec 5.2).</summary>
+public enum InstallmentPlanType { StandardProject = 1, PropertyCategory = 2, PropertySpecific = 3, CustomerSpecific = 4, Cash = 5 }
+
+public enum InstallmentPlanStatus { Draft = 1, Active = 2, Retired = 3 }
+
+/// <summary>The charge components of spec 5.3.</summary>
+public enum ChargeComponentKind
+{
+    DownPayment = 1, ConfirmationPayment = 2, MonthlyInstallment = 3, QuarterlyInstallment = 4, HalfYearlyInstallment = 5, AnnualInstallment = 6,
+    PossessionPayment = 7, DevelopmentCharges = 8, UtilityCharges = 9, GovernmentFees = 10, CustomCharge = 11
+}
+
+/// <summary>What a charge pays for. SaleConsideration components split the booking's total payable; the others are separate charges added to the agreement.</summary>
+public enum ChargeCategory { SaleConsideration = 1, DevelopmentCharges = 2, UtilityCharges = 3, GovernmentFees = 4, OtherCharges = 5 }
+
+/// <summary>Exclusive: tax is added on top of the amount; Inclusive: the amount already contains the tax (portion shown for information).</summary>
+public enum TaxTreatment { NotApplicable = 1, Exempt = 2, Inclusive = 3, Exclusive = 4 }
+
+/// <summary>OneTime: a single due date. Monthly..Annual: regular intervals. CustomDates: explicit dates (equal split, or explicit amounts = irregular schedule).</summary>
+public enum ScheduleFrequency { OneTime = 1, Monthly = 2, Quarterly = 3, HalfYearly = 4, Annual = 5, CustomDates = 6 }
+
+/// <summary>How a plan component's amount is determined when the plan is applied to an agreement.</summary>
+public enum AmountBasis { FixedAmount = 1, PercentOfPrice = 2, Remainder = 3 }
+
+public enum AgreementChargeStatus { Active = 1, Cancelled = 2 }
+
+public enum PaymentScheduleStatus { Active = 1, Superseded = 2, Cancelled = 3 }
+
+public enum ScheduleItemStatus { Pending = 1, PartiallyPaid = 2, Paid = 3, Waived = 4 }
+
+public enum LateFeeMethod { FixedOneTime = 1, PercentOneTime = 2, FixedPerDay = 3, PercentPerDay = 4, FixedPerMonth = 5, PercentPerMonth = 6 }
+
+public enum WaiverKind { Principal = 1, LateFee = 2 }
+
+public enum WaiverStatus { Pending = 1, Approved = 2, Rejected = 3, Cancelled = 4 }
+
+/// <summary>Operation recorded for each schedule line changed by an amendment.</summary>
+public enum ScheduleChangeOperation { Added = 1, Removed = 2, AmountChanged = 3, DueDateChanged = 4, GraceChanged = 5, Waived = 6, Settled = 7 }
+
+/// <summary>Where the amount removed from an installment goes (the total must still reconcile).</summary>
+public enum ReductionRedistribution { SpreadOverRemaining = 1, AddToLast = 2, NewInstallment = 3 }

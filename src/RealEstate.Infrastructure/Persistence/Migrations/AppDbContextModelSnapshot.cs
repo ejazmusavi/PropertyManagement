@@ -142,12 +142,14 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .HasColumnType("varchar(30)");
 
                     b.Property<string>("ApprovedBy")
-                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
-                    b.Property<Guid>("ApprovedByUserId")
+                    b.Property<Guid?>("ApprovedByUserId")
                         .HasColumnType("char(36)");
+
+                    b.Property<long?>("BaseScheduleId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasPrecision(6)
@@ -157,12 +159,24 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DecisionComments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
                     b.Property<string>("Details")
                         .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int>("FromVersionNo")
                         .HasColumnType("int");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
 
                     b.Property<DateTime?>("ModifiedAtUtc")
                         .HasPrecision(6)
@@ -172,20 +186,177 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
+                    b.Property<long?>("PendingAgreementId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)");
 
-                    b.Property<int>("ToVersionNo")
+                    b.Property<string>("RequestedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<Guid?>("RequestedByUserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<long?>("ResultScheduleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int?>("ToVersionNo")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BaseScheduleId");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("PendingAgreementId")
+                        .IsUnique();
+
+                    b.HasIndex("ResultScheduleId");
+
                     b.HasIndex("AgreementId", "ToVersionNo")
                         .IsUnique();
 
+                    b.HasIndex("Status", "AgreementId");
+
                     b.ToTable("AgreementAmendments", (string)null);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.AgreementCharge", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("AddedByAmendmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("AgreementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<long>("ChargeTypeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("CustomScheduleJson")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int?>("DueDayOfMonth")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("FirstDueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int>("GracePeriodDays")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("InstallmentAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long?>("LateFeeRuleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("MaxWaiverPercent")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<int?>("NumberOfInstallments")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<decimal?>("RoundingUnit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("SourcePlanComponentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("TaxRatePercent")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("TaxTreatment")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<bool>("WaiverAllowed")
+                        .HasColumnType("tinyint(1)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddedByAmendmentId");
+
+                    b.HasIndex("ChargeTypeId");
+
+                    b.HasIndex("LateFeeRuleId");
+
+                    b.HasIndex("SourcePlanComponentId");
+
+                    b.HasIndex("AgreementId", "Status", "SortOrder");
+
+                    b.ToTable("AgreementCharges", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AgreementCharges_Amount", "`Amount` > 0");
+                        });
                 });
 
             modelBuilder.Entity("RealEstate.Domain.Entities.AgreementDocument", b =>
@@ -963,6 +1134,73 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                     b.ToTable("BookingStatusHistories", (string)null);
                 });
 
+            modelBuilder.Entity("RealEstate.Domain.Entities.ChargeType", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("DefaultCategory")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("DefaultFrequency")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("ChargeTypes", (string)null);
+                });
+
             modelBuilder.Entity("RealEstate.Domain.Entities.Company", b =>
                 {
                     b.Property<int>("Id")
@@ -1260,6 +1498,9 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .HasPrecision(6)
                         .HasColumnType("datetime(6)");
 
+                    b.Property<long?>("InstallmentPlanId")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime?>("ModifiedAtUtc")
                         .HasPrecision(6)
                         .HasColumnType("datetime(6)");
@@ -1273,6 +1514,9 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp(6)");
 
+                    b.Property<DateOnly?>("ScheduleStartDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1285,6 +1529,8 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("BookingId")
                         .IsUnique();
+
+                    b.HasIndex("InstallmentPlanId");
 
                     b.ToTable("CustomerAgreements", (string)null);
                 });
@@ -1723,6 +1969,230 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("RealEstate.Domain.Entities.InstallmentPlan", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("ActivatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ActivatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<Guid?>("ActivatedByUserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<long?>("CustomerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("PlanType")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("varchar(25)");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("PropertyCategoryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("PropertyId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("RetireReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime?>("RetiredAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("RetiredBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("PropertyCategoryId");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("ProjectId", "Code")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId", "Status", "PlanType");
+
+                    b.ToTable("InstallmentPlans", (string)null);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.InstallmentPlanComponent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("AmountBasis")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<long>("ChargeTypeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("CustomScheduleJson")
+                        .HasColumnType("longtext");
+
+                    b.Property<int?>("DueDayOfMonth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FirstDueOffsetDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FirstDueOffsetMonths")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int>("GracePeriodDays")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("InstallmentAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long?>("LateFeeRuleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("MaxWaiverPercent")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int?>("NumberOfInstallments")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Percent")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<long>("PlanId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<decimal?>("RoundingUnit")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TaxRatePercent")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("TaxTreatment")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<bool>("WaiverAllowed")
+                        .HasColumnType("tinyint(1)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChargeTypeId");
+
+                    b.HasIndex("LateFeeRuleId");
+
+                    b.HasIndex("PlanId", "SortOrder");
+
+                    b.ToTable("InstallmentPlanComponents", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_InstallmentPlanComponents_Amount", "`Amount` IS NULL OR `Amount` > 0");
+
+                            t.HasCheckConstraint("CK_InstallmentPlanComponents_Percent", "`Percent` IS NULL OR (`Percent` > 0 AND `Percent` <= 100)");
+                        });
+                });
+
             modelBuilder.Entity("RealEstate.Domain.Entities.LandAcquisition", b =>
                 {
                     b.Property<long>("Id")
@@ -2108,6 +2578,257 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("LandParcels", (string)null);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.LateFeeRule", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<decimal?>("MaxAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MaxPercentOfInstallment")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("varchar(25)");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<long?>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("LateFeeRules", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_LateFeeRules_MaxAmount", "`MaxAmount` IS NULL OR `MaxAmount` > 0");
+
+                            t.HasCheckConstraint("CK_LateFeeRules_MaxPercent", "`MaxPercentOfInstallment` IS NULL OR (`MaxPercentOfInstallment` > 0 AND `MaxPercentOfInstallment` <= 100)");
+
+                            t.HasCheckConstraint("CK_LateFeeRules_Value", "`Value` > 0");
+                        });
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.PaymentSchedule", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ActiveAgreementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("AgreementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<DateTime>("GeneratedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("GeneratedBy")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<int>("ItemCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<long?>("SourceAmendmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime?>("SupersededAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalTax")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActiveAgreementId")
+                        .IsUnique();
+
+                    b.HasIndex("SourceAmendmentId");
+
+                    b.HasIndex("AgreementId", "VersionNo")
+                        .IsUnique();
+
+                    b.ToTable("PaymentSchedules", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PaymentSchedules_Total", "`TotalAmount` > 0");
+                        });
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.PaymentScheduleItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AgreementChargeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AmountPaid")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AmountWaived")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("GraceEndDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("InstallmentCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("InstallmentNo")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsPartial")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateOnly?>("LastPaymentDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("LateFeeWaived")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("PreviousItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ScheduleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgreementChargeId");
+
+                    b.HasIndex("PreviousItemId");
+
+                    b.HasIndex("DueDate", "Status");
+
+                    b.HasIndex("ScheduleId", "LineNo")
+                        .IsUnique();
+
+                    b.ToTable("PaymentScheduleItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PaymentScheduleItems_Amount", "`Amount` > 0");
+
+                            t.HasCheckConstraint("CK_PaymentScheduleItems_Settlement", "`AmountPaid` >= 0 AND `AmountWaived` >= 0 AND `LateFeeWaived` >= 0 AND `AmountPaid` + `AmountWaived` <= `Amount`");
+                        });
                 });
 
             modelBuilder.Entity("RealEstate.Domain.Entities.Permission", b =>
@@ -3858,6 +4579,70 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                     b.ToTable("RolePermissions", (string)null);
                 });
 
+            modelBuilder.Entity("RealEstate.Domain.Entities.ScheduleAmendment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("AgreementChargeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("AmendmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("FromItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("FromScheduleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("NewAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly?>("NewDueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<decimal?>("OldAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly?>("OldDueDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<long?>("ToItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ToScheduleId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgreementChargeId");
+
+                    b.HasIndex("AmendmentId");
+
+                    b.HasIndex("FromItemId");
+
+                    b.HasIndex("FromScheduleId");
+
+                    b.HasIndex("ToItemId");
+
+                    b.HasIndex("ToScheduleId");
+
+                    b.ToTable("ScheduleAmendments", (string)null);
+                });
+
             modelBuilder.Entity("RealEstate.Domain.Entities.UserProject", b =>
                 {
                     b.Property<long>("Id")
@@ -3899,6 +4684,95 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("UserProjects", (string)null);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.Waiver", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AgreementChargeId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("AgreementId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("AmendmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<DateTime?>("DecidedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("DecisionComments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime?>("ModifiedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<string>("RequestedBy")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<long>("ScheduleItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgreementChargeId");
+
+                    b.HasIndex("AgreementId");
+
+                    b.HasIndex("AmendmentId");
+
+                    b.HasIndex("ScheduleItemId");
+
+                    b.HasIndex("Status", "AgreementId");
+
+                    b.ToTable("Waivers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Waivers_Amount", "`Amount` > 0");
+                        });
                 });
 
             modelBuilder.Entity("RealEstate.Infrastructure.Identity.ApplicationRole", b =>
@@ -4078,6 +4952,48 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .HasForeignKey("AgreementId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentSchedule", null)
+                        .WithMany()
+                        .HasForeignKey("BaseScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentSchedule", null)
+                        .WithMany()
+                        .HasForeignKey("ResultScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.AgreementCharge", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.AgreementAmendment", null)
+                        .WithMany()
+                        .HasForeignKey("AddedByAmendmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.CustomerAgreement", null)
+                        .WithMany()
+                        .HasForeignKey("AgreementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.ChargeType", "ChargeType")
+                        .WithMany()
+                        .HasForeignKey("ChargeTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.LateFeeRule", null)
+                        .WithMany()
+                        .HasForeignKey("LateFeeRuleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.InstallmentPlanComponent", null)
+                        .WithMany()
+                        .HasForeignKey("SourcePlanComponentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ChargeType");
                 });
 
             modelBuilder.Entity("RealEstate.Domain.Entities.AgreementDocument", b =>
@@ -4204,6 +5120,11 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RealEstate.Domain.Entities.CustomerAgreement", "BookingId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.InstallmentPlan", null)
+                        .WithMany()
+                        .HasForeignKey("InstallmentPlanId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("RealEstate.Domain.Entities.CustomerContact", b =>
@@ -4308,6 +5229,52 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("RealEstate.Domain.Entities.InstallmentPlan", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.PropertyCategory", null)
+                        .WithMany()
+                        .HasForeignKey("PropertyCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.Property", null)
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.InstallmentPlanComponent", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.ChargeType", "ChargeType")
+                        .WithMany()
+                        .HasForeignKey("ChargeTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.LateFeeRule", null)
+                        .WithMany()
+                        .HasForeignKey("LateFeeRuleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.InstallmentPlan", null)
+                        .WithMany("Components")
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChargeType");
+                });
+
             modelBuilder.Entity("RealEstate.Domain.Entities.LandAcquisition", b =>
                 {
                     b.HasOne("RealEstate.Domain.Entities.LandParcel", "Parcel")
@@ -4386,6 +5353,48 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                     b.HasOne("RealEstate.Domain.Entities.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.LateFeeRule", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.PaymentSchedule", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.CustomerAgreement", null)
+                        .WithMany()
+                        .HasForeignKey("AgreementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.AgreementAmendment", null)
+                        .WithMany()
+                        .HasForeignKey("SourceAmendmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.PaymentScheduleItem", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.AgreementCharge", null)
+                        .WithMany()
+                        .HasForeignKey("AgreementChargeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentScheduleItem", null)
+                        .WithMany()
+                        .HasForeignKey("PreviousItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentSchedule", null)
+                        .WithMany("Items")
+                        .HasForeignKey("ScheduleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -4706,6 +5715,42 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                     b.Navigation("Permission");
                 });
 
+            modelBuilder.Entity("RealEstate.Domain.Entities.ScheduleAmendment", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.AgreementCharge", null)
+                        .WithMany()
+                        .HasForeignKey("AgreementChargeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.AgreementAmendment", null)
+                        .WithMany()
+                        .HasForeignKey("AmendmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentScheduleItem", null)
+                        .WithMany()
+                        .HasForeignKey("FromItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentSchedule", null)
+                        .WithMany()
+                        .HasForeignKey("FromScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentScheduleItem", null)
+                        .WithMany()
+                        .HasForeignKey("ToItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentSchedule", null)
+                        .WithMany()
+                        .HasForeignKey("ToScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("RealEstate.Domain.Entities.UserProject", b =>
                 {
                     b.HasOne("RealEstate.Domain.Entities.Project", null)
@@ -4717,6 +5762,33 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
                     b.HasOne("RealEstate.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.Waiver", b =>
+                {
+                    b.HasOne("RealEstate.Domain.Entities.AgreementCharge", null)
+                        .WithMany()
+                        .HasForeignKey("AgreementChargeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.CustomerAgreement", null)
+                        .WithMany()
+                        .HasForeignKey("AgreementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.AgreementAmendment", null)
+                        .WithMany()
+                        .HasForeignKey("AmendmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("RealEstate.Domain.Entities.PaymentScheduleItem", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduleItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -4747,6 +5819,16 @@ namespace RealEstate.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("RealEstate.Domain.Entities.CustomerAgreement", b =>
                 {
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.InstallmentPlan", b =>
+                {
+                    b.Navigation("Components");
+                });
+
+            modelBuilder.Entity("RealEstate.Domain.Entities.PaymentSchedule", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("RealEstate.Domain.Entities.PricingRule", b =>

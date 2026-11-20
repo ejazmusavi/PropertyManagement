@@ -1,0 +1,3 @@
+@model RealEstate.Domain.Enums.InstallmentPlanStatus
+@{ var cls = Model switch { RealEstate.Domain.Enums.InstallmentPlanStatus.Draft => "text-bg-secondary", RealEstate.Domain.Enums.InstallmentPlanStatus.Active => "text-bg-success", _ => "text-bg-dark" }; }
+<span class="badge @cls">@Model</span>

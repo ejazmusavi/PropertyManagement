@@ -153,6 +153,10 @@ public class CustomerAgreement : AuditableEntity<long>
     public DateTime GeneratedAtUtc { get; set; }
     public DateTime? CancelledAtUtc { get; set; }
     public string? CancelReason { get; set; }
+    /// <summary>Phase 5: the installment plan template last applied to build the agreement charges.</summary>
+    public long? InstallmentPlanId { get; set; }
+    /// <summary>Phase 5: start date used to resolve plan offsets.</summary>
+    public DateOnly? ScheduleStartDate { get; set; }
     public byte[] RowVersion { get; set; } = [];
     public List<AgreementVersion> Versions { get; set; } = [];
 }
@@ -173,15 +177,32 @@ public class AgreementDocument : StoredDocument
     public AgreementDocumentType DocumentType { get; set; }
 }
 
+/// <summary>
+/// An amendment of an agreement. Phase 4 transfers are recorded already Approved. Phase 5 schedule amendments are requested (Pending) and
+/// applied only when a different user approves them; rejected and cancelled requests are kept.
+/// </summary>
 public class AgreementAmendment : AuditableEntity<long>
 {
     public long AgreementId { get; set; }
     public AmendmentType AmendmentType { get; set; }
+    public AmendmentStatus Status { get; set; } = AmendmentStatus.Approved;
     public int FromVersionNo { get; set; }
-    public int ToVersionNo { get; set; }
+    /// <summary>Agreement version created when the amendment was applied (null while pending / when rejected).</summary>
+    public int? ToVersionNo { get; set; }
     public string Reason { get; set; } = default!;
-    /// <summary>JSON with the previous and the new owners and shares.</summary>
+    /// <summary>Phase 4: JSON with the previous and new owners. Phase 5: JSON of the requested change.</summary>
     public string Details { get; set; } = default!;
-    public Guid ApprovedByUserId { get; set; }
-    public string ApprovedBy { get; set; } = default!;
+    public Guid? ApprovedByUserId { get; set; }
+    public string? ApprovedBy { get; set; }
+    public Guid? RequestedByUserId { get; set; }
+    public string? RequestedBy { get; set; }
+    public DateTime? DecidedAtUtc { get; set; }
+    public string? DecisionComments { get; set; }
+    /// <summary>Active schedule the request was based on; approval fails if the schedule changed since.</summary>
+    public long? BaseScheduleId { get; set; }
+    public long? ResultScheduleId { get; set; }
+    /// <summary>Equals AgreementId while Pending, null otherwise. Unique: one pending amendment per agreement.</summary>
+    public long? PendingAgreementId { get; set; }
+    public string? IdempotencyKey { get; set; }
+    public byte[] RowVersion { get; set; } = [];
 }

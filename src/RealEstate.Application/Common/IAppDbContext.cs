@@ -61,6 +61,15 @@ public interface IAppDbContext
     DbSet<AgreementVersion> AgreementVersions { get; }
     DbSet<AgreementDocument> AgreementDocuments { get; }
     DbSet<AgreementAmendment> AgreementAmendments { get; }
+    DbSet<ChargeType> ChargeTypes { get; }
+    DbSet<LateFeeRule> LateFeeRules { get; }
+    DbSet<InstallmentPlan> InstallmentPlans { get; }
+    DbSet<InstallmentPlanComponent> InstallmentPlanComponents { get; }
+    DbSet<AgreementCharge> AgreementCharges { get; }
+    DbSet<PaymentSchedule> PaymentSchedules { get; }
+    DbSet<PaymentScheduleItem> PaymentScheduleItems { get; }
+    DbSet<ScheduleAmendment> ScheduleAmendments { get; }
+    DbSet<Waiver> Waivers { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

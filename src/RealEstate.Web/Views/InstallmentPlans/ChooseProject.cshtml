@@ -1,0 +1,10 @@
+@model IReadOnlyList<RealEstate.Application.Projects.ProjectListItemDto>
+@{ ViewData["Title"] = "New installment plan"; }
+<h1 class="h3 mb-1">New installment plan</h1>
+<p class="text-muted">Select the project the plan belongs to.</p>
+@if (Model.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No projects are available to you.</p></div> }
+else
+{
+    <div class="list-group">@foreach (var p in Model) { <a class="list-group-item list-group-item-action" asp-action="Create" asp-route-projectId="@p.Id">@p.ProjectCode – @p.ProjectName <span class="text-muted small">@p.City</span></a> }</div>
+}
+<a class="btn btn-outline-secondary mt-3" asp-action="Index">Back to plans</a>

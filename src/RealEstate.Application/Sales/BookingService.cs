@@ -5,6 +5,7 @@ using RealEstate.Application.Audit;
 using RealEstate.Application.Common;
 using RealEstate.Application.Customers;
 using RealEstate.Application.Documents;
+using RealEstate.Application.Installments;
 using RealEstate.Application.Pricing;
 using RealEstate.Domain.Common;
 using RealEstate.Domain.Entities;
@@ -385,6 +386,15 @@ public class BookingService(
             var ag = await db.CustomerAgreements.FirstOrDefaultAsync(a => a.BookingId == id, ct);
             if (ag is { Status: AgreementStatus.Active }) { ag.Status = AgreementStatus.Cancelled; ag.CancelledAtUtc = now; ag.CancelReason = reason; }
             foreach (var o in await db.CustomerOwnerships.Where(o => o.BookingId == id && o.IsActive).ToListAsync(ct)) o.Close(now, $"Booking cancelled: {reason}");
+            if (ag is not null)
+            {
+                // Phase 5: the schedule stops (kept as Cancelled, never deleted) and open amendment/waiver requests lapse.
+                foreach (var s in await db.PaymentSchedules.Where(s => s.ActiveAgreementId == ag.Id).ToListAsync(ct)) s.Supersede(now, PaymentScheduleStatus.Cancelled);
+                foreach (var a in await db.AgreementAmendments.Where(a => a.PendingAgreementId == ag.Id).ToListAsync(ct))
+                { a.Status = AmendmentStatus.Cancelled; a.PendingAgreementId = null; a.DecidedAtUtc = now; a.DecisionComments = $"Agreement cancelled: {reason}"; }
+                foreach (var w in await db.Waivers.Where(w => w.AgreementId == ag.Id && w.Status == WaiverStatus.Pending).ToListAsync(ct))
+                { w.Status = WaiverStatus.Cancelled; w.DecidedAtUtc = now; w.DecisionComments = $"Agreement cancelled: {reason}"; }
+            }
         }
         await ReleasePropertiesAsync(b, $"Booking cancelled: {reason}", now, userId, ct);
         if (r.RefundAmount is { } refund)
@@ -490,8 +500,8 @@ public class BookingService(
         var booking = await db.Bookings.AsNoTracking().Include(x => x.Customers).Include(x => x.Properties).ThenInclude(p => p.PricingSnapshot).Include(x => x.Charges).FirstAsync(x => x.Id == bookingId, ct);
         var latest = ag.Versions.First(x => x.VersionNo == ag.CurrentVersionNo);
         var receipt = AgreementText.BuildReceipt(await BuildAgreementDataAsync(booking, ag, ag.CurrentVersionNo, latest.Reason, ag.GeneratedAtUtc, ct));
-        var amendments = await db.AgreementAmendments.AsNoTracking().Where(a => a.AgreementId == ag.Id).OrderBy(a => a.ToVersionNo)
-            .Select(a => new AgreementAmendmentDto(a.AmendmentType, a.FromVersionNo, a.ToVersionNo, a.Reason, a.Details, a.ApprovedBy, a.CreatedAtUtc)).ToListAsync(ct);
+        var amendments = await db.AgreementAmendments.AsNoTracking().Where(a => a.AgreementId == ag.Id && a.Status == AmendmentStatus.Approved && a.ToVersionNo != null).OrderBy(a => a.ToVersionNo)
+            .Select(a => new AgreementAmendmentDto(a.AmendmentType, a.FromVersionNo, a.ToVersionNo!.Value, a.Reason, a.Details, a.ApprovedBy ?? "", a.DecidedAtUtc ?? a.CreatedAtUtc)).ToListAsync(ct);
         var docs = await db.AgreementDocuments.AsNoTracking().Where(d => d.AgreementId == ag.Id && !d.IsDeleted).OrderByDescending(d => d.CreatedAtUtc)
             .Select(d => new AgreementDocumentDto(d.Id, d.Title, d.FileName, d.DocumentType.ToString(), d.ContentType, d.SizeBytes, d.CreatedAtUtc, d.CreatedBy)).ToListAsync(ct);
         return new AgreementDto(ag.Id, ag.AgreementNumber, bookingId, booking.BookingNumber, ag.Status, ag.CurrentVersionNo, ag.GeneratedAtUtc, ag.CancelReason, viewing, v.Content,
@@ -591,9 +601,26 @@ public class BookingService(
         var lines = b.Properties.OrderBy(p => p.Id).Select(p => new AgreementLine(props[p.PropertyId].PropertyCode, props[p.PropertyId].PropertyNumber, p.PricingSnapshot!.Size, p.PricingSnapshot.Unit,
             p.PricingSnapshot.FinalPrice, p.ExtraDiscount, p.LinePrice, p.PricingSnapshot.SnapshotHash)).ToList();
         var auth = b.BalanceAuthorizedBy is null ? null : $"{b.BalanceAuthorizedBy} - {b.BalanceAuthorizationReason}";
+        var (scheduleVersion, schedule, extra) = ag.Id == 0 ? (null, null, null) : await InstallmentSupport.AgreementScheduleTextAsync(db, ag.Id, ct);
         return new AgreementData(company?.Name ?? "Company", ag.AgreementNumber, versionNo, reason, generatedAtUtc, b.BookingNumber, b.BookingDate, project.ProjectCode, project.ProjectName, b.PaymentMode,
-            company?.CurrencySymbol ?? "Rs", owners, lines, b.Charges.OrderBy(c => c.Id).Select(c => new AgreementCharge($"{c.ChargeType}: {c.Description}", c.Amount)).ToList(),
-            b.TotalPrice, b.TotalExtraDiscount, b.TotalCharges, b.TotalPayable, b.BookingAmount, auth);
+            company?.CurrencySymbol ?? "Rs", owners, lines, b.Charges.OrderBy(c => c.Id).Select(c => new AgreementChargeLine($"{c.ChargeType}: {c.Description}", c.Amount)).ToList(),
+            b.TotalPrice, b.TotalExtraDiscount, b.TotalCharges, b.TotalPayable, b.BookingAmount, auth, scheduleVersion, schedule, extra);
+    }
+
+    /// <summary>
+    /// Phase 5: adds agreement version N+1 reflecting the current state (including the active payment schedule, which must already be saved).
+    /// The caller saves and commits inside its own transaction.
+    /// </summary>
+    public async Task<AgreementVersion> AddAgreementVersionAsync(CustomerAgreement ag, string reason, DateTime nowUtc, CancellationToken ct = default)
+    {
+        var b = await db.Bookings.AsNoTracking().Include(x => x.Customers).Include(x => x.Properties).ThenInclude(p => p.PricingSnapshot).Include(x => x.Charges).FirstAsync(x => x.Id == ag.BookingId, ct);
+        var next = ag.CurrentVersionNo + 1;
+        var trimmed = reason.Length > 1000 ? reason[..1000] : reason;
+        var content = AgreementText.BuildAgreement(await BuildAgreementDataAsync(b, ag, next, trimmed, nowUtc, ct));
+        var v = new AgreementVersion { AgreementId = ag.Id, VersionNo = next, Content = content, ContentSha256 = AgreementText.Sha256(content), Reason = trimmed };
+        db.AgreementVersions.Add(v);
+        ag.CurrentVersionNo = next;
+        return v;
     }
 
     private async Task SaveAsync(CancellationToken ct)

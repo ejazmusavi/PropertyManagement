@@ -1,0 +1,37 @@
+@model LateFeeListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Late fee rules"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Rules;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["isActive"] = f.IsActive?.ToString().ToLowerInvariant() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Late fee rules</h1>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" asp-action="Calculator">Late fee calculator</a>
+        <a class="btn btn-outline-secondary" asp-controller="InstallmentPlans" asp-action="Index">Plans</a>
+        @if (Ui.Has("installments.manage")) { <a class="btn btn-primary" asp-action="Create">New rule</a> }
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-4"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Code or name" aria-label="Search rules" /></div>
+    <div class="col-6 col-lg-3"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-3"><select name="isActive" class="form-select" aria-label="Status"><option value="">Active and inactive</option><option value="true" selected="@(f.IsActive == true)">Active</option><option value="false" selected="@(f.IsActive == false)">Inactive</option></select></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No late fee rules found@(Ui.Has("installments.manage") ? ". Create the first rule to get started." : ".")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Code</th><th>Name</th><th>Scope</th><th>Method</th><th class="text-end">Value</th><th class="text-end">Caps</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Code">@x.Code</td><td data-label="Name">@x.Name</td><td data-label="Scope">@(x.ProjectCode ?? "All projects")</td><td data-label="Method">@x.Method.Label()</td><td data-label="Value" class="text-end">@x.Value.ToString("0.####")@(x.Method is RealEstate.Domain.Enums.LateFeeMethod.PercentOneTime or RealEstate.Domain.Enums.LateFeeMethod.PercentPerDay or RealEstate.Domain.Enums.LateFeeMethod.PercentPerMonth ? "%" : "")</td>
+                <td data-label="Caps" class="text-end">@(x.MaxAmount is { } ma ? "max " + ma.ToString("N2") : "")@(x.MaxPercentOfInstallment is { } mp ? (x.MaxAmount is null ? "" : " / ") + mp.ToString("0.##") + "% of installment" : "")@(x.MaxAmount is null && x.MaxPercentOfInstallment is null ? "-" : "")</td>
+                <td data-label="Status"><span class="badge @(x.IsActive ? "text-bg-success" : "text-bg-secondary")">@(x.IsActive ? "Active" : "Inactive")</span>@if (x.IsInUse) { <span class="badge text-bg-info ms-1">In use</span> }</td>
+                <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-secondary" asp-action="Calculator" asp-route-ruleId="@x.Id">Calculate</a>@if (Ui.Has("installments.manage")) { <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@x.Id">Edit</a> }</td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "rules", route, "page")' />
+}

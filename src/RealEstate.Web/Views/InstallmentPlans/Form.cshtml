@@ -1,0 +1,29 @@
+@model PlanFormViewModel
+@using RealEstate.Domain.Enums
+@{ var edit = Model.Id is not null; bool Show(string types) => !edit || types.Split(',').Contains(Model.PlanType.ToString()); ViewData["Title"] = edit ? "Edit plan " + Model.Code : "New installment plan"; }
+<h1 class="h3 mb-1">@ViewData["Title"]</h1>
+<p class="text-muted">@Model.ProjectName</p>
+<form asp-action="@(edit ? "Edit" : "Create")" asp-route-id="@Model.Id" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="ProjectId" /><input type="hidden" asp-for="RowVersion" />
+    @if (edit) { <input type="hidden" asp-for="PlanType" /><input type="hidden" asp-for="Code" /> }
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Code" class="form-label"></label>@if (edit) { <input class="form-control" value="@Model.Code" disabled /> } else { <input asp-for="Code" class="form-control" maxlength="40" /> }<span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" maxlength="200" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="PlanType" class="form-label"></label>
+            @if (edit) { <input class="form-control" value="@Model.PlanType.Label()" disabled /> } else { <select asp-for="PlanType" class="form-select plan-type-select" asp-items="EnumText.Options<InstallmentPlanType>()"></select> }</div>
+        @if (Show("PropertyCategory")) {
+        <div class="col-12 col-lg-4" data-show-when-plan="PropertyCategory"><label asp-for="PropertyCategoryId" class="form-label"></label>
+            <select asp-for="PropertyCategoryId" class="form-select"><option value="">- Select -</option>@foreach (var c in Model.Categories) { <option value="@c.Id" selected="@(Model.PropertyCategoryId == c.Id)">@c.Name</option> }</select></div> }
+        @if (Show("PropertySpecific,CustomerSpecific")) {
+        <div class="col-12 col-lg-4" data-show-when-plan="PropertySpecific,CustomerSpecific"><label asp-for="PropertyId" class="form-label"></label>
+            <select asp-for="PropertyId" class="form-select"><option value="">- Select -</option>@foreach (var x in Model.Properties) { <option value="@x.Id" selected="@(Model.PropertyId == x.Id)">@x.PropertyCode (@x.PropertyNumber)</option> }</select></div> }
+        @if (Show("CustomerSpecific")) {
+        <div class="col-12 col-lg-4" data-show-when-plan="CustomerSpecific"><label class="form-label">Customer</label><partial name="_CustomerPicker" model='("CustomerId", Model.CustomerId, Model.CustomerLabel, "CustomerLabel")' /><div class="form-text">Customer-specific plans are activated by a different user with the approval permission.</div></div> }
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="2" maxlength="1000"></textarea></div>
+    </div></div></div>
+    @if (!edit) { <p class="text-muted small">The plan is created as a draft. Add its components on the next page and activate it when it is ready.</p> }
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>@(edit ? "Save changes" : "Create plan")</button>
+        @if (edit) { <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.Id">Cancel</a> } else { <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a> }</div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/installments.js" asp-append-version="true"></script> }

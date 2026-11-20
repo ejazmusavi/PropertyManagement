@@ -1,0 +1,65 @@
+@model AgreementDetailsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var a = Model.Agreement; var s = a.CurrencySymbol; ViewData["Title"] = "Installments " + a.AgreementNumber; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Agreement @a.AgreementNumber <span class="badge @(a.Status == AgreementStatus.Active ? "text-bg-success" : "text-bg-dark")">@a.Status.Label()</span></h1>
+        <div class="text-muted">Booking @a.BookingNumber &middot; @a.ProjectCode – @a.ProjectName &middot; @a.PaymentMode.Label() &middot; agreement version @a.CurrentVersionNo</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (!a.ScheduleGenerated && Ui.Has("installments.schedule")) { <a class="btn btn-primary" asp-action="Builder" asp-route-id="@a.AgreementId">Build schedule</a> }
+        @if (a.ScheduleGenerated || Ui.Has("installments.schedule")) { <a class="btn btn-outline-primary" asp-action="Preview" asp-route-id="@a.AgreementId">Schedule preview</a> }
+        @if (a.ScheduleGenerated && Ui.Has("agreements.amend") && a.PendingAmendmentId is null) { <a class="btn btn-outline-primary" asp-controller="AgreementAmendments" asp-action="Create" asp-route-id="@a.AgreementId">Request amendment</a> }
+        <a class="btn btn-outline-secondary" asp-action="History" asp-route-id="@a.AgreementId">Schedule history</a>
+        <a class="btn btn-outline-secondary" asp-controller="Bookings" asp-action="Details" asp-route-id="@a.BookingId">Booking</a>
+        <a class="btn btn-outline-secondary" asp-controller="Bookings" asp-action="Agreement" asp-route-id="@a.BookingId">Agreement document</a>
+    </div>
+</div>
+@if (a.PendingAmendmentId is { } pid)
+{
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">An amendment is waiting for approval; no other amendment can be requested until it is decided.
+        <a class="btn btn-sm btn-outline-dark" asp-controller="AgreementAmendments" asp-action="Details" asp-route-id="@a.AgreementId" asp-route-amendmentId="@pid">View amendment</a></div>
+}
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Parties and properties</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Customers</dt><dd class="col-sm-8">@a.Customers</dd>
+        <dt class="col-sm-4">Properties</dt><dd class="col-sm-8">@a.Properties</dd>
+        <dt class="col-sm-4">Booking date</dt><dd class="col-sm-8">@a.BookingDate.ToString("yyyy-MM-dd")</dd>
+        <dt class="col-sm-4">Plan</dt><dd class="col-sm-8">@(a.PlanId is { } planId ? Html.Raw($"<a href=\"{Url.Action("Details", "InstallmentPlans", new { id = planId })}\">{System.Net.WebUtility.HtmlEncode(a.PlanName)}</a>") : Html.Raw("None (manual charges)"))</dd>
+        <dt class="col-sm-4">Start date</dt><dd class="col-sm-8">@(a.ScheduleStartDate?.ToString("yyyy-MM-dd") ?? "-")</dd>
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Totals</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-6">Total payable (booking)</dt><dd class="col-sm-6 text-end">@s @a.TotalPayable.ToString("N2")</dd>
+        <dt class="col-sm-6">Due at booking</dt><dd class="col-sm-6 text-end">@s @a.BookingAmount.ToString("N2")</dd>
+        <dt class="col-sm-6">Sale consideration charges</dt><dd class="col-sm-6 text-end">@s @a.SaleConsiderationTotal.ToString("N2")</dd>
+        <dt class="col-sm-6">Additional charges</dt><dd class="col-sm-6 text-end">@s @a.AdditionalChargesTotal.ToString("N2")</dd>
+        <dt class="col-sm-6">All charges</dt><dd class="col-sm-6 text-end fw-semibold">@s @a.ChargesTotal.ToString("N2")</dd>
+        <dt class="col-sm-6">Price difference</dt><dd class="col-sm-6 text-end @(a.PriceDifference == 0 ? "text-success" : "text-danger")">@s @a.PriceDifference.ToString("N2")</dd>
+    </dl></div></div></div>
+</div>
+
+<div class="card mb-3"><div class="card-header fw-semibold">Charges (@a.Charges.Count)</div>
+@if (a.Charges.Count == 0) { <div class="card-body text-muted">No charges yet.@(Ui.Has("installments.schedule") && a.CanEditCharges ? " Open the schedule builder to apply a plan or add charges." : "")</div> }
+else
+{
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>#</th><th>Charge</th><th>Category</th><th class="text-end">Amount</th><th>Frequency</th><th>First due</th><th>Late fee / grace</th><th>Status</th></tr></thead><tbody>
+    @foreach (var c in a.Charges)
+    {
+        <tr><td data-label="#">@c.SortOrder</td><td data-label="Charge">@c.Description</td><td data-label="Category">@c.Category.Label()</td><td data-label="Amount" class="text-end">@c.Amount.ToString("N2")</td>
+            <td data-label="Frequency">@c.Frequency.Label()@(c.NumberOfInstallments is { } n ? " x " + n : "")</td><td data-label="First due">@c.FirstDueDate.ToString("yyyy-MM-dd")</td>
+            <td data-label="Late fee / grace">@(c.LateFeeRuleName ?? "None") / @c.GracePeriodDays d</td><td data-label="Status">@c.Status.Label()@(c.AddedByAmendmentId is not null ? " (amendment)" : "")</td></tr>
+    }</tbody></table></div>
+}</div>
+
+<div class="card mb-3"><div class="card-header fw-semibold">Active schedule</div>
+@if (a.ActiveSchedule is { } sc)
+{
+    <div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-3">Version</dt><dd class="col-sm-9">@sc.VersionNo – @sc.Reason (generated @sc.GeneratedAtUtc.ToString("yyyy-MM-dd HH:mm") by @sc.GeneratedBy)</dd>
+        <dt class="col-sm-3">Installments</dt><dd class="col-sm-9">@sc.ItemCount</dd>
+        <dt class="col-sm-3">Total</dt><dd class="col-sm-9">@s @sc.TotalAmount.ToString("N2") (tax @sc.TotalTax.ToString("N2"))</dd>
+        <dt class="col-sm-3">Outstanding</dt><dd class="col-sm-9">@s @sc.Outstanding.ToString("N2")</dd>
+        <dt class="col-sm-3">Next due</dt><dd class="col-sm-9">@(sc.NextDueDate?.ToString("yyyy-MM-dd") ?? "-")@(sc.NextDueAmount is { } nd ? " (" + s + " " + nd.ToString("N2") + ")" : "")</dd>
+    </dl></div>
+    @if (Model.Schedule is { } sch) { <partial name="_ScheduleTable" model="(sch.Items, s)" /> }
+}
+else { <div class="card-body text-muted">No schedule has been generated yet.</div> }</div>

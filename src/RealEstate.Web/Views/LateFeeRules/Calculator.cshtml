@@ -1,0 +1,23 @@
+@model LateFeeCalculatorViewModel
+@{ ViewData["Title"] = "Late fee calculator"; var inv = System.Globalization.CultureInfo.InvariantCulture; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h1 class="h3 mb-0">Late fee calculator</h1><a class="btn btn-outline-secondary" asp-action="Index">Back to rules</a></div>
+<p class="text-muted">Shows the late fee a rule would charge for an overdue installment. Nothing is saved.</p>
+<form method="get" class="card card-body mb-3" data-loading-form>
+    <div class="row g-3">
+        <div class="col-12 col-lg-4"><label class="form-label" for="ruleId">Rule</label><select id="ruleId" name="ruleId" class="form-select" required><option value="">- Select -</option>@foreach (var r in Model.Rules) { <option value="@r.Id" selected="@(Model.RuleId == r.Id)">@r.Code – @r.Name (@r.Method.Label())</option> }</select></div>
+        <div class="col-12 col-lg-4"><label class="form-label" for="installmentAmount">Installment amount</label><input id="installmentAmount" name="installmentAmount" type="number" step="0.01" min="0" class="form-control" required value="@Model.InstallmentAmount?.ToString("0.##", inv)" /></div>
+        <div class="col-12 col-lg-4"><label class="form-label" for="outstanding">Outstanding amount</label><input id="outstanding" name="outstanding" type="number" step="0.01" min="0" class="form-control" value="@Model.Outstanding?.ToString("0.##", inv)" /><div class="form-text">Blank = the full installment amount.</div></div>
+        <div class="col-12 col-lg-4"><label class="form-label" for="graceEndDate">Grace period ends</label><input id="graceEndDate" name="graceEndDate" type="date" class="form-control" required value="@Model.GraceEndDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-12 col-lg-4"><label class="form-label" for="asOf">Calculate as of</label><input id="asOf" name="asOf" type="date" class="form-control" required value="@Model.AsOf?.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-12 col-lg-4 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Calculate</button></div>
+    </div>
+</form>
+@if (Model.Error is not null) { <div class="alert alert-danger" role="alert">@Model.Error</div> }
+@if (Model.Result is { } res)
+{
+    <div class="card"><div class="card-header fw-semibold">Result</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Late fee</dt><dd class="col-sm-8 fw-semibold">@res.LateFee.ToString("N2")</dd>
+        <dt class="col-sm-4">Overdue days</dt><dd class="col-sm-8">@res.OverdueDays</dd>
+        <dt class="col-sm-4">Started months</dt><dd class="col-sm-8">@res.StartedMonths</dd>
+    </dl></div></div>
+}

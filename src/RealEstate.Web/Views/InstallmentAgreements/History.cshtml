@@ -1,0 +1,75 @@
+@model HistoryViewModel
+@using RealEstate.Domain.Enums
+@{ var h = Model.History; var sc = Model.Schedule!; var s = Model.CurrencySymbol; ViewData["Title"] = "Schedule history " + h.AgreementNumber;
+   var changes = Model.Schedule is null ? [] : h.Changes.Where(c => c.ToScheduleVersion == sc.VersionNo || c.FromScheduleVersion == sc.VersionNo).ToList(); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Schedule history – @h.AgreementNumber</h1><div class="text-muted">Booking @h.BookingNumber</div></div>
+    <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@h.AgreementId">Agreement installments</a>
+</div>
+@if (h.Schedules.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No schedule has been generated for this agreement yet.</p></div> }
+else
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Versions</div>
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Version</th><th>Status</th><th>Reason</th><th class="text-end">Installments</th><th class="text-end">Total</th><th class="text-end">Outstanding</th><th>Generated</th><th>Superseded</th><th></th></tr></thead><tbody>
+    @foreach (var v in h.Schedules.OrderByDescending(x => x.VersionNo))
+    {
+        <tr class="@(v.VersionNo == sc.VersionNo ? "table-active" : "")"><td data-label="Version">@v.VersionNo</td><td data-label="Status">@v.Status.Label()</td><td data-label="Reason">@v.Reason</td><td data-label="Installments" class="text-end">@v.ItemCount</td>
+            <td data-label="Total" class="text-end">@s @v.TotalAmount.ToString("N2")</td><td data-label="Outstanding" class="text-end">@s @v.Outstanding.ToString("N2")</td>
+            <td data-label="Generated">@v.GeneratedAtUtc.ToString("yyyy-MM-dd HH:mm") by @v.GeneratedBy</td><td data-label="Superseded">@(v.SupersededAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+            <td class="text-end">@if (v.VersionNo == sc.VersionNo) { <span class="text-muted small">Showing</span> } else { <a class="btn btn-sm btn-outline-primary" asp-action="History" asp-route-id="@h.AgreementId" asp-route-version="@v.VersionNo">View lines</a> }</td></tr>
+    }</tbody></table></div></div>
+
+    <div class="card mb-3"><div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2"><span class="fw-semibold">Version @sc.VersionNo – lines (@sc.ItemCount)</span>
+        <form method="get" class="d-flex gap-2 align-items-center"><label class="form-label mb-0" for="version">Version</label>
+            <select id="version" name="version" class="form-select form-select-sm w-auto" onchange="this.form.submit()">@foreach (var v in h.Schedules.OrderByDescending(x => x.VersionNo)) { <option value="@v.VersionNo" selected="@(v.VersionNo == sc.VersionNo)">Version @v.VersionNo (@v.Status.Label())</option> }</select>
+            <noscript><button class="btn btn-sm btn-outline-primary" type="submit">Show</button></noscript></form></div>
+    <div class="card-body border-bottom"><dl class="row mb-0">
+        <dt class="col-sm-3">Reason</dt><dd class="col-sm-9">@sc.Reason</dd>
+        <dt class="col-sm-3">Totals</dt><dd class="col-sm-9">@s @sc.TotalAmount.ToString("N2") scheduled, @s @sc.TotalPaid.ToString("N2") paid, @s @sc.TotalWaived.ToString("N2") waived, @s @sc.TotalOutstanding.ToString("N2") outstanding</dd>
+        <dt class="col-sm-3">Integrity</dt><dd class="col-sm-9">@(sc.HashVerified ? "Content checksum verified" : "Checksum mismatch")@(sc.IsReconciled ? ", reconciled with the charges" : ", not reconciled")</dd>
+    </dl></div>
+    <partial name="_ScheduleTable" model="(sc.Items, s)" /></div>
+
+    <div class="card mb-3"><div class="card-header fw-semibold">Line changes for version @sc.VersionNo</div>
+    @if (changes.Count == 0) { <div class="card-body text-muted">No line changes are recorded for this version.</div> }
+    else
+    {
+        <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack"><thead><tr><th>Amendment</th><th>Operation</th><th>Charge</th><th>Old due</th><th>New due</th><th class="text-end">Old amount</th><th class="text-end">New amount</th><th>Note</th></tr></thead><tbody>
+        @foreach (var c in changes)
+        {
+            <tr><td data-label="Amendment"><a asp-controller="AgreementAmendments" asp-action="Details" asp-route-id="@h.AgreementId" asp-route-amendmentId="@c.AmendmentId">#@c.AmendmentId @c.AmendmentType</a></td><td data-label="Operation">@c.Operation.Label()</td><td data-label="Charge">@c.ChargeDescription</td>
+                <td data-label="Old due">@(c.OldDueDate?.ToString("yyyy-MM-dd") ?? "-")</td><td data-label="New due">@(c.NewDueDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                <td data-label="Old amount" class="text-end">@(c.OldAmount?.ToString("N2") ?? "-")</td><td data-label="New amount" class="text-end">@(c.NewAmount?.ToString("N2") ?? "-")</td><td data-label="Note">@c.Note</td></tr>
+        }</tbody></table></div>
+    }</div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Amendments</div>
+    @if (h.Amendments.Count == 0) { <div class="card-body text-muted">No amendments.</div> }
+    else
+    {
+        <ul class="list-group list-group-flush">@foreach (var m in h.Amendments)
+        {
+            <li class="list-group-item"><a asp-controller="AgreementAmendments" asp-action="Details" asp-route-id="@h.AgreementId" asp-route-amendmentId="@m.Id">@m.AmendmentType</a> <partial name="_AmendmentStatusBadge" model="m.Status" />
+                <div class="small text-muted">@m.Reason &middot; requested by @m.RequestedBy on @m.CreatedAtUtc.ToString("yyyy-MM-dd")@(m.ApprovedBy is not null ? " &middot; decided by " + m.ApprovedBy : "")@(m.BaseScheduleVersion is { } b ? $" &middot; schedule v{b}" : "")@(m.ResultScheduleVersion is { } r ? $" → v{r}" : "")</div></li>
+        }</ul>
+    }</div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Agreement versions</div>
+    @if (h.AgreementVersions.Count == 0) { <div class="card-body text-muted">No versions.</div> }
+    else
+    {
+        <ul class="list-group list-group-flush">@foreach (var v in h.AgreementVersions.OrderByDescending(v => v.VersionNo)) { <li class="list-group-item"><a asp-controller="Bookings" asp-action="Agreement" asp-route-id="@h.BookingId" asp-route-version="@v.VersionNo">Version @v.VersionNo</a><div class="small text-muted">@v.Reason &middot; @v.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") by @v.CreatedBy</div></li> }</ul>
+    }</div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Waivers</div>
+@if (h.Waivers.Count == 0) { <div class="card-body text-muted">No waivers.</div> }
+else
+{
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Installment</th><th>Kind</th><th class="text-end">Amount</th><th>Status</th><th>Requested by</th><th>Reason</th><th></th></tr></thead><tbody>
+    @foreach (var w in h.Waivers)
+    {
+        <tr><td data-label="Installment">@w.ItemDescription</td><td data-label="Kind">@w.Kind.Label()</td><td data-label="Amount" class="text-end">@s @w.Amount.ToString("N2")</td><td data-label="Status">@w.Status.Label()</td><td data-label="Requested by">@w.RequestedBy</td><td data-label="Reason">@w.Reason</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-controller="AgreementAmendments" asp-action="Details" asp-route-id="@h.AgreementId" asp-route-amendmentId="@w.AmendmentId">Amendment</a></td></tr>
+    }</tbody></table></div>
+}</div>

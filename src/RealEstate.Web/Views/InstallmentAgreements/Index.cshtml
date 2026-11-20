@@ -1,0 +1,40 @@
+@model AgreementListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Installment agreements"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Agreements;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["hasSchedule"] = f.HasSchedule?.ToString().ToLowerInvariant(), ["status"] = f.Status?.ToString(), ["paymentMode"] = f.PaymentMode?.ToString() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Installment agreements</h1>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" asp-controller="AgreementAmendments" asp-action="Pending">Pending amendments</a>
+        <a class="btn btn-outline-secondary" asp-controller="AgreementAmendments" asp-action="Waivers">Waivers</a>
+        <a class="btn btn-outline-secondary" asp-controller="InstallmentPlans" asp-action="Index">Plans</a>
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Agreement, booking or customer" aria-label="Search agreements" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="hasSchedule" class="form-select" aria-label="Schedule"><option value="">Any schedule state</option><option value="true" selected="@(f.HasSchedule == true)">Schedule generated</option><option value="false" selected="@(f.HasSchedule == false)">No schedule yet</option></select></div>
+    <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<AgreementStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="paymentMode" class="form-select" aria-label="Payment mode"><option value="">All payment modes</option>@foreach (var s in Enum.GetValues<PaymentMode>()) { <option value="@s" selected="@(f.PaymentMode == s)">@s.Label()</option> }</select></div>
+    <div class="col-12 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No agreements found. Agreements are created when a booking is approved.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Agreement</th><th>Booking</th><th>Project</th><th>Customer</th><th>Payment</th><th class="text-end">Total payable</th><th>Schedule</th><th class="text-end">Outstanding</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Agreement">@x.AgreementNumber</td><td data-label="Booking">@x.BookingNumber</td><td data-label="Project">@x.ProjectCode</td><td data-label="Customer">@(x.PrimaryCustomer ?? "-")</td><td data-label="Payment">@x.PaymentMode.Label()</td>
+                <td data-label="Total payable" class="text-end">@x.TotalPayable.ToString("N2")</td>
+                <td data-label="Schedule">@(x.ScheduleVersion is { } v ? "Version " + v : "Not generated")@if (x.HasPendingAmendment) { <span class="badge text-bg-warning ms-1">Amendment pending</span> }</td>
+                <td data-label="Outstanding" class="text-end">@(x.ScheduleOutstanding?.ToString("N2") ?? "-")</td><td data-label="Status">@x.Status.Label()</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.AgreementId">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "agreements", route, "page")' />
+}

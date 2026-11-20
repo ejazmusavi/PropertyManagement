@@ -1,0 +1,15 @@
+@* Custom schedule entry rows. Model: (string Prefix, bool IsPlan, IReadOnlyList<TemplateRow> TemplateRows, IReadOnlyList<ScheduleRow> ScheduleRows) *@
+@model (string Prefix, bool IsPlan, IReadOnlyList<RealEstate.Web.ViewModels.TemplateRow> TemplateRows, IReadOnlyList<RealEstate.Web.ViewModels.ScheduleRow> ScheduleRows)
+@{
+    string Row(string i, string a, string b) => Model.IsPlan
+        ? $"<div class=\"row g-2 mb-2 entry-row\"><div class=\"col-6 col-lg-5\"><input name=\"{Model.Prefix}[{i}].OffsetMonths\" type=\"number\" min=\"0\" max=\"600\" class=\"form-control\" placeholder=\"Months after start\" aria-label=\"Months after start\" value=\"{a}\" /></div><div class=\"col-4 col-lg-5\"><input name=\"{Model.Prefix}[{i}].SharePercent\" type=\"number\" step=\"0.0001\" min=\"0\" max=\"100\" class=\"form-control\" placeholder=\"Share % (optional)\" aria-label=\"Share percent\" value=\"{b}\" /></div><div class=\"col-2\"><button type=\"button\" class=\"btn btn-outline-danger w-100 remove-entry\" aria-label=\"Remove row\">&times;</button></div></div>"
+        : $"<div class=\"row g-2 mb-2 entry-row\"><div class=\"col-6 col-lg-5\"><input name=\"{Model.Prefix}[{i}].DueDate\" type=\"date\" class=\"form-control\" aria-label=\"Due date\" value=\"{a}\" /></div><div class=\"col-4 col-lg-5\"><input name=\"{Model.Prefix}[{i}].Amount\" type=\"number\" step=\"0.01\" min=\"0\" class=\"form-control\" placeholder=\"Amount (optional)\" aria-label=\"Amount\" value=\"{b}\" /></div><div class=\"col-2\"><button type=\"button\" class=\"btn btn-outline-danger w-100 remove-entry\" aria-label=\"Remove row\">&times;</button></div></div>";
+}
+<div class="entry-editor">
+    <div class="d-flex justify-content-between align-items-center mb-2"><span class="form-label mb-0">@(Model.IsPlan ? "Custom dates (months after the start date; shares optional, all or none)" : "Custom dates (amounts optional, all or none)")</span><button type="button" class="btn btn-sm btn-outline-primary add-entry">Add date</button></div>
+    <div class="entry-rows">
+        @if (Model.IsPlan) { var i = 0; foreach (var r in Model.TemplateRows) { Write(Html.Raw(Row(i.ToString(), r.OffsetMonths?.ToString() ?? "", r.SharePercent?.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) ?? ""))); i++; } }
+        else { var i = 0; foreach (var r in Model.ScheduleRows) { Write(Html.Raw(Row(i.ToString(), r.DueDate?.ToString("yyyy-MM-dd") ?? "", r.Amount?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) ?? ""))); i++; } }
+    </div>
+    <template>@Html.Raw(Row("__I__", "", ""))</template>
+</div>

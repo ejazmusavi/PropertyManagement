@@ -19,3 +19,7 @@ body { background: #f4f6f9; }
   .table-stack td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: .2rem 0; }
   .table-stack td::before { content: attr(data-label); font-weight: 600; color: #6c757d; }
 }
+/* An "All" validation summary renders an empty box when there are no errors. */
+.validation-summary-valid { display: none; }
+/* Wide tables scroll inside their card at every width instead of widening the page (Bootstrap only does this below 768px). */
+.table-responsive-md { overflow-x: auto; }

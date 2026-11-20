@@ -1,0 +1,38 @@
+@model AmendmentQueueViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = Model.PendingOnly ? "Pending amendments" : "Schedule amendments"; var f = Model.Filter; var p = Model.Amendments;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["status"] = Model.PendingOnly ? null : f.Status?.ToString(), ["type"] = f.Type?.ToString() };
+   var action = Model.PendingOnly ? "Pending" : "Index"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@ViewData["Title"]</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Model.PendingOnly) { <a class="btn btn-outline-secondary" asp-action="Index">All amendments</a> } else { <a class="btn btn-outline-secondary" asp-action="Pending">Pending only</a> }
+        <a class="btn btn-outline-secondary" asp-action="Waivers">Waivers</a>
+        <a class="btn btn-outline-secondary" asp-controller="InstallmentAgreements" asp-action="Index">Agreements</a>
+    </div>
+</div>
+<form method="get" asp-action="@action" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Agreement or booking number" aria-label="Search amendments" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    @if (!Model.PendingOnly) { <div class="col-6 col-lg-3"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<AmendmentStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div> }
+    <div class="col-6 col-lg-3"><select name="type" class="form-select" aria-label="Type"><option value="">All types</option>@foreach (var s in Enum.GetValues<AmendmentType>().Where(t => t >= AmendmentType.Reschedule)) { <option value="@s" selected="@(f.Type == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">@(Model.PendingOnly ? "No amendments are waiting for approval." : "No amendments found.")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Requested</th><th>Agreement</th><th>Project</th><th>Type</th><th>Reason</th><th>Requested by</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Requested">@x.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td data-label="Agreement">@x.AgreementNumber<div class="small text-muted">@x.BookingNumber</div></td><td data-label="Project">@x.ProjectCode</td>
+                <td data-label="Type">@x.AmendmentType.Label()@(x.WaiverAmount is { } w && w != 0m ? " (waiver " + w.ToString("N2") + ")" : "")</td><td data-label="Reason">@x.Reason</td><td data-label="Requested by">@x.RequestedBy</td>
+                <td data-label="Status"><partial name="_AmendmentStatusBadge" model="x.Status" /></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.AgreementId" asp-route-amendmentId="@x.Id">@(x.Status == AmendmentStatus.Pending ? "Review" : "Details")</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "amendments", route, "page")' />
+}

@@ -1,0 +1,3 @@
+@model RealEstate.Domain.Enums.AmendmentStatus
+@{ var cls = Model switch { RealEstate.Domain.Enums.AmendmentStatus.Pending => "text-bg-warning", RealEstate.Domain.Enums.AmendmentStatus.Approved => "text-bg-success", RealEstate.Domain.Enums.AmendmentStatus.Rejected => "text-bg-danger", _ => "text-bg-dark" }; }
+<span class="badge @cls">@Model</span>

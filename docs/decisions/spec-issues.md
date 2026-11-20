@@ -5,7 +5,7 @@ Found while reorganizing the original specification. **No decision has been inve
 | # | Issue | Affected | Suggested handling |
 |---|---|---|---|
 | 1 | (Phase 4: no payments or postings are simulated; Phase 4 only records amounts due, see decisions log.) Phases 6 and 7 require "Accounting posting" (and Phase 4 cash sales must "not bypass accounting controls") but accounting is Phase 8. | 4, 6, 7, 8 | Ask user: stub/outbox for postings until Phase 8, or reorder. Per Part 8, functional completion follows sequence; Phase 6/7 accounting acceptance can only be fully verified after Phase 8. |
-| 2 | (Resolved in Phase 4 as assumed: Phase 4 creates them, Phase 5 extends them.) `CustomerAgreement`, `AgreementVersion`, `AgreementAmendment` appear in both Phase 4 and Phase 5. | 4, 5 | Assumption to confirm: Phase 4 creates them, Phase 5 extends them. |
+| 2 | (Resolved: Phase 4 created them; Phase 5 extended CustomerAgreement and AgreementAmendment for schedules and approval-based amendments, see decisions log 2026-11-20.) `CustomerAgreement`, `AgreementVersion`, `AgreementAmendment` appear in both Phase 4 and Phase 5. | 4, 5 | Assumption to confirm: Phase 4 creates them, Phase 5 extends them. |
 | 3 | Phase 0 creates Role, Permission, UserProject; Phase 1.4 defines roles/permissions/project assignment. | 0, 1 | Confirm Phase 0 = schema + auth, Phase 1 = roles list, seed and management UI. |
 | 4 | Phase 0 says verify Flutter SDK, but Flutter app is Phase 10. Mobile state-management library unspecified. | 0, 10 | Decide before Phase 10. |
 | 5 | Phase 10 includes mobile notifications; notification entities/channels are Phase 11. | 10, 11 | Confirm Phase 10 uses minimal/in-app approach. |

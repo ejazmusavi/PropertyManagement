@@ -10,6 +10,7 @@
         <div class="text-muted">@b.ProjectCode – @b.ProjectName &middot; @b.BookingDate.ToString("yyyy-MM-dd") &middot; @b.PaymentMode</div></div>
     <div class="d-flex flex-wrap gap-2">
         @if (b.AgreementId is not null) { <a class="btn btn-outline-primary" asp-action="Agreement" asp-route-id="@b.Id">Agreement</a> }
+        @if (b.AgreementId is not null && Ui.Has("installments.view")) { <a class="btn btn-outline-primary" asp-controller="InstallmentAgreements" asp-action="Details" asp-route-id="@b.AgreementId">Installments</a> }
         @if (Ui.Has("bookings.create") && b.Status == BookingStatus.Draft)
         { <form asp-action="Submit" asp-route-id="@b.Id" method="post"><input type="hidden" name="rowVersion" value="@b.RowVersion" /><button class="btn btn-primary" type="submit">Submit for approval</button></form> }
         @if (canDecide)

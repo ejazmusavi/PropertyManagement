@@ -1,0 +1,37 @@
+@model PlanListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Installment plans"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Plans;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["planType"] = f.PlanType?.ToString(), ["status"] = f.Status?.ToString() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Installment plan templates</h1>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-secondary" asp-action="ChargeTypes">Charge types</a>
+        <a class="btn btn-outline-secondary" asp-controller="LateFeeRules" asp-action="Index">Late fee rules</a>
+        @if (Ui.Has("installments.manage")) { <a class="btn btn-primary" asp-action="Create">New plan</a> }
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Code or name" aria-label="Search plans" /></div>
+    <div class="col-6 col-lg-3"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="planType" class="form-select" aria-label="Plan type"><option value="">All types</option>@foreach (var s in Enum.GetValues<InstallmentPlanType>()) { <option value="@s" selected="@(f.PlanType == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<InstallmentPlanStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No installment plans found@(Ui.Has("installments.manage") ? ". Create the first plan to get started." : ".")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Code</th><th>Name</th><th>Project</th><th>Type</th><th>Applies to</th><th class="text-end">Components</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Code">@x.Code</td><td data-label="Name">@x.Name</td><td data-label="Project">@x.ProjectCode</td><td data-label="Type">@x.PlanType.Label()</td><td data-label="Applies to">@(x.Target ?? "-")</td>
+                <td data-label="Components" class="text-end">@x.ComponentCount</td><td data-label="Status"><partial name="_PlanStatusBadge" model="x.Status" /></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Details</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "plans", route, "page")' />
+}

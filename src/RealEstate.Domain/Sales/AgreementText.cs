@@ -7,13 +7,15 @@ namespace RealEstate.Domain.Sales;
 
 public sealed record AgreementOwner(string CustomerCode, string FullName, string IdentityNumber, decimal SharePercent, bool IsPrimary);
 public sealed record AgreementLine(string PropertyCode, string PropertyNumber, decimal Size, MeasurementUnit Unit, decimal FinalPrice, decimal ExtraDiscount, decimal LinePrice, string SnapshotHash);
-public sealed record AgreementCharge(string Description, decimal Amount);
+public sealed record AgreementChargeLine(string Description, decimal Amount);
+public sealed record AgreementScheduleLine(int LineNo, string Description, DateOnly DueDate, decimal Amount, decimal TaxAmount);
 
 public sealed record AgreementData(
     string CompanyName, string AgreementNumber, int VersionNo, string VersionReason, DateTime GeneratedAtUtc,
     string BookingNumber, DateOnly BookingDate, string ProjectCode, string ProjectName, PaymentMode PaymentMode, string CurrencySymbol,
-    IReadOnlyList<AgreementOwner> Owners, IReadOnlyList<AgreementLine> Lines, IReadOnlyList<AgreementCharge> Charges,
-    decimal TotalPrice, decimal TotalExtraDiscount, decimal TotalCharges, decimal TotalPayable, decimal BookingAmount, string? BalanceAuthorization);
+    IReadOnlyList<AgreementOwner> Owners, IReadOnlyList<AgreementLine> Lines, IReadOnlyList<AgreementChargeLine> Charges,
+    decimal TotalPrice, decimal TotalExtraDiscount, decimal TotalCharges, decimal TotalPayable, decimal BookingAmount, string? BalanceAuthorization,
+    int? ScheduleVersionNo = null, IReadOnlyList<AgreementScheduleLine>? Schedule = null, IReadOnlyList<AgreementChargeLine>? AdditionalCharges = null);
 
 /// <summary>Deterministic agreement and booking-receipt text. The same data always yields the same text, so versions can be verified by hash.</summary>
 public static class AgreementText
@@ -50,7 +52,18 @@ public static class AgreementText
         sb.AppendLine($"  TOTAL PAYABLE:        {M(d.CurrencySymbol, d.TotalPayable)}");
         sb.AppendLine($"  Payment mode: {d.PaymentMode}   Due at booking: {M(d.CurrencySymbol, d.BookingAmount)}   Balance: {M(d.CurrencySymbol, d.TotalPayable - d.BookingAmount)}");
         if (d.BalanceAuthorization is not null) sb.AppendLine($"  Outstanding balance authorized: {d.BalanceAuthorization}");
-        sb.AppendLine(d.PaymentMode == PaymentMode.Installment ? "  The installment schedule is attached to this agreement when it is generated." : "  The balance is payable as authorized above.");
+        if (d.Schedule is { Count: > 0 } schedule)
+        {
+            if (d.AdditionalCharges is { Count: > 0 } extra)
+                foreach (var c in extra) sb.AppendLine($"  Additional agreement charge - {c.Description}: {M(d.CurrencySymbol, c.Amount)}");
+            sb.AppendLine();
+            sb.AppendLine($"PAYMENT SCHEDULE (version {d.ScheduleVersionNo})");
+            foreach (var s in schedule)
+                sb.AppendLine($"  {s.LineNo,3}. {s.DueDate:yyyy-MM-dd}  {s.Description}  {M(d.CurrencySymbol, s.Amount)}" + (s.TaxAmount != 0 ? $"  tax {M(d.CurrencySymbol, s.TaxAmount)}" : ""));
+            sb.AppendLine($"  SCHEDULE TOTAL:       {M(d.CurrencySymbol, schedule.Sum(s => s.Amount))}");
+        }
+        else
+            sb.AppendLine(d.PaymentMode == PaymentMode.Installment ? "  The installment schedule is attached to this agreement when it is generated." : "  The balance is payable as authorized above.");
         sb.AppendLine();
         sb.AppendLine("This agreement is generated from the confirmed booking. Amendments create a new version; earlier versions are retained.");
         return sb.ToString();

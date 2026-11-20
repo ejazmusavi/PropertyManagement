@@ -1,0 +1,19 @@
+@model IReadOnlyList<RealEstate.Application.Installments.ChargeTypeDto>
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Charge types"; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Charge types</h1>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-action="Index">Plans</a>@if (Ui.Has("installments.manage")) { <a class="btn btn-primary" asp-action="CreateChargeType">New charge type</a> }</div>
+</div>
+@if (Model.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No charge types defined.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Code</th><th>Name</th><th>Component</th><th>Default category</th><th>Default frequency</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var t in Model)
+        {
+            <tr><td data-label="Code">@t.Code</td><td data-label="Name">@t.Name@(t.IsSystem ? " (system)" : "")</td><td data-label="Component">@t.Kind.Label()</td><td data-label="Default category">@t.DefaultCategory.Label()</td><td data-label="Default frequency">@t.DefaultFrequency.Label()</td>
+                <td data-label="Status"><span class="badge @(t.IsActive ? "text-bg-success" : "text-bg-secondary")">@(t.IsActive ? "Active" : "Inactive")</span></td>
+                <td class="text-end">@if (Ui.Has("installments.manage")) { <a class="btn btn-sm btn-outline-primary" asp-action="EditChargeType" asp-route-id="@t.Id">Edit</a> }</td></tr>
+        }</tbody></table></div></div>
+}

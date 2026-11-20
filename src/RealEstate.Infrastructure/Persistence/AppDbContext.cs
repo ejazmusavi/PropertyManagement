@@ -61,6 +61,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<AgreementVersion> AgreementVersions => Set<AgreementVersion>();
     public DbSet<AgreementDocument> AgreementDocuments => Set<AgreementDocument>();
     public DbSet<AgreementAmendment> AgreementAmendments => Set<AgreementAmendment>();
+    public DbSet<ChargeType> ChargeTypes => Set<ChargeType>();
+    public DbSet<LateFeeRule> LateFeeRules => Set<LateFeeRule>();
+    public DbSet<InstallmentPlan> InstallmentPlans => Set<InstallmentPlan>();
+    public DbSet<InstallmentPlanComponent> InstallmentPlanComponents => Set<InstallmentPlanComponent>();
+    public DbSet<AgreementCharge> AgreementCharges => Set<AgreementCharge>();
+    public DbSet<PaymentSchedule> PaymentSchedules => Set<PaymentSchedule>();
+    public DbSet<PaymentScheduleItem> PaymentScheduleItems => Set<PaymentScheduleItem>();
+    public DbSet<ScheduleAmendment> ScheduleAmendments => Set<ScheduleAmendment>();
+    public DbSet<Waiver> Waivers => Set<Waiver>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();

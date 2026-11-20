@@ -1,0 +1,16 @@
+@model AgreementChargeFormViewModel
+@{ var edit = Model.ChargeId is not null; ViewData["Title"] = edit ? "Edit charge" : "Add charge"; }
+<h1 class="h3 mb-1">@ViewData["Title"]</h1>
+<p class="text-muted">Agreement @Model.AgreementNumber &middot; amounts in @Model.CurrencySymbol</p>
+<form asp-action="@(edit ? "EditCharge" : "AddCharge")" asp-route-id="@Model.AgreementId" asp-route-chargeId="@Model.ChargeId" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-header fw-semibold">Charge</div><div class="card-body" data-freq-scope><div class="row g-3">
+        <partial name="_ChargeFields" model="Model" />
+        <div class="col-12 col-lg-4"><label asp-for="Amount" class="form-label">Total amount</label><input asp-for="Amount" type="number" step="0.01" min="0" class="form-control" /><span asp-validation-for="Amount" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4" data-show-when-freq="OneTime,Monthly,Quarterly,HalfYearly,Annual"><label asp-for="FirstDueDate" class="form-label"></label><input asp-for="FirstDueDate" type="date" class="form-control" /><span asp-validation-for="FirstDueDate" class="text-danger small"></span></div>
+        <div class="col-12" data-show-when-freq="CustomDates"><partial name="_EntryEditor" model='("CustomEntries", false, (IReadOnlyList<TemplateRow>)new List<TemplateRow>(), (IReadOnlyList<ScheduleRow>)Model.CustomEntries)' /></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>@(edit ? "Save charge" : "Add charge")</button><a class="btn btn-outline-secondary" asp-action="Builder" asp-route-id="@Model.AgreementId">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/installments.js" asp-append-version="true"></script> }

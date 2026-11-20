@@ -1,0 +1,19 @@
+@* Model: (IReadOnlyList<ScheduleLineDto> Lines, string Symbol) *@
+@model (IReadOnlyList<RealEstate.Application.Installments.ScheduleLineDto> Lines, string Symbol)
+@using RealEstate.Domain.Enums
+<div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack">
+    <thead><tr><th>#</th><th>Charge</th><th>Installment</th><th>Due</th><th>Grace until</th><th class="text-end">Amount</th><th class="text-end">Tax</th><th class="text-end">Paid</th><th class="text-end">Waived</th><th class="text-end">Outstanding</th><th>Status</th></tr></thead>
+    <tbody>
+    @foreach (var l in Model.Lines)
+    {
+        <tr class="@(l.IsOverdue ? "table-danger" : "")">
+            <td data-label="#">@l.LineNo</td><td data-label="Charge">@l.Description</td><td data-label="Installment">@l.InstallmentNo / @l.InstallmentCount@(l.IsPartial ? " (partial)" : "")</td>
+            <td data-label="Due">@l.DueDate.ToString("yyyy-MM-dd")</td><td data-label="Grace until">@l.GraceEndDate.ToString("yyyy-MM-dd")</td>
+            <td data-label="Amount" class="text-end">@l.Amount.ToString("N2")</td><td data-label="Tax" class="text-end">@l.TaxAmount.ToString("N2")</td>
+            <td data-label="Paid" class="text-end">@l.AmountPaid.ToString("N2")</td><td data-label="Waived" class="text-end">@l.AmountWaived.ToString("N2")</td>
+            <td data-label="Outstanding" class="text-end">@l.Outstanding.ToString("N2")</td>
+            <td data-label="Status">@l.Status.Label()@(l.IsOverdue ? " (overdue)" : "")</td>
+        </tr>
+    }
+    </tbody>
+</table></div>

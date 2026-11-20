@@ -1,0 +1,98 @@
+@model AmendmentFormViewModel
+@using RealEstate.Domain.Enums
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@{ ViewData["Title"] = "Request amendment " + Model.AgreementNumber; var s = Model.CurrencySymbol;
+   var types = Enum.GetValues<AmendmentType>().Where(t => t >= AmendmentType.Reschedule).Select(t => new SelectListItem(t.ToString(), t.ToString(), t == Model.Type)).ToList();
+   var open = Model.Lines.Where(l => l.Status is ScheduleItemStatus.Pending or ScheduleItemStatus.PartiallyPaid).ToList();
+   string Desc(RealEstate.Application.Installments.ScheduleLineDto l) => l.InstallmentCount > 1 && !l.Description.EndsWith($"{l.InstallmentNo}/{l.InstallmentCount}") ? $"{l.Description} {l.InstallmentNo}/{l.InstallmentCount}" : l.Description;
+   string LineText(RealEstate.Application.Installments.ScheduleLineDto l) => $"#{l.LineNo} {Desc(l)}, due {l.DueDate:yyyy-MM-dd}, {s} {l.Amount:N2} (outstanding {l.Outstanding:N2})"; }
+<h1 class="h3 mb-1">Request schedule amendment</h1>
+<p class="text-muted">Agreement @Model.AgreementNumber &middot; amounts in @s. The request is applied only after another user approves it.</p>
+@if (Model.Lines.Count == 0)
+{
+    <div class="alert alert-warning">This agreement has no active schedule yet, so there is nothing to amend. <a asp-controller="InstallmentAgreements" asp-action="Builder" asp-route-id="@Model.AgreementId">Open the schedule builder</a>.</div>
+}
+else
+{
+<form asp-action="Create" asp-route-id="@Model.AgreementId" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="IdempotencyKey" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Type" class="form-label">Amendment type</label><select asp-for="Type" id="amendmentType" class="form-select" asp-items="types"></select></div>
+        <div class="col-12 col-lg-8"><label asp-for="Reason" class="form-label"></label><input asp-for="Reason" class="form-control" maxlength="1000" /><span asp-validation-for="Reason" class="text-danger small"></span></div>
+    </div></div></div>
+
+    <div class="card mb-3 amend-section" data-type="Reschedule" data-freq-scope><div class="card-header fw-semibold">Reschedule a charge</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="RsChargeId" class="form-label">Charge</label><select asp-for="RsChargeId" class="form-select"><option value="">- Select -</option>@foreach (var c in Model.Charges) { <option value="@c.Id" selected="@(Model.RsChargeId == c.Id)">@c.Description (@c.Frequency.Label(), @s @c.Amount.ToString("N2"))</option> }</select></div>
+        <div class="col-12 col-lg-4"><label asp-for="RsFrequency" class="form-label">New frequency</label><select asp-for="RsFrequency" class="form-select freq-select" asp-items="EnumText.Options<ScheduleFrequency>()"></select></div>
+        <div class="col-12 col-lg-4" data-show-when-freq="OneTime,Monthly,Quarterly,HalfYearly,Annual"><label asp-for="RsFirstDueDate" class="form-label">First due date</label><input asp-for="RsFirstDueDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-4" data-show-when-freq="Monthly,Quarterly,HalfYearly,Annual"><label asp-for="RsCount" class="form-label">Number of installments</label><input asp-for="RsCount" type="number" min="1" class="form-control" /></div>
+        <div class="col-12 col-lg-4" data-show-when-freq="Monthly,Quarterly,HalfYearly,Annual"><label asp-for="RsInstallmentAmount" class="form-label">Installment amount</label><input asp-for="RsInstallmentAmount" type="number" step="0.01" min="0" class="form-control" /></div>
+        <div class="col-12 col-lg-4" data-show-when-freq="Monthly,Quarterly,HalfYearly,Annual"><label asp-for="RsDueDay" class="form-label">Fixed due day of month</label><input asp-for="RsDueDay" type="number" min="1" max="31" class="form-control" /></div>
+        <div class="col-12" data-show-when-freq="CustomDates"><partial name="_EntryEditor" model='("RsEntries", false, (IReadOnlyList<TemplateRow>)new List<TemplateRow>(), (IReadOnlyList<ScheduleRow>)Model.RsEntries)' /></div>
+        <div class="col-12 text-muted small">Only the unpaid part of the charge is rescheduled; give the number of installments or the installment amount.</div>
+    </div></div></div>
+
+    <div class="card mb-3 amend-section" data-type="Deferment"><div class="card-header fw-semibold">Defer installments</div><div class="card-body"><div class="row g-3">
+        <div class="col-12"><span class="form-label d-block">Installments to defer</span>
+            @if (open.Count == 0) { <p class="text-muted mb-0">There are no unpaid installments.</p> }
+            @foreach (var l in open) { <div class="form-check"><input class="form-check-input" type="checkbox" name="DefItemIds" value="@l.Id" id="def@(l.Id)" checked="@Model.DefItemIds.Contains(l.Id ?? 0)" /><label class="form-check-label" for="def@(l.Id)">@LineText(l)</label></div> }</div>
+        <div class="col-12 col-lg-4"><label asp-for="DefMonths" class="form-label">Defer by (months)</label><input asp-for="DefMonths" type="number" min="1" max="120" class="form-control" /></div>
+        <div class="col-12 col-lg-8 d-flex align-items-end"><div class="form-check mb-2"><input asp-for="DefCascade" class="form-check-input" /><label asp-for="DefCascade" class="form-check-label">Also move the following installments of the same charge</label></div></div>
+    </div></div></div>
+
+    <div class="card mb-3 amend-section" data-type="InstallmentReduction"><div class="card-header fw-semibold">Reduce an installment</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-6"><label asp-for="RedItemId" class="form-label">Installment</label><select asp-for="RedItemId" class="form-select"><option value="">- Select -</option>@foreach (var l in open) { <option value="@l.Id" selected="@(Model.RedItemId == l.Id)">@LineText(l)</option> }</select></div>
+        <div class="col-12 col-lg-3"><label asp-for="RedNewAmount" class="form-label">New amount</label><input asp-for="RedNewAmount" type="number" step="0.01" min="0" class="form-control" /></div>
+        <div class="col-12 col-lg-3"><label asp-for="RedNewDueDate" class="form-label">New due date (optional)</label><input asp-for="RedNewDueDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-6"><label asp-for="RedRedistribution" class="form-label">The removed amount goes</label><select asp-for="RedRedistribution" class="form-select" asp-items="EnumText.Options<ReductionRedistribution>()"></select><div class="form-text">The total of the charge must stay the same.</div></div>
+    </div></div></div>
+
+    <div class="card mb-3 amend-section" data-type="AdditionalInstallments"><div class="card-header fw-semibold">Add installments</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-6"><label asp-for="AiChargeId" class="form-label">Charge</label><select asp-for="AiChargeId" class="form-select"><option value="">- Select -</option>@foreach (var c in Model.Charges) { <option value="@c.Id" selected="@(Model.AiChargeId == c.Id)">@c.Description (@c.Frequency.Label())</option> }</select></div>
+        <div class="col-12 col-lg-3"><label asp-for="AiCount" class="form-label">Additional installments</label><input asp-for="AiCount" type="number" min="1" max="120" class="form-control" /></div>
+        <div class="col-12 text-muted small">The unpaid balance of the charge is spread over the existing and the new installments.</div>
+    </div></div></div>
+
+    <div class="card mb-3 amend-section" data-type="DueDateChange"><div class="card-header fw-semibold">Change due dates</div>
+        @if (open.Count == 0) { <div class="card-body text-muted">There are no unpaid installments.</div> }
+        else
+        {
+            <div class="card-body pb-0 text-muted small">Enter a new due date only for the installments that should move.</div>
+            <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Installment</th><th>Current due</th><th class="text-end">Amount</th><th>New due date</th></tr></thead><tbody>
+            @{ var di = 0; }
+            @foreach (var l in open)
+            {
+                var pre = Model.DueChanges.FirstOrDefault(d => d.ItemId == l.Id)?.NewDueDate;
+                <tr><td data-label="Installment">#@l.LineNo @Desc(l)<input type="hidden" name="DueChanges[@di].ItemId" value="@l.Id" /></td><td data-label="Current due">@l.DueDate.ToString("yyyy-MM-dd")</td><td data-label="Amount" class="text-end">@l.Amount.ToString("N2")</td>
+                    <td data-label="New due date"><input type="date" name="DueChanges[@di].NewDueDate" class="form-control" aria-label="New due date for line @l.LineNo" value="@pre?.ToString("yyyy-MM-dd")" /></td></tr>
+                di++;
+            }</tbody></table></div>
+        }</div>
+
+    <div class="card mb-3 amend-section" data-type="PenaltyChange"><div class="card-header fw-semibold">Change late fee terms</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="PcChargeId" class="form-label">Charge</label><select asp-for="PcChargeId" class="form-select"><option value="">- Select -</option>@foreach (var c in Model.Charges) { <option value="@c.Id" selected="@(Model.PcChargeId == c.Id)">@c.Description (now: @(c.LateFeeRuleName ?? "no late fee"), grace @c.GracePeriodDays d)</option> }</select></div>
+        <div class="col-12 col-lg-5"><label asp-for="PcLateFeeRuleId" class="form-label">New late fee rule</label><select asp-for="PcLateFeeRuleId" class="form-select"><option value="">- No late fee -</option>@foreach (var r in Model.LateFeeRules) { <option value="@r.Id" selected="@(Model.PcLateFeeRuleId == r.Id)">@r.Code – @r.Name</option> }</select></div>
+        <div class="col-12 col-lg-3"><label asp-for="PcGraceDays" class="form-label">New grace days</label><input asp-for="PcGraceDays" type="number" min="0" max="365" class="form-control" /></div>
+    </div></div></div>
+
+    <div class="card mb-3 amend-section" data-type="Waiver"><div class="card-header fw-semibold">Waive an amount</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-6"><label asp-for="WvItemId" class="form-label">Installment</label><select asp-for="WvItemId" class="form-select"><option value="">- Select -</option>@foreach (var l in open) { <option value="@l.Id" selected="@(Model.WvItemId == l.Id)">@LineText(l)</option> }</select></div>
+        <div class="col-12 col-lg-3"><label asp-for="WvKind" class="form-label">Waive</label><select asp-for="WvKind" class="form-select" asp-items="EnumText.Options<WaiverKind>()"></select></div>
+        <div class="col-12 col-lg-3"><label asp-for="WvAmount" class="form-label">Amount</label><input asp-for="WvAmount" type="number" step="0.01" min="0" class="form-control" /></div>
+        <div class="col-12 text-muted small">The waiver cannot exceed the maximum percentage allowed on the charge.</div>
+    </div></div></div>
+
+    <div class="card mb-3 amend-section" data-type="AdditionalCharge" data-freq-scope><div class="card-header fw-semibold">Add a charge</div><div class="card-body"><div class="row g-3">
+        @{ var childView = new ViewDataDictionary(ViewData); childView.TemplateInfo.HtmlFieldPrefix = "Charge"; }
+        @await Html.PartialAsync("_ChargeFields", Model.Charge, childView)
+        <div class="col-12 col-lg-4"><label class="form-label" for="Charge_Amount">Total amount</label><input id="Charge_Amount" name="Charge.Amount" type="number" step="0.01" min="0" class="form-control" value="@Model.Charge.Amount?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+        <div class="col-12 col-lg-4" data-show-when-freq="OneTime,Monthly,Quarterly,HalfYearly,Annual"><label class="form-label" for="Charge_FirstDueDate">First due date</label><input id="Charge_FirstDueDate" name="Charge.FirstDueDate" type="date" class="form-control" value="@Model.Charge.FirstDueDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="col-12" data-show-when-freq="CustomDates"><partial name="_EntryEditor" model='("Charge.CustomEntries", false, (IReadOnlyList<TemplateRow>)new List<TemplateRow>(), (IReadOnlyList<ScheduleRow>)Model.Charge.CustomEntries)' /></div>
+    </div></div></div>
+
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Submit for approval</button><a class="btn btn-outline-secondary" asp-controller="InstallmentAgreements" asp-action="Details" asp-route-id="@Model.AgreementId">Cancel</a></div>
+</form>
+}
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/installments.js" asp-append-version="true"></script> }

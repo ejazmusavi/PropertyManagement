@@ -1,0 +1,21 @@
+@model PlanComponentFormViewModel
+@using RealEstate.Domain.Enums
+@{ var edit = Model.ComponentId is not null; ViewData["Title"] = edit ? "Edit component" : "Add component"; }
+<h1 class="h3 mb-1">@ViewData["Title"]</h1>
+<p class="text-muted">Plan: @Model.PlanName</p>
+<form asp-action="@(edit ? "EditComponent" : "AddComponent")" asp-route-id="@Model.PlanId" asp-route-componentId="@Model.ComponentId" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-header fw-semibold">Component</div><div class="card-body" data-freq-scope><div class="row g-3">
+        <partial name="_ChargeFields" model="Model" />
+        <div class="col-12 col-lg-4"><label asp-for="AmountBasis" class="form-label"></label><select asp-for="AmountBasis" class="form-select basis-select" asp-items="EnumText.Options<AmountBasis>()"></select>
+            <div class="form-text">Remainder takes whatever price is left after the other components.</div></div>
+        <div class="col-12 col-lg-4" data-show-when-basis="FixedAmount"><label asp-for="Amount" class="form-label"></label><input asp-for="Amount" type="number" step="0.01" min="0" class="form-control" /></div>
+        <div class="col-12 col-lg-4" data-show-when-basis="PercentOfPrice"><label asp-for="Percent" class="form-label"></label><input asp-for="Percent" type="number" step="0.0001" min="0" max="100" class="form-control" /></div>
+        <div class="col-6 col-lg-4"><label asp-for="FirstDueOffsetMonths" class="form-label"></label><input asp-for="FirstDueOffsetMonths" type="number" min="0" max="600" class="form-control" /></div>
+        <div class="col-6 col-lg-4"><label asp-for="FirstDueOffsetDays" class="form-label"></label><input asp-for="FirstDueOffsetDays" type="number" min="0" max="3650" class="form-control" /></div>
+        <div class="col-12" data-show-when-freq="CustomDates"><partial name="_EntryEditor" model='("CustomEntries", true, (IReadOnlyList<TemplateRow>)Model.CustomEntries, (IReadOnlyList<ScheduleRow>)new List<ScheduleRow>())' /></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>@(edit ? "Save component" : "Add component")</button><a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.PlanId">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/installments.js" asp-append-version="true"></script> }

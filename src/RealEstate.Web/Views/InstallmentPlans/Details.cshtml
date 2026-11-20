@@ -1,0 +1,122 @@
+@model PlanDetailsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var p = Model.Plan; ViewData["Title"] = "Plan " + p.Code; await Ui.LoadAsync();
+   var manage = Ui.Has("installments.manage"); var draft = p.Status == InstallmentPlanStatus.Draft; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@p.Code – @p.Name <partial name="_PlanStatusBadge" model="p.Status" /></h1>
+        <div class="text-muted">@p.ProjectCode – @p.ProjectName &middot; @p.PlanType.Label()@(p.RequiresApproval ? " &middot; requires approval to activate" : "")</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (manage && draft) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@p.Id">Edit details</a> }
+        @if (manage && draft)
+        {
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#activateModal">Activate</button>
+        }
+        @if (manage && p.Status == InstallmentPlanStatus.Active) { <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#retireModal">Retire</button> }
+        @if (manage) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#copyModal">Copy to new draft</button> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to plans</a>
+    </div>
+</div>
+@if (draft) { <div class="alert alert-info">This plan is a draft. Components can be changed until it is activated; an active plan is read-only (copy it to make changes).</div> }
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Plan</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Type</dt><dd class="col-sm-8">@p.PlanType.Label()</dd>
+        @if (p.PropertyCategoryName is not null) { <dt class="col-sm-4">Category</dt><dd class="col-sm-8">@p.PropertyCategoryName</dd> }
+        @if (p.PropertyCode is not null) { <dt class="col-sm-4">Property</dt><dd class="col-sm-8">@p.PropertyCode</dd> }
+        @if (p.CustomerName is not null) { <dt class="col-sm-4">Customer</dt><dd class="col-sm-8">@p.CustomerName</dd> }
+        <dt class="col-sm-4">Description</dt><dd class="col-sm-8">@(p.Description ?? "-")</dd>
+        <dt class="col-sm-4">Created</dt><dd class="col-sm-8">@p.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") by @p.CreatedBy</dd>
+        @if (p.ActivatedAtUtc is { } aa) { <dt class="col-sm-4">Activated</dt><dd class="col-sm-8">@aa.ToString("yyyy-MM-dd HH:mm") by @p.ActivatedBy</dd> }
+        @if (p.RetiredAtUtc is { } ra) { <dt class="col-sm-4">Retired</dt><dd class="col-sm-8">@ra.ToString("yyyy-MM-dd HH:mm") by @p.RetiredBy: @p.RetireReason</dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Sale consideration coverage</div><div class="card-body">
+        <p class="mb-1">Fixed and percentage components cover <strong>@p.SaleConsiderationPercent.ToString("0.####")%</strong> of the price@(p.HasRemainder ? ", and a remainder component takes the rest." : ".")</p>
+        @if (!p.HasRemainder && p.SaleConsiderationPercent != 100m) { <div class="text-warning small">Without a remainder component the sale-consideration components should total 100% of the price.</div> }
+    </div></div></div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Components (@p.Components.Count)</span>
+        @if (manage && draft) { <a class="btn btn-sm btn-primary" asp-action="AddComponent" asp-route-id="@p.Id">Add component</a> }</div>
+    @if (p.Components.Count == 0) { <div class="card-body text-muted">No components yet.@(manage && draft ? " Add the first component to build the plan." : "")</div> }
+    else
+    {
+        <div class="table-responsive-lg"><table class="table align-middle mb-0 table-stack">
+            <thead><tr><th>#</th><th>Name</th><th>Charge type</th><th>Category</th><th>Amount</th><th>Schedule</th><th>First due</th><th>Late fee / grace</th><th>Waiver</th><th>Tax</th><th></th></tr></thead><tbody>
+            @foreach (var c in p.Components)
+            {
+                <tr><td data-label="#">@c.SortOrder</td><td data-label="Name">@c.Name</td><td data-label="Charge type">@c.ChargeTypeName</td><td data-label="Category">@c.Category.Label()</td>
+                    <td data-label="Amount">@(c.AmountBasis switch { AmountBasis.FixedAmount => c.Amount?.ToString("N2"), AmountBasis.PercentOfPrice => c.Percent?.ToString("0.####") + "% of price", _ => "Remainder" })</td>
+                    <td data-label="Schedule">@c.Frequency.Label()@(c.Frequency == ScheduleFrequency.CustomDates ? $" ({c.CustomEntries.Count} dates)" : c.NumberOfInstallments is { } n ? $" x {n}" : c.InstallmentAmount is { } ia ? $" @ {ia:N2}" : "")@(c.DueDayOfMonth is { } dd ? $", day {dd}" : "")</td>
+                    <td data-label="First due">+@c.FirstDueOffsetMonths m @c.FirstDueOffsetDays d</td>
+                    <td data-label="Late fee / grace">@(c.LateFeeRuleName ?? "No late fee") / @c.GracePeriodDays d</td>
+                    <td data-label="Waiver">@(c.WaiverAllowed ? c.MaxWaiverPercent.ToString("0.##") + "%" : "No")</td>
+                    <td data-label="Tax">@(c.TaxTreatment == TaxTreatment.Inclusive || c.TaxTreatment == TaxTreatment.Exclusive ? $"{c.TaxTreatment} {c.TaxRatePercent:0.####}%" : c.TaxTreatment.ToString())</td>
+                    <td class="text-end text-nowrap">
+                        @if (manage && draft)
+                        {
+                            <a class="btn btn-sm btn-outline-primary" asp-action="EditComponent" asp-route-id="@p.Id" asp-route-componentId="@c.Id">Edit</a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#removeModal" data-action="@Url.Action("RemoveComponent", new { id = p.Id, componentId = c.Id })" data-name="@c.Name">Remove</button>
+                        }
+                    </td></tr>
+            }
+            </tbody></table></div>
+    }
+</div>
+
+<div class="card mb-3" id="preview">
+    <div class="card-header fw-semibold">Sample-price preview</div>
+    <div class="card-body">
+        <form method="get" asp-action="Details" asp-route-id="@p.Id" class="row g-3 align-items-end">
+            <input type="hidden" name="preview" value="true" />
+            <div class="col-12 col-lg-3"><label class="form-label" for="price">Sample price</label><input id="price" name="price" type="number" step="0.01" min="0" class="form-control" value="@Model.PreviewPrice.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+            <div class="col-12 col-lg-3"><label class="form-label" for="bookingAmount">Booking amount</label><input id="bookingAmount" name="bookingAmount" type="number" step="0.01" min="0" class="form-control" value="@Model.PreviewBookingAmount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+            <div class="col-12 col-lg-3"><label class="form-label" for="startDate">Start date</label><input id="startDate" name="startDate" type="date" class="form-control" value="@Model.PreviewStartDate.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-12 col-lg-3"><button class="btn btn-outline-primary w-100" type="submit">Preview schedule</button></div>
+        </form>
+        @if (Model.PreviewError is not null) { <div class="alert alert-danger mt-3 mb-0" role="alert">@Model.PreviewError</div> }
+        @if (Model.Preview is { } pv)
+        {
+            <h2 class="h6 mt-4">Resolved charges</h2>
+            <div class="table-responsive-md"><table class="table table-sm align-middle table-stack"><thead><tr><th>Charge</th><th>Category</th><th class="text-end">Amount</th><th>Frequency</th><th>First due</th></tr></thead><tbody>
+                @foreach (var c in pv.Charges) { <tr><td data-label="Charge">@c.Description</td><td data-label="Category">@c.Category.Label()</td><td data-label="Amount" class="text-end">@c.Amount.ToString("N2")</td><td data-label="Frequency">@c.Frequency.Label()</td><td data-label="First due">@c.FirstDueDate.ToString("yyyy-MM-dd")</td></tr> }
+            </tbody></table></div>
+            <h2 class="h6 mt-3">Schedule (@pv.Schedule.Items.Count installments, total @pv.Schedule.TotalAmount.ToString("N2"))</h2>
+            <partial name="_ScheduleTable" model='(pv.Schedule.Items, "")' />
+            @if (pv.Schedule.Problems.Count > 0) { <div class="alert alert-warning mt-3 mb-0"><ul class="mb-0">@foreach (var x in pv.Schedule.Problems) { <li>@x</li> }</ul></div> }
+        }
+    </div>
+</div>
+
+@if (manage && draft)
+{
+    <div class="modal fade" id="activateModal" tabindex="-1" aria-labelledby="activateTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Activate" asp-route-id="@p.Id" method="post"><input type="hidden" name="rowVersion" value="@p.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="activateTitle">Activate plan</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body">Activate <strong>@p.Code</strong>? Once active its components can no longer be edited and it can be applied to agreements.@(p.RequiresApproval ? " A customer-specific plan must be activated by a user other than its creator who has the approval permission." : "")</div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success">Activate</button></div></form></div></div>
+    <div class="modal fade" id="removeModal" tabindex="-1" aria-labelledby="removeTitle" aria-hidden="true" data-fill-modal><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" method="post" action="#"><input type="hidden" name="rowVersion" value="@p.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="removeTitle">Remove component</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body">Remove component <strong data-fill="name"></strong> from this draft plan?</div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Remove</button></div></form></div></div>
+}
+@if (manage && p.Status == InstallmentPlanStatus.Active)
+{
+    <div class="modal fade" id="retireModal" tabindex="-1" aria-labelledby="retireTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Retire" asp-route-id="@p.Id" method="post"><input type="hidden" name="rowVersion" value="@p.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="retireTitle">Retire plan</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Retired plans can no longer be applied to new agreements. Agreements already using the plan are not affected.</p><label class="form-label" for="retireReason">Reason (required)</label><input id="retireReason" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Retire</button></div></form></div></div>
+}
+@if (manage)
+{
+    <div class="modal fade" id="copyModal" tabindex="-1" aria-labelledby="copyTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Copy" asp-route-id="@p.Id" method="post">
+            <div class="modal-header"><h2 class="modal-title fs-5" id="copyTitle">Copy plan</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Creates a new draft with the same components.</p>
+                <div class="mb-3"><label class="form-label" for="copyCode">New code</label><input id="copyCode" name="code" class="form-control" required maxlength="40" value="@(p.Code)-COPY" /></div>
+                <div><label class="form-label" for="copyName">New name</label><input id="copyName" name="name" class="form-control" required maxlength="200" value="@(p.Name) (copy)" /></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Copy</button></div></form></div></div>
+}
+@section Scripts { <script src="~/js/installments.js" asp-append-version="true"></script> }

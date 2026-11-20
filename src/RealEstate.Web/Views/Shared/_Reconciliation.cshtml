@@ -1,0 +1,30 @@
+@* Model: (SchedulePreviewDto Preview, string Symbol) *@
+@model (RealEstate.Application.Installments.SchedulePreviewDto Preview, string Symbol)
+@{ var p = Model.Preview; var s = Model.Symbol; var ok = p.IsReconciled && p.PriceDifference == 0m && p.ChargesTotal > 0m; }
+<div class="card mb-3" id="reconciliation">
+    <div class="card-header fw-semibold d-flex justify-content-between align-items-center"><span>Reconciliation</span>
+        <span class="badge @(ok ? "text-bg-success" : "text-bg-danger")">@(ok ? "Reconciled" : "Not reconciled")</span></div>
+    <div class="card-body">
+        <dl class="row mb-3">
+            <dt class="col-7 col-md-4">Sale consideration scheduled</dt><dd class="col-5 col-md-2 text-end text-nowrap">@s @p.SaleConsiderationTotal.ToString("N2")</dd>
+            <dt class="col-7 col-md-4">Booking total payable</dt><dd class="col-5 col-md-2 text-end text-nowrap">@s @p.TotalPayable.ToString("N2")</dd>
+            <dt class="col-7 col-md-4">Difference</dt><dd class="col-5 col-md-2 text-end text-nowrap @(p.PriceDifference == 0 ? "text-success" : "text-danger fw-semibold")">@s @p.PriceDifference.ToString("N2")</dd>
+            <dt class="col-7 col-md-4">Additional charges</dt><dd class="col-5 col-md-2 text-end text-nowrap">@s @((p.ChargesTotal - p.SaleConsiderationTotal).ToString("N2"))</dd>
+            <dt class="col-7 col-md-4">All charges</dt><dd class="col-5 col-md-2 text-end text-nowrap">@s @p.ChargesTotal.ToString("N2")</dd>
+            <dt class="col-7 col-md-4">Scheduled total / tax</dt><dd class="col-5 col-md-2 text-end text-nowrap">@s @p.TotalAmount.ToString("N2") / @p.TotalTax.ToString("N2")</dd>
+        </dl>
+        @if (p.Reconciliation.Count > 0)
+        {
+            <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack"><thead><tr><th>Charge</th><th class="text-end">Charge amount</th><th class="text-end">Scheduled</th><th class="text-end">Difference</th></tr></thead><tbody>
+            @foreach (var r in p.Reconciliation)
+            {
+                <tr><td data-label="Charge">@r.Description</td><td data-label="Charge amount" class="text-end">@r.ChargeAmount.ToString("N2")</td><td data-label="Scheduled" class="text-end">@r.ScheduledAmount.ToString("N2")</td>
+                    <td data-label="Difference" class="text-end @(r.Difference == 0 ? "" : "text-danger")">@r.Difference.ToString("N2")</td></tr>
+            }</tbody></table></div>
+        }
+        @if (p.Problems.Count > 0)
+        {
+            <div class="alert alert-danger mt-3 mb-0" role="alert"><div class="fw-semibold">Problems to fix before the schedule can be generated</div><ul class="mb-0">@foreach (var x in p.Problems) { <li>@x</li> }</ul></div>
+        }
+    </div>
+</div>

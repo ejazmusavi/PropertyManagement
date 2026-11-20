@@ -282,6 +282,7 @@ public class CustomerAgreementConfiguration : IEntityTypeConfiguration<CustomerA
         b.HasOne<Booking>().WithOne().HasForeignKey<CustomerAgreement>(x => x.BookingId).OnDelete(DeleteBehavior.Restrict);
         b.HasMany(x => x.Versions).WithOne().HasForeignKey(v => v.AgreementId).OnDelete(DeleteBehavior.Restrict);
         b.HasIndex(x => x.AgreementNumber).IsUnique();
+        b.HasOne<InstallmentPlan>().WithMany().HasForeignKey(x => x.InstallmentPlanId).OnDelete(DeleteBehavior.Restrict); // Phase 5
         b.HasIndex(x => x.BookingId).IsUnique();
     }
 }
@@ -320,7 +321,18 @@ public class AgreementAmendmentConfiguration : IEntityTypeConfiguration<Agreemen
         b.Property(x => x.AmendmentType).HasConversion<string>().HasMaxLength(30);
         b.Property(x => x.Reason).HasMaxLength(1000).IsRequired();
         b.Property(x => x.Details).HasColumnType("longtext").IsRequired();
-        b.Property(x => x.ApprovedBy).HasMaxLength(256).IsRequired();
+        b.Property(x => x.ApprovedBy).HasMaxLength(256);
+        b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.RequestedBy).HasMaxLength(256);
+        b.Property(x => x.DecisionComments).HasMaxLength(1000);
+        b.Property(x => x.DecidedAtUtc).HasPrecision(6);
+        b.Property(x => x.IdempotencyKey).HasMaxLength(64);
+        b.Property(x => x.RowVersion).IsRowVersion();
+        b.HasOne<PaymentSchedule>().WithMany().HasForeignKey(x => x.BaseScheduleId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<PaymentSchedule>().WithMany().HasForeignKey(x => x.ResultScheduleId).OnDelete(DeleteBehavior.Restrict);
+        b.HasIndex(x => x.PendingAgreementId).IsUnique(); // Phase 5: one pending amendment per agreement
+        b.HasIndex(x => x.IdempotencyKey).IsUnique();
+        b.HasIndex(x => new { x.Status, x.AgreementId });
         b.HasOne<CustomerAgreement>().WithMany().HasForeignKey(x => x.AgreementId).OnDelete(DeleteBehavior.Restrict);
         b.HasIndex(x => new { x.AgreementId, x.ToVersionNo }).IsUnique();
     }

@@ -1,0 +1,26 @@
+@model PreviewViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var a = Model.Agreement; var p = Model.Preview; var s = a.CurrencySymbol; ViewData["Title"] = "Schedule preview " + a.AgreementNumber; await Ui.LoadAsync();
+   var canGenerate = p.CanGenerate && a.CanEditCharges && Ui.Has("installments.schedule"); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Schedule preview – @a.AgreementNumber</h1><div class="text-muted">@a.ProjectCode &middot; @a.Customers</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canGenerate) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal">Generate schedule</button> }
+        @if (a.CanEditCharges && Ui.Has("installments.schedule")) { <a class="btn btn-outline-primary" asp-action="Builder" asp-route-id="@a.AgreementId">Back to builder</a> }
+        <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@a.AgreementId">Agreement installments</a>
+    </div>
+</div>
+@if (a.ScheduleGenerated) { <div class="alert alert-info">A schedule has already been generated (version @a.CurrentVersionNo). This is the preview of the current charges; changes now require an amendment.</div> }
+<partial name="_Reconciliation" model="(p, s)" />
+<div class="card mb-3"><div class="card-header fw-semibold">Installments (@p.Items.Count)</div>
+@if (p.Items.Count == 0) { <div class="card-body text-muted">There are no installments to show. Add charges in the builder first.</div> }
+else { <partial name="_ScheduleTable" model="(p.Items, s)" /> }</div>
+@if (canGenerate)
+{
+    <div class="modal fade" id="generateModal" tabindex="-1" aria-labelledby="generateTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Generate" asp-route-id="@a.AgreementId" method="post" data-loading-form><input type="hidden" name="rowVersion" value="@a.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="generateTitle">Generate schedule</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Generate the installment schedule of @p.Items.Count installments totalling @s @p.TotalAmount.ToString("N2")? Once generated, the charges are locked and every later change needs an approved amendment.</p>
+                <label class="form-label" for="remarks">Remarks (optional)</label><input id="remarks" name="remarks" class="form-control" maxlength="500" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Generate</button></div></form></div></div>
+}

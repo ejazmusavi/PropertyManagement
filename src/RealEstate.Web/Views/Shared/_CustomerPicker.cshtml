@@ -1,0 +1,9 @@
+@* Model: (string Field, long? Id, string? Label, string LabelField) *@
+@model (string Field, long? Id, string? Label, string LabelField)
+<div class="cust-picker" data-lookup-url="@Url.Action("CustomerLookup", "Bookings")">
+    <input type="search" class="form-control mb-1 cust-search" placeholder="Search customer by name, code, CNIC or mobile" aria-label="Search customer" autocomplete="off" />
+    <select name="@Model.Field" class="form-select cust-select" aria-label="Customer">
+        @if (Model.Id is { } id) { <option value="@id" selected>@(Model.Label ?? id.ToString())</option> } else { <option value="">- Search first -</option> }
+    </select>
+    <input type="hidden" name="@Model.LabelField" class="cust-label" value="@Model.Label" />
+</div>

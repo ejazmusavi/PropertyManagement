@@ -5,7 +5,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3 d-print-none">
     <div><h1 class="h3 mb-1">Agreement @a.AgreementNumber <span class="badge @(a.Status == AgreementStatus.Active ? "text-bg-success" : "text-bg-dark")">@a.Status</span></h1>
         <div class="text-muted">Booking @a.BookingNumber &middot; version @a.ViewingVersionNo of @a.CurrentVersionNo &middot; generated @a.GeneratedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div></div>
-    <div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-outline-primary" onclick="window.print()">Print</button><a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@a.BookingId">Back to booking</a></div>
+    <div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-outline-primary" onclick="window.print()">Print</button>@if (b.AgreementId is not null && Ui.Has("installments.view")) { <a class="btn btn-outline-primary" asp-controller="InstallmentAgreements" asp-action="Details" asp-route-id="@b.AgreementId">Installments</a> }<a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@a.BookingId">Back to booking</a></div>
 </div>
 @if (a.Status == AgreementStatus.Cancelled) { <div class="alert alert-dark d-print-none">This agreement was cancelled: @a.CancelReason</div> }
 @if (!a.ContentVerified) { <div class="alert alert-danger d-print-none">The stored text of this version does not match its recorded checksum.</div> }
