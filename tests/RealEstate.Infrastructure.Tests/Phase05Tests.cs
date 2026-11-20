@@ -212,6 +212,34 @@ public class Phase05Tests(Phase1Fixture fx)
             InstallmentPlanType.StandardProject, null, null, null, null))));
     }
 
+    [MySqlFact]
+    public async Task CompanyWideLateFeeRules_CanBeChangedOnlyWithAllProjectAccess()
+    {
+        var w = await WorldAsync();
+        var manager = await UserAsync(RoleNames.ProjectManager); // installments.manage, but no projects.access.all
+        As(w.Admin);
+        using (var s = fx.Scope()) await Svc<ProjectAccessAdminService>(s).AssignAsync(w.ProjectId, manager);
+
+        var global = await Run(w.Director, s => Svc<InstallmentSetupService>(s).CreateLateFeeRuleAsync(new SaveLateFeeRuleRequest("LF" + Interlocked.Increment(ref counter), "Company rule",
+            null, LateFeeMethod.PercentPerMonth, 1m, null, 10m, null, true, null)));
+        // Readable, but neither renaming nor deactivating is allowed for a project-scoped manager.
+        Assert.Equal(global.Id, (await Run(manager, s => Svc<InstallmentSetupService>(s).GetLateFeeRuleAsync(global.Id))).Id);
+        await Assert.ThrowsAsync<ForbiddenException>(() => Run(manager, s => Svc<InstallmentSetupService>(s).UpdateLateFeeRuleAsync(global.Id,
+            new SaveLateFeeRuleRequest(global.Code, "Hijacked", null, LateFeeMethod.PercentPerMonth, 1m, null, 10m, null, false, global.RowVersion))));
+        await Assert.ThrowsAsync<ForbiddenException>(() => Run(manager, s => Svc<InstallmentSetupService>(s).CreateLateFeeRuleAsync(new SaveLateFeeRuleRequest(
+            "LF" + Interlocked.Increment(ref counter), "Company rule 2", null, LateFeeMethod.PercentPerMonth, 1m, null, 10m, null, true, null))));
+        var unchanged = await Run(w.Director, s => Svc<InstallmentSetupService>(s).GetLateFeeRuleAsync(global.Id));
+        Assert.Equal("Company rule", unchanged.Name);
+        Assert.True(unchanged.IsActive);
+
+        // Project rules of an assigned project stay manageable by the project-scoped manager.
+        var local = await Run(manager, s => Svc<InstallmentSetupService>(s).CreateLateFeeRuleAsync(new SaveLateFeeRuleRequest("LF" + Interlocked.Increment(ref counter), "Project rule",
+            w.ProjectId, LateFeeMethod.PercentPerMonth, 1m, null, 10m, null, true, null)));
+        var renamed = await Run(manager, s => Svc<InstallmentSetupService>(s).UpdateLateFeeRuleAsync(local.Id,
+            new SaveLateFeeRuleRequest(local.Code, "Project rule (renamed)", w.ProjectId, LateFeeMethod.PercentPerMonth, 1m, null, 10m, null, true, local.RowVersion)));
+        Assert.Equal("Project rule (renamed)", renamed.Name);
+    }
+
     // ------------------------------------------------------------------------------------------------ builder and generation
     [MySqlFact]
     public async Task ApplyPlan_Generate_ReconcilesWithAgreement_AndAttachesScheduleToAgreementText()

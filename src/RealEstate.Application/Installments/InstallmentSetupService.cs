@@ -106,6 +106,8 @@ public class InstallmentSetupService(
         await permissions.EnsureAsync(user, Permissions.InstallmentsManage, ct);
         await ruleValidator.ValidateOrThrowAsync(r, ct);
         var rule = await LoadRuleAsync(id, tracked: true, ct);
+        // Same rule as creation: company-wide rules affect every project, so only users with access to all projects may change them.
+        if (rule.ProjectId is null && !await access.HasAllAccessAsync(ct)) throw new ForbiddenException("Only users with access to all projects can change company-wide late fee rules.");
         if (!string.Equals(rule.Code, r.Code.Trim(), StringComparison.OrdinalIgnoreCase)) throw PricingSupport.Invalid("Code", "The code cannot be changed.");
         if (rule.ProjectId != r.ProjectId) throw PricingSupport.Invalid("ProjectId", "The project of a late fee rule cannot be changed.");
         LateFeeCalculator.Validate(new(r.Method, r.Value, r.MaxAmount, r.MaxPercentOfInstallment));
