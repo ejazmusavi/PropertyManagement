@@ -1,0 +1,47 @@
+@model ExpenseListViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = Model.Title; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Expenses;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["categoryId"] = f.CategoryId?.ToString(), ["status"] = Model.ApprovalQueue ? null : f.Status?.ToString(),
+       ["paymentStatus"] = f.PaymentStatus?.ToString(), ["payableOnly"] = f.PayableOnly ? "true" : null, ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.Title</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.ExpensesManage)) { <a class="btn btn-primary" asp-action="Create">Register expense</a> }
+        <a class="btn btn-outline-secondary" asp-action="Dashboard">Dashboard</a>
+        @if (!Model.ApprovalQueue && Ui.Has(Permissions.ExpensesApprove)) { <a class="btn btn-outline-secondary" asp-action="Approvals">Approval queue</a> }
+        @if (Ui.Has(Permissions.ExpensesView)) { <a class="btn btn-outline-secondary" asp-action="Index" asp-route-payableOnly="true">Payables</a> }
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    @if (f.PayableOnly) { <input type="hidden" name="payableOnly" value="true" /> }
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Number, description, vendor" aria-label="Search expenses" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="categoryId" class="form-select" aria-label="Category"><option value="">All categories</option>@foreach (var x in Model.Categories) { <option value="@x.Id" selected="@(f.CategoryId == x.Id)">@x.Name</option> }</select></div>
+    @if (!Model.ApprovalQueue)
+    {
+        <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<ExpenseStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div>
+        <div class="col-6 col-lg-2"><select name="paymentStatus" class="form-select" aria-label="Payment"><option value="">Any payment status</option>@foreach (var s in Enum.GetValues<ExpensePaymentStatus>()) { <option value="@s" selected="@(f.PaymentStatus == s)">@s.Label()</option> }</select></div>
+    }
+    <div class="col-12 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">@(Model.ApprovalQueue ? "No expenses are waiting for approval." : "No expenses found.")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Expense</th><th>Project</th><th>Category</th><th>Vendor</th><th>Date</th><th class="text-end">Amount</th><th class="text-end">Outstanding</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Expense">@x.ExpenseNumber<div class="small text-muted">@x.Description</div></td><td data-label="Project">@x.ProjectCode</td><td data-label="Category">@x.CategoryName</td><td data-label="Vendor">@(x.VendorName ?? "-")</td>
+                <td data-label="Date">@x.ExpenseDate.ToString("yyyy-MM-dd")@(x.DueDate is { } dd ? " (due " + dd.ToString("yyyy-MM-dd") + ")" : "")</td><td data-label="Amount" class="text-end">@x.Amount.ToString("N2")</td>
+                <td data-label="Outstanding" class="text-end">@x.Outstanding.ToString("N2")</td>
+                <td data-label="Status">@x.Status.Label()@(x.Status == ExpenseStatus.Approved ? " / " + x.PaymentStatus.Label() : "")</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">@(Model.ApprovalQueue ? "Review" : "Open")</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "expenses", route, "page")' />
+}

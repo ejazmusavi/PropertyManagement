@@ -1,0 +1,21 @@
+@model VendorInvoiceFormViewModel
+@{ ViewData["Title"] = "Register vendor invoice"; }
+<h1 class="h3 mb-3">Register vendor invoice</h1>
+<p class="text-muted">Registering an invoice creates its payable expense (Draft). Upload the invoice document and submit it for approval; once approved it can be paid in full or in part.</p>
+<form asp-action="Create" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="IdempotencyKey" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="VendorId" class="form-label"></label><select asp-for="VendorId" class="form-select"><option value="0">Select vendor</option>@foreach (var x in Model.Vendors) { <option value="@x.Id" selected="@(Model.VendorId == x.Id)">@x.Code &ndash; @x.Name</option> }</select><span asp-validation-for="VendorId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="ProjectId" class="form-label"></label><select asp-for="ProjectId" class="form-select"><option value="0">Select project</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(Model.ProjectId == x.Id)">@x.ProjectCode &ndash; @x.ProjectName</option> }</select><span asp-validation-for="ProjectId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="CategoryId" class="form-label"></label><select asp-for="CategoryId" class="form-select"><option value="0">Select category</option>@foreach (var x in Model.Categories) { <option value="@x.Id" selected="@(Model.CategoryId == x.Id)">@x.Name</option> }</select><span asp-validation-for="CategoryId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="InvoiceNumber" class="form-label"></label><input asp-for="InvoiceNumber" class="form-control" maxlength="60" /><span asp-validation-for="InvoiceNumber" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="InvoiceDate" class="form-label"></label><input asp-for="InvoiceDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="Amount" class="form-label"></label><input asp-for="Amount" type="number" step="0.01" min="0.01" class="form-control" /><span asp-validation-for="Amount" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-8"><label asp-for="Description" class="form-label"></label><input asp-for="Description" class="form-control" maxlength="500" placeholder="Defaults to the invoice number and vendor" /></div>
+        <div class="col-12"><label asp-for="Notes" class="form-label"></label><input asp-for="Notes" class="form-control" maxlength="1000" /></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Register invoice</button><a class="btn btn-outline-secondary" asp-action="Index">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

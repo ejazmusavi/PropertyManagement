@@ -1,0 +1,35 @@
+@model VendorPaymentListViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Vendor payments"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Payments;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["status"] = f.Status?.ToString(), ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Vendor payments</h1>
+    @if (Ui.Has(Permissions.ExpensesPay)) { <a class="btn btn-primary" asp-action="Create">Record payment</a> }
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Payment, expense, vendor or reference" aria-label="Search payments" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<VendorPaymentStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-2"><input type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" aria-label="From" /></div>
+    <div class="col-6 col-lg-2"><input type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" aria-label="To" /></div>
+    <div class="col-12 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No vendor payments found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Payment</th><th>Expense</th><th>Vendor</th><th>Date</th><th>Method</th><th class="text-end">Amount</th><th>Status</th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Payment">@x.PaymentNumber<div class="small text-muted">@x.ProjectCode</div></td><td data-label="Expense"><a asp-controller="Expenses" asp-action="Details" asp-route-id="@x.ExpenseId">@x.ExpenseNumber</a></td>
+                <td data-label="Vendor">@(x.VendorName ?? "-")</td><td data-label="Date">@x.PaymentDate.ToString("yyyy-MM-dd")</td><td data-label="Method">@x.MethodName@(x.Reference is null ? "" : " / " + x.Reference)</td>
+                <td data-label="Amount" class="text-end">@x.Amount.ToString("N2")</td><td data-label="Status">@x.Status.Label()</td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "payments", route, "page")' />
+}

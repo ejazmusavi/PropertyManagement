@@ -1,0 +1,139 @@
+@model GovFeeDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var f = Model.Fee; var s = f.CurrencySymbol; ViewData["Title"] = "Fee " + f.AssessmentNumber;
+   var live = f.Status == GovernmentFeeAssessmentStatus.Assessed;
+   var canCollect = live && f.CustomerOutstanding > 0m && Ui.Has(Permissions.GovFeesAssess);
+   var canPay = live && f.GovernmentPayable > 0m && Ui.Has(Permissions.GovFeesPay);
+   var canCancel = live && f.Collected == 0m && f.PaidToGovernment == 0m && Ui.Has(Permissions.GovFeesAssess);
+   var canReverse = Ui.Has(Permissions.GovFeesPay);
+   var docsOpen = Ui.Has(Permissions.GovFeesAssess); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Fee @f.AssessmentNumber <span class="badge text-bg-secondary">@f.Status.Label()</span></h1>
+        <div class="text-muted">@f.FeeTypeName &middot; agreement @f.AgreementNumber &middot; @f.CustomerName &middot; @f.ProjectCode</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canCollect) { <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#collectModal">Record customer collection</button> }
+        @if (canPay) { <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#payModal">Record payment to government</button> }
+        @if (canCancel) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancel assessment</button> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
+    </div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Customer side</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-6">Customer liability</dt><dd class="col-sm-6">@s @f.CustomerLiability.ToString("N2")</dd>
+        <dt class="col-sm-6">Customer collection</dt><dd class="col-sm-6">@s @f.Collected.ToString("N2")</dd>
+        <dt class="col-sm-6">Customer outstanding</dt><dd class="col-sm-6 fw-semibold">@s @f.CustomerOutstanding.ToString("N2")</dd>
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Government and company side</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-6">Government payable (assessed)</dt><dd class="col-sm-6">@s @f.Amount.ToString("N2")</dd>
+        <dt class="col-sm-6">Actual payment to government</dt><dd class="col-sm-6">@s @f.PaidToGovernment.ToString("N2")</dd>
+        <dt class="col-sm-6">Government payable outstanding</dt><dd class="col-sm-6 fw-semibold">@s @f.GovernmentPayable.ToString("N2")</dd>
+        <dt class="col-sm-6">Company-borne expense</dt><dd class="col-sm-6">@s @f.CompanyBorne.ToString("N2")</dd>
+    </dl></div></div></div>
+    <div class="col-12"><div class="card"><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-3">Calculation</dt><dd class="col-sm-9">@f.Method.Label()@(f.BasisAmount is { } b ? " on " + s + " " + b.ToString("N2") : "")</dd>
+        @if (f.DueDate is { } due) { <dt class="col-sm-3">Due date</dt><dd class="col-sm-9">@due.ToString("yyyy-MM-dd")</dd> }
+        @if (!string.IsNullOrEmpty(f.Reference)) { <dt class="col-sm-3">Reference</dt><dd class="col-sm-9">@f.Reference</dd> }
+        @if (!string.IsNullOrEmpty(f.Remarks)) { <dt class="col-sm-3">Remarks</dt><dd class="col-sm-9">@f.Remarks</dd> }
+        <dt class="col-sm-3">Assessed</dt><dd class="col-sm-9">@f.CreatedBy on @f.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC. Accounting entries are generated in Phase 8 from the queued events.</dd>
+        @if (f.CancelledBy is not null) { <dt class="col-sm-3">Cancelled</dt><dd class="col-sm-9">@f.CancelledBy on @f.CancelledAtUtc?.ToString("yyyy-MM-dd"): @f.CancelReason</dd> }
+    </dl></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Customer collections</div>
+@if (f.Collections.Count == 0) { <div class="card-body text-muted">Nothing collected yet.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Collection</th><th>Date</th><th>Method</th><th>Reference</th><th class="text-end">Amount</th><th>Status</th><th></th></tr></thead><tbody>
+@foreach (var c in f.Collections) { <tr><td data-label="Collection">@c.CollectionNumber</td><td data-label="Date">@c.CollectionDate.ToString("yyyy-MM-dd")</td><td data-label="Method">@c.MethodName</td><td data-label="Reference">@(c.Reference ?? "-")</td><td data-label="Amount" class="text-end">@c.Amount.ToString("N2")</td>
+    <td data-label="Status">@c.Status.Label()@(c.Status == FeeEntryStatus.Reversed ? " by " + c.ReversedBy + ": " + c.ReversalReason : "")</td>
+    <td class="text-end">@if (c.Status == FeeEntryStatus.Posted && canReverse) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#revColModal" data-id="@c.Id" data-no="@c.CollectionNumber">Reverse</button> }</td></tr> }
+</tbody></table></div> }
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Payments to government</div>
+@if (f.Payments.Count == 0) { <div class="card-body text-muted">Nothing paid to government yet.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Payment</th><th>Date</th><th>Method</th><th>Challan / receipt</th><th class="text-end">Amount</th><th>Status</th><th></th></tr></thead><tbody>
+@foreach (var p in f.Payments) { <tr><td data-label="Payment">@p.PaymentNumber</td><td data-label="Date">@p.PaymentDate.ToString("yyyy-MM-dd")</td><td data-label="Method">@p.MethodName</td><td data-label="Reference">@(p.Reference ?? "-")</td><td data-label="Amount" class="text-end">@p.Amount.ToString("N2")</td>
+    <td data-label="Status">@p.Status.Label()@(p.Status == FeeEntryStatus.Reversed ? " by " + p.ReversedBy + ": " + p.ReversalReason : "")</td>
+    <td class="text-end">@if (p.Status == FeeEntryStatus.Posted && canReverse) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#revPayModal" data-id="@p.Id" data-no="@p.PaymentNumber">Reverse</button> }</td></tr> }
+</tbody></table></div> }
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Government receipts and documents</div>
+@if (f.Documents.Count == 0) { <div class="card-body text-muted">No documents uploaded.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Title</th><th>Type</th><th>File</th><th class="text-end">Size</th><th>Uploaded</th><th></th></tr></thead><tbody>
+@foreach (var d in f.Documents) { <tr><td data-label="Title">@d.Title</td><td data-label="Type">@d.DocumentType.Label()</td><td data-label="File">@d.FileName</td><td data-label="Size" class="text-end">@((d.SizeBytes / 1024.0).ToString("N0")) KB</td><td data-label="Uploaded">@d.CreatedAtUtc.ToString("yyyy-MM-dd") by @d.CreatedBy</td>
+    <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="DownloadDocument" asp-route-id="@f.Id" asp-route-documentId="@d.Id">Download</a>
+    @if (docsOpen) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal" data-doc-id="@d.Id" data-doc-title="@d.Title">Remove</button> }</td></tr> }
+</tbody></table></div> }
+@if (docsOpen)
+{
+    <div class="card-body border-top"><form asp-action="UploadDocument" asp-route-id="@f.Id" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+        <div class="col-12 col-lg-4"><label class="form-label" for="docfile">File</label><input id="docfile" type="file" name="file" class="form-control" required /></div>
+        <div class="col-6 col-lg-3"><label class="form-label" for="doctype">Type</label><select id="doctype" name="type" asp-items="EnumText.Options<GovernmentFeeDocumentType>()" class="form-select"></select></div>
+        <div class="col-6 col-lg-4"><label class="form-label" for="doctitle">Title</label><input id="doctitle" name="title" class="form-control" maxlength="200" /></div>
+        <div class="col-12 col-lg-1"><button class="btn btn-primary w-100" type="submit">Upload</button></div></form></div>
+}
+</div>
+@if (canCollect)
+{
+    <div class="modal fade" id="collectModal" tabindex="-1" aria-labelledby="collectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Collect" asp-route-id="@f.Id" method="post" data-loading-form><input type="hidden" name="rowVersion" value="@f.RowVersion" /><input type="hidden" name="idempotencyKey" value="@Guid.NewGuid().ToString("N")" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="collectTitle">Record customer collection</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>The customer still owes @s @f.CustomerOutstanding.ToString("N2").</p>
+                <div class="row g-2"><div class="col-12 col-sm-6"><label class="form-label" for="ca">Amount</label><input id="ca" name="amount" type="number" step="0.01" min="0.01" max="@f.CustomerOutstanding" class="form-control" required value="@f.CustomerOutstanding.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="cd">Date</label><input id="cd" name="collectionDate" type="date" class="form-control" required value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="cm">Method</label><select id="cm" name="paymentMethodId" class="form-select">@foreach (var m in Model.Methods) { <option value="@m.Id">@m.Name</option> }</select></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="cr">Reference</label><input id="cr" name="reference" class="form-control" maxlength="100" placeholder="Required except for cash" /></div>
+                <div class="col-12"><label class="form-label" for="crm">Remarks</label><input id="crm" name="remarks" class="form-control" maxlength="1000" /></div></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Record collection</button></div></form></div></div>
+}
+@if (canPay)
+{
+    <div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Pay" asp-route-id="@f.Id" method="post" data-loading-form><input type="hidden" name="IdempotencyKey" value="@Guid.NewGuid().ToString("N")" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="payTitle">Record payment to government</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Payable to government: @s @f.GovernmentPayable.ToString("N2").</p>
+                <div class="row g-2"><div class="col-12 col-sm-6"><label class="form-label" for="pa">Amount</label><input id="pa" name="Amount" type="number" step="0.01" min="0.01" max="@f.GovernmentPayable" class="form-control" required value="@f.GovernmentPayable.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="pd">Payment date</label><input id="pd" name="PaymentDate" type="date" class="form-control" required value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="pm">Method</label><select id="pm" name="PaymentMethodId" class="form-select">@foreach (var m in Model.Methods) { <option value="@m.Id">@m.Name</option> }</select></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="pr">Challan / receipt number</label><input id="pr" name="Reference" class="form-control" maxlength="100" placeholder="Required except for cash" /></div>
+                <div class="col-12"><label class="form-label" for="prm">Remarks</label><input id="prm" name="Remarks" class="form-control" maxlength="1000" /></div></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Record payment</button></div></form></div></div>
+}
+@if (canCancel)
+{
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Cancel" asp-route-id="@f.Id" method="post"><input type="hidden" name="rowVersion" value="@f.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="cancelTitle">Cancel assessment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="cnr">Reason</label><input id="cnr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back</button><button type="submit" class="btn btn-danger">Cancel assessment</button></div></form></div></div>
+}
+@if (canReverse)
+{
+    <div class="modal fade" id="revColModal" tabindex="-1" aria-labelledby="revColTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="ReverseCollection" asp-route-id="@f.Id" method="post"><input type="hidden" name="collectionId" id="revColId" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="revColTitle">Reverse collection</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Reverse collection <strong id="revColNo"></strong>? The amount becomes owed by the customer again.</p><label class="form-label" for="rcr">Reason</label><input id="rcr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back</button><button type="submit" class="btn btn-danger">Reverse</button></div></form></div></div>
+    <div class="modal fade" id="revPayModal" tabindex="-1" aria-labelledby="revPayTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="ReversePayment" asp-route-id="@f.Id" method="post"><input type="hidden" name="paymentId" id="revPayId" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="revPayTitle">Reverse payment to government</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Reverse payment <strong id="revPayNo"></strong>? The amount becomes payable to government again.</p><label class="form-label" for="rpr">Reason</label><input id="rpr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back</button><button type="submit" class="btn btn-danger">Reverse</button></div></form></div></div>
+}
+<div class="modal fade" id="deleteDocModal" tabindex="-1" aria-labelledby="deleteDocTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="DeleteDocument" asp-route-id="@f.Id" method="post"><input type="hidden" name="documentId" id="deleteDocId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="deleteDocTitle">Remove document</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Remove <strong id="deleteDocName"></strong>? The file is archived and the removal is audited.</p><label class="form-label" for="dr">Reason (required)</label><input id="dr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Remove</button></div></form></div></div>
+@section Scripts {
+<script>
+function wire(modal, idField, labelField, idKey, labelKey) {
+  document.getElementById(modal)?.addEventListener('show.bs.modal', function (ev) { document.getElementById(idField).value = ev.relatedTarget.dataset[idKey]; document.getElementById(labelField).textContent = ev.relatedTarget.dataset[labelKey]; });
+}
+wire('deleteDocModal', 'deleteDocId', 'deleteDocName', 'docId', 'docTitle');
+wire('revColModal', 'revColId', 'revColNo', 'id', 'no');
+wire('revPayModal', 'revPayId', 'revPayNo', 'id', 'no');
+</script>
+}

@@ -1,0 +1,29 @@
+@model ExpenseFormViewModel
+@{ var edit = Model.Id is not null; ViewData["Title"] = edit ? "Edit expense" : "Register expense"; }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+@if (Model.AmountLocked) { <div class="alert alert-info">This expense comes from a vendor invoice, so its vendor and amount cannot be changed here.</div> }
+<form asp-action="@(edit ? "Edit" : "Create")" asp-route-id="@Model.Id" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" /><input type="hidden" asp-for="IdempotencyKey" /><input type="hidden" asp-for="AmountLocked" />
+    @if (edit) { <input type="hidden" asp-for="ProjectId" /> }
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="ProjectId" class="form-label"></label>
+            @if (edit) { <input class="form-control" value="@(Model.Projects.FirstOrDefault(x => x.Id == Model.ProjectId)?.ProjectCode)" disabled /> }
+            else { <select asp-for="ProjectId" class="form-select"><option value="0">Select project</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(Model.ProjectId == x.Id)">@x.ProjectCode &ndash; @x.ProjectName</option> }</select> }
+            <span asp-validation-for="ProjectId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="CategoryId" class="form-label"></label><select asp-for="CategoryId" class="form-select"><option value="0">Select category</option>@foreach (var x in Model.Categories) { <option value="@x.Id" selected="@(Model.CategoryId == x.Id)">@x.Name</option> }</select><span asp-validation-for="CategoryId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="VendorId" class="form-label"></label>
+            <select asp-for="VendorId" class="form-select" disabled="@Model.AmountLocked"><option value="">No vendor</option>@foreach (var x in Model.Vendors) { <option value="@x.Id" selected="@(Model.VendorId == x.Id)">@x.Code &ndash; @x.Name</option> }</select>
+            @if (Model.AmountLocked) { <input type="hidden" asp-for="VendorId" /> }</div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><input asp-for="Description" class="form-control" maxlength="500" /><span asp-validation-for="Description" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Amount" class="form-label"></label><input asp-for="Amount" type="number" step="0.01" min="0.01" class="form-control" readonly="@Model.AmountLocked" /><span asp-validation-for="Amount" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="ExpenseDate" class="form-label"></label><input asp-for="ExpenseDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="Reference" class="form-label"></label><input asp-for="Reference" class="form-control" maxlength="100" /></div>
+        <div class="col-12 col-lg-8"><label asp-for="Remarks" class="form-label"></label><input asp-for="Remarks" class="form-control" maxlength="1000" /></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>@(edit ? "Save" : "Register")</button>
+        <a class="btn btn-outline-secondary" asp-action="@(edit ? "Details" : "Index")" asp-route-id="@Model.Id">Cancel</a></div>
+    @if (!edit) { <p class="text-muted small mt-2">After registering you upload the supporting document and submit the expense for approval.</p> }
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

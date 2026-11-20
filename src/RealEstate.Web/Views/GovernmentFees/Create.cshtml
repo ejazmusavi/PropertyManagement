@@ -1,0 +1,36 @@
+@model GovFeeAssessFormViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = "Assess a government fee"; var ag = Model.Agreement; }
+<h1 class="h3 mb-3">Assess a government fee</h1>
+@if (ag is not null) { <div class="card mb-3"><div class="card-body">Agreement <strong>@ag.AgreementNumber</strong> (@ag.ProjectCode) &middot; account holder @ag.CustomerName (@ag.CustomerCode)</div></div> }
+<form asp-action="Create" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="AgreementId" /><input type="hidden" asp-for="IdempotencyKey" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="FeeTypeId" class="form-label"></label>
+            <select asp-for="FeeTypeId" class="form-select" id="feeType"><option value="0">Select fee type</option>
+            @foreach (var t in Model.Types) { <option value="@t.Id" data-method="@t.Method" data-bearer="@t.DefaultBearer" selected="@(Model.FeeTypeId == t.Id)">@t.Name (@t.Method.Label())</option> }</select>
+            <span asp-validation-for="FeeTypeId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4" id="basisField"><label asp-for="BasisAmount" class="form-label"></label><input asp-for="BasisAmount" type="number" step="0.01" min="0" class="form-control" /><div class="form-text">For percentage fees, e.g. the property value.</div></div>
+        <div class="col-12 col-lg-4" id="amountField"><label asp-for="Amount" class="form-label"></label><input asp-for="Amount" type="number" step="0.01" min="0" class="form-control" /><div class="form-text">For manual fees. Fixed and percentage fees are calculated.</div></div>
+        <div class="col-12 col-lg-4"><label asp-for="CompanyBorneAmount" class="form-label"></label><input asp-for="CompanyBorneAmount" type="number" step="0.01" min="0" class="form-control" /><div class="form-text">Leave blank to use the fee type's default bearer (customer or company).</div></div>
+        <div class="col-12 col-lg-4"><label asp-for="DueDate" class="form-label"></label><input asp-for="DueDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="Reference" class="form-label"></label><input asp-for="Reference" class="form-control" maxlength="100" /></div>
+        <div class="col-12"><label asp-for="Remarks" class="form-label"></label><input asp-for="Remarks" class="form-control" maxlength="1000" /></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Assess fee</button><a class="btn btn-outline-secondary" asp-action="Index">Cancel</a></div>
+</form>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  var sel = document.getElementById('feeType'); if (!sel) return;
+  function sync() {
+    var o = sel.options[sel.selectedIndex]; var m = o ? o.dataset.method : '';
+    document.getElementById('basisField').style.display = m === 'PercentOfBasis' ? '' : 'none';
+    document.getElementById('amountField').style.display = (m === 'Manual' || !m) ? '' : 'none';
+  }
+  sel.addEventListener('change', sync); sync();
+})();
+</script>
+}

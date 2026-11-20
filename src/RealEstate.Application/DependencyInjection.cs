@@ -15,6 +15,8 @@ using RealEstate.Application.Sales;
 using RealEstate.Application.Installments;
 using RealEstate.Application.Payments;
 using RealEstate.Application.Recovery;
+using RealEstate.Application.Expenses;
+using RealEstate.Application.GovernmentFees;
 
 namespace RealEstate.Application;
 
@@ -51,6 +53,11 @@ public static class DependencyInjection
         services.AddScoped<LedgerService>();
         services.AddScoped<RefundService>();
         services.AddScoped<RecoveryService>();
+        services.AddScoped<ExpenseSupport>();
+        services.AddScoped<VendorService>();
+        services.AddScoped<ExpenseService>();
+        services.AddScoped<VendorInvoiceService>();
+        services.AddScoped<GovernmentFeeService>();
         services.AddScoped<UserAdministrationService>();
         services.AddScoped<RoleService>();
         services.AddScoped<ProjectAccessAdminService>();

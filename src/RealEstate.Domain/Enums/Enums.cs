@@ -168,7 +168,13 @@ public enum LedgerEntryType
     InstallmentDue = 1, DueAdjustment = 2, PaymentReceived = 3, PaymentReversed = 4, Waiver = 5, WaiverAdjustment = 6, RefundPaid = 7, BalanceTransferIn = 8, BalanceTransferOut = 9
 }
 
-public enum AccountingEventType { PaymentPosted = 1, PaymentReversed = 2, RefundPaid = 3 }
+public enum AccountingEventType
+{
+    PaymentPosted = 1, PaymentReversed = 2, RefundPaid = 3,
+    // Phase 7 (stored as text, max 25 characters)
+    ExpenseApproved = 4, ExpenseCancelled = 5, ExpensePaid = 6, ExpensePaymentReversed = 7,
+    GovFeeAssessed = 8, GovFeeAssessmentCancelled = 9, GovFeeCollected = 10, GovFeeCollectionReversed = 11, GovFeePaid = 12, GovFeePaymentReversed = 13,
+}
 
 public enum AccountingPostingStatus { Pending = 1, Posted = 2, Failed = 3 }
 
@@ -177,3 +183,26 @@ public enum RecoveryAssignmentStatus { Active = 1, Closed = 2 }
 public enum FollowUpMethod { Call = 1, Visit = 2, Sms = 3, Email = 4, Letter = 5, Meeting = 6, Other = 7 }
 
 public enum FollowUpOutcome { Contacted = 1, NoAnswer = 2, PromiseToPay = 3, Disputed = 4, PaymentReceived = 5, WrongContact = 6, Other = 7 }
+
+// Phase 7 - expenses, vendors and government fees
+public enum ExpenseStatus { Draft = 1, PendingApproval = 2, Approved = 3, Rejected = 4, Cancelled = 5 }
+
+/// <summary>Derived from the paid amount; never stored.</summary>
+public enum ExpensePaymentStatus { Unpaid = 1, PartiallyPaid = 2, Paid = 3 }
+
+public enum ExpenseDocumentType { Invoice = 1, Receipt = 2, Contract = 3, Quotation = 4, Other = 5 }
+
+public enum VendorPaymentStatus { Posted = 1, Reversed = 2 }
+
+public enum GovernmentFeeKind { StampDuty = 1, Registration = 2, TransferFee = 3, Tax = 4, NocFee = 5, DevelopmentCharge = 6, Other = 7 }
+
+public enum FeeCalculationMethod { Manual = 1, Fixed = 2, PercentOfBasis = 3 }
+
+/// <summary>Who bears a fee by default: the customer (collected from the customer and passed on) or the company (a company expense).</summary>
+public enum FeeBearer { Customer = 1, Company = 2 }
+
+public enum GovernmentFeeAssessmentStatus { Assessed = 1, Cancelled = 2 }
+
+public enum FeeEntryStatus { Posted = 1, Reversed = 2 }
+
+public enum GovernmentFeeDocumentType { GovernmentReceipt = 1, Challan = 2, Other = 3 }

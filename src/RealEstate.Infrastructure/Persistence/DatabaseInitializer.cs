@@ -67,6 +67,8 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
         await SeedPropertyCatalogAsync(ct);
         await SeedChargeTypesAsync(ct);
         await SeedPaymentMethodsAsync(ct);
+        await SeedExpenseCategoriesAsync(ct);
+        await SeedGovernmentFeeTypesAsync(ct);
     }
 
     /// <summary>Seeds the standard property categories and types once (matched by code, so edits and custom entries are kept).</summary>
@@ -135,6 +137,36 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
         ];
         foreach (var d in defaults.Where(d => !codes.Contains(d.Code)))
             db.PaymentMethods.Add(new PaymentMethod { Code = d.Code, Name = d.Name, Kind = d.Kind, RequiresVerification = d.Verify, RequiresReference = d.Reference, IsSystem = true });
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Seeds the eleven expense categories of spec 7.2 once (matched by code, so edits and custom categories are kept).</summary>
+    private async Task SeedExpenseCategoriesAsync(CancellationToken ct)
+    {
+        var codes = await db.ExpenseCategories.Select(t => t.Code).ToListAsync(ct);
+        (string Code, string Name)[] defaults =
+        [
+            ("SALARIES", "Salaries"), ("OFFICE_RENT", "Office rent"), ("UTILITIES", "Utilities"), ("MARKETING", "Marketing"), ("CONSTRUCTION", "Construction"),
+            ("LAND_ACQUISITION", "Land acquisition"), ("LEGAL", "Legal expenses"), ("TRANSPORTATION", "Transportation"), ("MAINTENANCE", "Maintenance"),
+            ("AGENT_COMMISSION", "Agent commission"), ("MISCELLANEOUS", "Miscellaneous"),
+        ];
+        foreach (var d in defaults.Where(d => !codes.Contains(d.Code))) db.ExpenseCategories.Add(new ExpenseCategory { Code = d.Code, Name = d.Name, IsSystem = true });
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Seeds the standard government fee types of spec 7.4 once (amount entered per assessment until a method/rate is configured).</summary>
+    private async Task SeedGovernmentFeeTypesAsync(CancellationToken ct)
+    {
+        var codes = await db.GovernmentFeeTypes.Select(t => t.Code).ToListAsync(ct);
+        (string Code, string Name, GovernmentFeeKind Kind)[] defaults =
+        [
+            ("STAMP_DUTY", "Stamp duty", GovernmentFeeKind.StampDuty), ("REGISTRATION", "Registration fee", GovernmentFeeKind.Registration),
+            ("TRANSFER_FEE", "Transfer fee", GovernmentFeeKind.TransferFee), ("TAX", "Applicable tax", GovernmentFeeKind.Tax),
+            ("NOC_FEE", "NOC fee", GovernmentFeeKind.NocFee), ("DEVELOPMENT_CHARGES", "Development charges", GovernmentFeeKind.DevelopmentCharge),
+            ("OTHER_FEE", "Other government fee", GovernmentFeeKind.Other),
+        ];
+        foreach (var d in defaults.Where(d => !codes.Contains(d.Code)))
+            db.GovernmentFeeTypes.Add(new GovernmentFeeType { Code = d.Code, Name = d.Name, Kind = d.Kind, Method = FeeCalculationMethod.Manual, DefaultBearer = FeeBearer.Customer, IsSystem = true });
         await db.SaveChangesAsync(ct);
     }
 }

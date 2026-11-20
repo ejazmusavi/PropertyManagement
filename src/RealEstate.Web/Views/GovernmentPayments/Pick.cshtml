@@ -1,0 +1,24 @@
+@model GovPaymentPickerViewModel
+@{ ViewData["Title"] = "Record payment to government"; var p = Model.Payable; }
+<h1 class="h3 mb-3">Record payment to government</h1>
+<p class="text-muted">Choose the assessed fee to pay.</p>
+<form method="get" asp-action="Create" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-6"><input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Assessment, agreement, customer or fee type" aria-label="Find fee" autofocus /></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Search</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No assessed fees with an unpaid government payable were found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Assessment</th><th>Fee</th><th>Customer</th><th class="text-end">Govt payable</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Assessment">@x.AssessmentNumber<div class="small text-muted">@x.ProjectCode</div></td><td data-label="Fee">@x.FeeTypeName</td><td data-label="Customer">@x.CustomerName</td>
+                <td data-label="Govt payable" class="text-end">@x.GovernmentPayable.ToString("N2")</td><td class="text-end"><a class="btn btn-sm btn-primary" asp-action="Create" asp-route-assessmentId="@x.Id">Select</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <p class="text-muted small mt-2">Showing up to 20 matches; refine the search to narrow them down.</p>
+}

@@ -1,0 +1,21 @@
+@model GovPaymentFormViewModel
+@{ ViewData["Title"] = "Record payment to government"; var f = Model.Fee!; var s = f.CurrencySymbol; }
+<h1 class="h3 mb-3">Record payment for @f.AssessmentNumber</h1>
+<div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Fee</dt><dd class="col-sm-9">@f.FeeTypeName &middot; agreement @f.AgreementNumber (@f.CustomerName)</dd>
+    <dt class="col-sm-3">Assessed / paid</dt><dd class="col-sm-9">@s @f.Amount.ToString("N2") / @s @f.PaidToGovernment.ToString("N2")</dd>
+    <dt class="col-sm-3">Payable outstanding</dt><dd class="col-sm-9 fw-semibold">@s @f.GovernmentPayable.ToString("N2")</dd>
+</dl></div></div>
+<form asp-action="Create" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="AssessmentId" /><input type="hidden" asp-for="IdempotencyKey" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-3"><label asp-for="Amount" class="form-label"></label><input asp-for="Amount" type="number" step="0.01" min="0.01" max="@f.GovernmentPayable" class="form-control" /><span asp-validation-for="Amount" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-3"><label asp-for="PaymentDate" class="form-label"></label><input asp-for="PaymentDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-lg-3"><label asp-for="PaymentMethodId" class="form-label"></label><select asp-for="PaymentMethodId" class="form-select">@foreach (var m in Model.Methods) { <option value="@m.Id" selected="@(Model.PaymentMethodId == m.Id)">@m.Name</option> }</select></div>
+        <div class="col-12 col-lg-3"><label asp-for="Reference" class="form-label"></label><input asp-for="Reference" class="form-control" maxlength="100" placeholder="Required except for cash" /></div>
+        <div class="col-12"><label asp-for="Remarks" class="form-label"></label><input asp-for="Remarks" class="form-control" maxlength="1000" /></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Record payment</button><a class="btn btn-outline-secondary" asp-controller="GovernmentFees" asp-action="Details" asp-route-id="@f.Id">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

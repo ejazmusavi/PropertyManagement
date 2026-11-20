@@ -80,6 +80,20 @@ public static class Permissions
     public const string RecoveryAssign = "recovery.assign";
     public const string RecoveryFollowUp = "recovery.followup";
 
+    // Phase 7
+    public const string ExpensesView = "expenses.view";
+    public const string ExpensesManage = "expenses.manage";
+    public const string ExpensesApprove = "expenses.approve";
+    public const string ExpensesPay = "expenses.pay";
+    public const string ExpensesReverse = "expenses.reverse";
+    public const string ExpensesSetup = "expenses.setup";
+    public const string VendorsView = "vendors.view";
+    public const string VendorsManage = "vendors.manage";
+    public const string GovFeesView = "govfees.view";
+    public const string GovFeesSetup = "govfees.setup";
+    public const string GovFeesAssess = "govfees.assess";
+    public const string GovFeesPay = "govfees.pay";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -144,6 +158,18 @@ public static class Permissions
         new(RecoveryView, "View upcoming and overdue dues, defaulters and recovery reports", "Recovery"),
         new(RecoveryAssign, "Assign and close recovery assignments", "Recovery"),
         new(RecoveryFollowUp, "Record customer follow-ups", "Recovery"),
+        new(ExpensesView, "View expenses, payables, vendor payments and the expense dashboard", "Expenses"),
+        new(ExpensesManage, "Register, edit, submit and cancel expenses and manage their documents", "Expenses"),
+        new(ExpensesApprove, "Approve or reject expenses (maker-checker)", "Expenses"),
+        new(ExpensesPay, "Record payments of approved expenses and vendor invoices", "Expenses"),
+        new(ExpensesReverse, "Reverse expense payments", "Expenses"),
+        new(ExpensesSetup, "Manage expense categories", "Expenses"),
+        new(VendorsView, "View vendors and vendor invoices", "Expenses"),
+        new(VendorsManage, "Manage vendors and register vendor invoices", "Expenses"),
+        new(GovFeesView, "View government fee types, assessments, collections and payments", "Government fees"),
+        new(GovFeesSetup, "Configure government fee types", "Government fees"),
+        new(GovFeesAssess, "Assess fees to customers, record collections and manage fee documents", "Government fees"),
+        new(GovFeesPay, "Record payments to government and reverse fee collections and payments", "Government fees"),
     ];
 }
 
@@ -179,20 +205,26 @@ public static class DefaultRoles
              Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.InstallmentsApprove, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend, Permissions.AgreementsAmendApprove,
              Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsVerify, Permissions.PaymentsApprove, Permissions.PaymentsAllocate, Permissions.PaymentsReverse,
              Permissions.PaymentsReceipts, Permissions.RefundsRequest, Permissions.RefundsApprove, Permissions.RefundsPay, Permissions.LedgersView,
-             Permissions.RecoveryView, Permissions.RecoveryAssign, Permissions.RecoveryFollowUp]),
+             Permissions.RecoveryView, Permissions.RecoveryAssign, Permissions.RecoveryFollowUp,
+             Permissions.ExpensesView, Permissions.ExpensesManage, Permissions.ExpensesApprove, Permissions.ExpensesPay, Permissions.ExpensesReverse, Permissions.ExpensesSetup,
+             Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
              Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.CustomersView, Permissions.BookingsView,
-             Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.PaymentsView, Permissions.LedgersView, Permissions.RecoveryView]),
+             Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.PaymentsView, Permissions.LedgersView, Permissions.RecoveryView,
+             Permissions.ExpensesView, Permissions.ExpensesManage, Permissions.VendorsView, Permissions.GovFeesView]),
         new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsCancel, Permissions.AgreementsDocuments,
              Permissions.InstallmentsView, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend,
-             Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsReceipts, Permissions.RefundsRequest, Permissions.LedgersView, Permissions.RecoveryView, Permissions.RecoveryAssign]),
+             Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsReceipts, Permissions.RefundsRequest, Permissions.LedgersView, Permissions.RecoveryView, Permissions.RecoveryAssign,
+             Permissions.GovFeesView, Permissions.GovFeesAssess]),
         new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.PricingView,
              Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmendApprove,
              Permissions.PaymentsView, Permissions.PaymentsVerify, Permissions.PaymentsApprove, Permissions.PaymentsAllocate, Permissions.PaymentsReverse, Permissions.PaymentsReceipts,
-             Permissions.RefundsApprove, Permissions.RefundsPay, Permissions.LedgersView, Permissions.RecoveryView]),
+             Permissions.RefundsApprove, Permissions.RefundsPay, Permissions.LedgersView, Permissions.RecoveryView,
+             Permissions.ExpensesView, Permissions.ExpensesApprove, Permissions.ExpensesPay, Permissions.ExpensesReverse, Permissions.ExpensesSetup,
+             Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay]),
         new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView,
              Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsAllocate, Permissions.PaymentsReceipts, Permissions.LedgersView]),
         new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmend,

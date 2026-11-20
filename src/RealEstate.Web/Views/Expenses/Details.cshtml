@@ -1,0 +1,123 @@
+@model ExpenseDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var e = Model.Expense; var s = e.CurrencySymbol; ViewData["Title"] = "Expense " + e.ExpenseNumber;
+   var editable = e.Status is ExpenseStatus.Draft or ExpenseStatus.Rejected;
+   var canSubmit = editable && Ui.Has(Permissions.ExpensesManage);
+   var canDecide = e.Status == ExpenseStatus.PendingApproval && Ui.Has(Permissions.ExpensesApprove) && !Model.IsSubmitter;
+   var canPay = e.Status == ExpenseStatus.Approved && e.Outstanding > 0m && Ui.Has(Permissions.ExpensesPay);
+   var canCancel = e.Status != ExpenseStatus.Cancelled && (e.Status == ExpenseStatus.Approved ? (e.AmountPaid == 0m && Ui.Has(Permissions.ExpensesApprove)) : Ui.Has(Permissions.ExpensesManage));
+   var docsOpen = e.Status != ExpenseStatus.Cancelled && Ui.Has(Permissions.ExpensesManage); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Expense @e.ExpenseNumber <span class="badge text-bg-secondary">@e.Status.Label()</span>@if (e.Status == ExpenseStatus.Approved) { <span class="badge text-bg-info">@e.PaymentStatus.Label()</span> }</h1>
+        <div class="text-muted">@e.ProjectCode &ndash; @e.ProjectName &middot; @e.CategoryName &middot; registered by @e.CreatedBy on @e.CreatedAtUtc.ToString("yyyy-MM-dd")</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (editable && Ui.Has(Permissions.ExpensesManage)) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@e.Id">Edit</a> }
+        @if (canSubmit) { <form asp-action="Submit" asp-route-id="@e.Id" method="post" class="d-inline"><input type="hidden" name="rowVersion" value="@e.RowVersion" /><button class="btn btn-primary" type="submit">Submit for approval</button></form> }
+        @if (canDecide) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">Approve</button><button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button> }
+        @if (canPay) { <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#payModal">Record payment</button> }
+        @if (canCancel) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancel expense</button> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
+    </div>
+</div>
+@if (e.Status == ExpenseStatus.PendingApproval && Model.IsSubmitter) { <div class="alert alert-info">You submitted this expense, so another user must approve it.</div> }
+@if (e.Status == ExpenseStatus.Rejected) { <div class="alert alert-warning">This expense was rejected. Edit it and submit it again, or cancel it.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Expense</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Description</dt><dd class="col-sm-8">@e.Description</dd>
+        <dt class="col-sm-4">Amount</dt><dd class="col-sm-8 fs-5 fw-semibold">@s @e.Amount.ToString("N2")</dd>
+        <dt class="col-sm-4">Date</dt><dd class="col-sm-8">@e.ExpenseDate.ToString("yyyy-MM-dd")@(e.DueDate is { } dd ? " (due " + dd.ToString("yyyy-MM-dd") + ")" : "")</dd>
+        <dt class="col-sm-4">Vendor</dt><dd class="col-sm-8">@if (e.VendorId is { } vid) { <a asp-controller="Vendors" asp-action="Details" asp-route-id="@vid">@e.VendorName</a> } else { <text>-</text> }</dd>
+        @if (e.Invoice is { } inv) { <dt class="col-sm-4">Vendor invoice</dt><dd class="col-sm-8">@inv.InvoiceNumber (dated @inv.InvoiceDate.ToString("yyyy-MM-dd"), due @inv.DueDate.ToString("yyyy-MM-dd"))</dd> }
+        @if (!string.IsNullOrEmpty(e.Reference)) { <dt class="col-sm-4">Reference</dt><dd class="col-sm-8">@e.Reference</dd> }
+        @if (!string.IsNullOrEmpty(e.Remarks)) { <dt class="col-sm-4">Remarks</dt><dd class="col-sm-8">@e.Remarks</dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Payable and approval</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Paid</dt><dd class="col-sm-8">@s @e.AmountPaid.ToString("N2")</dd>
+        <dt class="col-sm-4">Outstanding</dt><dd class="col-sm-8">@s @e.Outstanding.ToString("N2")</dd>
+        @if (e.SubmittedBy is not null) { <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">@e.SubmittedBy on @e.SubmittedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</dd> }
+        @foreach (var a in e.Approvals) { <dt class="col-sm-4">@a.Decision.Label()</dt><dd class="col-sm-8">@a.ApproverName on @a.DecidedAtUtc.ToString("yyyy-MM-dd HH:mm")@(a.Comments is null ? "" : ": " + a.Comments)</dd> }
+        @if (e.Status == ExpenseStatus.Approved) { <dt class="col-sm-4">Accounting</dt><dd class="col-sm-8">Queued for posting (accounting entries are generated in Phase 8).</dd> }
+        @if (e.CancelledBy is not null) { <dt class="col-sm-4">Cancelled</dt><dd class="col-sm-8">@e.CancelledBy on @e.CancelledAtUtc?.ToString("yyyy-MM-dd"): @e.CancelReason</dd> }
+    </dl></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Supporting documents</div>
+@if (e.Attachments.Count == 0) { <div class="card-body text-muted">No documents uploaded@(editable ? ". Upload at least one before submitting for approval." : ".")</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Title</th><th>Type</th><th>File</th><th class="text-end">Size</th><th>Uploaded</th><th></th></tr></thead><tbody>
+@foreach (var d in e.Attachments) { <tr><td data-label="Title">@d.Title</td><td data-label="Type">@d.DocumentType.Label()</td><td data-label="File">@d.FileName</td><td data-label="Size" class="text-end">@((d.SizeBytes / 1024.0).ToString("N0")) KB</td><td data-label="Uploaded">@d.CreatedAtUtc.ToString("yyyy-MM-dd") by @d.CreatedBy</td>
+    <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="DownloadDocument" asp-route-id="@e.Id" asp-route-documentId="@d.Id">Download</a>
+    @if (docsOpen && e.Status != ExpenseStatus.Approved) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal" data-doc-id="@d.Id" data-doc-title="@d.Title">Remove</button> }</td></tr> }
+</tbody></table></div> }
+@if (docsOpen)
+{
+    <div class="card-body border-top"><form asp-action="UploadDocument" asp-route-id="@e.Id" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+        <div class="col-12 col-lg-4"><label class="form-label" for="docfile">File</label><input id="docfile" type="file" name="file" class="form-control" required /></div>
+        <div class="col-6 col-lg-3"><label class="form-label" for="doctype">Type</label><select id="doctype" name="type" asp-items="EnumText.Options<ExpenseDocumentType>()" class="form-select"></select></div>
+        <div class="col-6 col-lg-4"><label class="form-label" for="doctitle">Title</label><input id="doctitle" name="title" class="form-control" maxlength="200" /></div>
+        <div class="col-12 col-lg-1"><button class="btn btn-primary w-100" type="submit">Upload</button></div></form></div>
+}
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Payments</div>
+@if (e.Payments.Count == 0) { <div class="card-body text-muted">No payments recorded.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Payment</th><th>Date</th><th>Method</th><th>Reference</th><th class="text-end">Amount</th><th>Status</th><th></th></tr></thead><tbody>
+@foreach (var p in e.Payments) { <tr><td data-label="Payment">@p.PaymentNumber</td><td data-label="Date">@p.PaymentDate.ToString("yyyy-MM-dd")</td><td data-label="Method">@p.MethodName</td><td data-label="Reference">@(p.Reference ?? "-")</td><td data-label="Amount" class="text-end">@p.Amount.ToString("N2")</td>
+    <td data-label="Status">@p.Status.Label()@(p.Status == VendorPaymentStatus.Reversed ? " by " + p.ReversedBy + ": " + p.ReversalReason : "")</td>
+    <td class="text-end">@if (p.Status == VendorPaymentStatus.Posted && Ui.Has(Permissions.ExpensesReverse)) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reverseModal" data-pay-id="@p.Id" data-pay-no="@p.PaymentNumber">Reverse</button> }</td></tr> }
+</tbody></table></div> }
+</div>
+@if (canDecide)
+{
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Approve" asp-route-id="@e.Id" method="post"><input type="hidden" name="rowVersion" value="@e.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="approveTitle">Approve expense</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Approve @s @e.Amount.ToString("N2") for @e.CategoryName. It becomes payable and is queued for accounting.</p><label class="form-label" for="ac">Comments (optional)</label><input id="ac" name="comments" class="form-control" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success">Approve</button></div></form></div></div>
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Reject" asp-route-id="@e.Id" method="post"><input type="hidden" name="rowVersion" value="@e.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="rejectTitle">Reject expense</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="rc">Comments</label><input id="rc" name="comments" class="form-control" required minlength="3" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Reject</button></div></form></div></div>
+}
+@if (canPay)
+{
+    <div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Pay" asp-route-id="@e.Id" method="post" data-loading-form><input type="hidden" name="RowVersion" value="@e.RowVersion" /><input type="hidden" name="IdempotencyKey" value="@Guid.NewGuid().ToString("N")" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="payTitle">Record payment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Outstanding: @s @e.Outstanding.ToString("N2"). Partial payments are allowed.</p>
+                <div class="row g-2"><div class="col-12 col-sm-6"><label class="form-label" for="pa">Amount</label><input id="pa" name="Amount" type="number" step="0.01" min="0.01" max="@e.Outstanding" class="form-control" required value="@e.Outstanding.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" /></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="pd">Payment date</label><input id="pd" name="PaymentDate" type="date" class="form-control" required value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="pm">Method</label><select id="pm" name="PaymentMethodId" class="form-select">@foreach (var m in Model.Methods) { <option value="@m.Id">@m.Name</option> }</select></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="pr">Reference</label><input id="pr" name="Reference" class="form-control" maxlength="100" placeholder="Required except for cash" /></div>
+                <div class="col-12"><label class="form-label" for="prm">Remarks</label><input id="prm" name="Remarks" class="form-control" maxlength="1000" /></div></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Record payment</button></div></form></div></div>
+}
+@if (canCancel)
+{
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Cancel" asp-route-id="@e.Id" method="post"><input type="hidden" name="rowVersion" value="@e.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="cancelTitle">Cancel expense</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="cr">Reason</label><input id="cr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back</button><button type="submit" class="btn btn-danger">Cancel expense</button></div></form></div></div>
+}
+@if (Ui.Has(Permissions.ExpensesReverse))
+{
+    <div class="modal fade" id="reverseModal" tabindex="-1" aria-labelledby="reverseTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="ReversePayment" asp-route-id="@e.Id" method="post"><input type="hidden" name="paymentId" id="reversePayId" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="reverseTitle">Reverse payment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Reverse payment <strong id="reversePayNo"></strong>? The amount becomes payable again and the reversal is queued for accounting.</p><label class="form-label" for="rr">Reason</label><input id="rr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back</button><button type="submit" class="btn btn-danger">Reverse payment</button></div></form></div></div>
+}
+<div class="modal fade" id="deleteDocModal" tabindex="-1" aria-labelledby="deleteDocTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="DeleteDocument" asp-route-id="@e.Id" method="post"><input type="hidden" name="documentId" id="deleteDocId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="deleteDocTitle">Remove document</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Remove <strong id="deleteDocName"></strong>? The file is archived and the removal is audited.</p><label class="form-label" for="dr">Reason (required)</label><input id="dr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Remove</button></div></form></div></div>
+@section Scripts {
+<script>
+document.getElementById('deleteDocModal')?.addEventListener('show.bs.modal', function (ev) { document.getElementById('deleteDocId').value = ev.relatedTarget.dataset.docId; document.getElementById('deleteDocName').textContent = ev.relatedTarget.dataset.docTitle; });
+document.getElementById('reverseModal')?.addEventListener('show.bs.modal', function (ev) { document.getElementById('reversePayId').value = ev.relatedTarget.dataset.payId; document.getElementById('reversePayNo').textContent = ev.relatedTarget.dataset.payNo; });
+</script>
+}

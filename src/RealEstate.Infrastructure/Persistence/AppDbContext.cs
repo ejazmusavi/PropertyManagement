@@ -83,6 +83,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<AccountingPostingRequest> AccountingPostingRequests => Set<AccountingPostingRequest>();
     public DbSet<RecoveryAssignment> RecoveryAssignments => Set<RecoveryAssignment>();
     public DbSet<CustomerFollowUp> CustomerFollowUps => Set<CustomerFollowUp>();
+    public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
+    public DbSet<Vendor> Vendors => Set<Vendor>();
+    public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<ExpenseApproval> ExpenseApprovals => Set<ExpenseApproval>();
+    public DbSet<ExpenseAttachment> ExpenseAttachments => Set<ExpenseAttachment>();
+    public DbSet<VendorInvoice> VendorInvoices => Set<VendorInvoice>();
+    public DbSet<VendorPayment> VendorPayments => Set<VendorPayment>();
+    public DbSet<GovernmentFeeType> GovernmentFeeTypes => Set<GovernmentFeeType>();
+    public DbSet<GovernmentFeeAssessment> GovernmentFeeAssessments => Set<GovernmentFeeAssessment>();
+    public DbSet<GovernmentFeeCollection> GovernmentFeeCollections => Set<GovernmentFeeCollection>();
+    public DbSet<GovernmentFeePayment> GovernmentFeePayments => Set<GovernmentFeePayment>();
+    public DbSet<GovernmentFeeDocument> GovernmentFeeDocuments => Set<GovernmentFeeDocument>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();

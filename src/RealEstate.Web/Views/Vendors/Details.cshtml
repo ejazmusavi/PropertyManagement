@@ -1,0 +1,40 @@
+@model VendorDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var d = Model.Vendor; var v = d.Vendor; var s = d.CurrencySymbol; ViewData["Title"] = "Vendor " + v.Code; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@v.Name <span class="badge text-bg-secondary">@(v.IsActive ? "Active" : "Inactive")</span></h1><div class="text-muted">@v.Code@(string.IsNullOrEmpty(v.TaxNumber) ? "" : " · NTN " + v.TaxNumber)</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.VendorsManage)) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@v.Id">Edit</a><a class="btn btn-primary" asp-controller="VendorInvoices" asp-action="Create" asp-route-vendorId="@v.Id">Register invoice</a> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to vendors</a>
+    </div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Details</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Contact</dt><dd class="col-sm-8">@(v.ContactPerson ?? "-")</dd><dt class="col-sm-4">Phone</dt><dd class="col-sm-8">@(v.Phone ?? "-")</dd>
+        <dt class="col-sm-4">Email</dt><dd class="col-sm-8">@(v.Email ?? "-")</dd><dt class="col-sm-4">Address</dt><dd class="col-sm-8">@(v.Address ?? "-")</dd>
+        @if (!string.IsNullOrEmpty(v.Notes)) { <dt class="col-sm-4">Notes</dt><dd class="col-sm-8">@v.Notes</dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Payables (your projects)</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-5">Outstanding payable</dt><dd class="col-sm-7 fs-5 fw-semibold">@s @d.Payable.ToString("N2")</dd>
+        <dt class="col-sm-5">Overdue</dt><dd class="col-sm-7 @(d.Overdue > 0 ? "text-danger" : "")">@s @d.Overdue.ToString("N2")</dd>
+        <dt class="col-sm-5">Total paid</dt><dd class="col-sm-7">@s @d.Paid.ToString("N2")</dd>
+    </dl></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Open payables</div>
+@if (d.OpenPayables.Count == 0) { <div class="card-body text-muted">No approved expenses are waiting for payment.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Expense</th><th>Project</th><th>Due</th><th class="text-end">Amount</th><th class="text-end">Outstanding</th><th></th></tr></thead><tbody>
+@foreach (var x in d.OpenPayables) { <tr><td data-label="Expense">@x.ExpenseNumber<div class="small text-muted">@x.Description</div></td><td data-label="Project">@x.ProjectCode</td><td data-label="Due">@(x.DueDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+    <td data-label="Amount" class="text-end">@x.Amount.ToString("N2")</td><td data-label="Outstanding" class="text-end">@x.Outstanding.ToString("N2")</td>
+    <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-controller="Expenses" asp-action="Details" asp-route-id="@x.Id">Open</a>@if (Ui.Has(Permissions.ExpensesPay)) { <a class="btn btn-sm btn-primary" asp-controller="VendorPayments" asp-action="Create" asp-route-expenseId="@x.Id">Pay</a> }</td></tr> }
+</tbody></table></div> }
+</div>
+<div class="card"><div class="card-header fw-semibold">Recent payments</div>
+@if (d.RecentPayments.Count == 0) { <div class="card-body text-muted">No payments recorded.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Payment</th><th>Expense</th><th>Date</th><th>Method</th><th class="text-end">Amount</th><th>Status</th></tr></thead><tbody>
+@foreach (var p in d.RecentPayments) { <tr><td data-label="Payment">@p.PaymentNumber</td><td data-label="Expense"><a asp-controller="Expenses" asp-action="Details" asp-route-id="@p.ExpenseId">@p.ExpenseNumber</a></td><td data-label="Date">@p.PaymentDate.ToString("yyyy-MM-dd")</td><td data-label="Method">@p.MethodName</td><td data-label="Amount" class="text-end">@p.Amount.ToString("N2")</td><td data-label="Status">@p.Status.Label()</td></tr> }
+</tbody></table></div> }
+</div>

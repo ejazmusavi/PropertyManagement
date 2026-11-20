@@ -1,0 +1,30 @@
+@model ExpenseCategoriesViewModel
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Expense categories"; await Ui.LoadAsync(); var canSetup = Ui.Has(Permissions.ExpensesSetup); var f = Model.Form; var editing = f.Id is not null; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Expense categories</h1>
+    <a class="btn btn-outline-secondary" asp-controller="Expenses" asp-action="Dashboard">Expense dashboard</a>
+</div>
+<div class="card mb-3"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>Name</th><th>Code</th><th>Description</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var c in Model.Categories)
+    {
+        <tr><td data-label="Name">@c.Name @if (c.IsSystem) { <span class="badge text-bg-light border">Standard</span> }</td><td data-label="Code">@c.Code</td><td data-label="Description">@(c.Description ?? "-")</td><td data-label="Status">@(c.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">@if (canSetup) { <a class="btn btn-sm btn-outline-primary" asp-action="Index" asp-route-edit="@c.Id">Edit</a> }</td></tr>
+    }
+    </tbody></table></div></div>
+@if (canSetup)
+{
+    <div class="card"><div class="card-header fw-semibold">@(editing ? "Edit category" : "New category")</div><div class="card-body">
+        <form asp-action="Save" method="post" data-loading-form class="row g-3">
+            <div asp-validation-summary="All" class="alert alert-danger col-12" role="alert"></div>
+            <input type="hidden" asp-for="Form.Id" /><input type="hidden" asp-for="Form.IsSystem" />
+            <div class="col-12 col-lg-3"><label asp-for="Form.Code" class="form-label"></label>@if (editing) { <input type="hidden" asp-for="Form.Code" /><input class="form-control" value="@f.Code" disabled /> } else { <input asp-for="Form.Code" class="form-control" maxlength="40" /> }<span asp-validation-for="Form.Code" class="text-danger small"></span></div>
+            <div class="col-12 col-lg-4"><label asp-for="Form.Name" class="form-label"></label><input asp-for="Form.Name" class="form-control" maxlength="100" /><span asp-validation-for="Form.Name" class="text-danger small"></span></div>
+            <div class="col-12 col-lg-5"><label asp-for="Form.Description" class="form-label"></label><input asp-for="Form.Description" class="form-control" maxlength="500" /></div>
+            <div class="col-12 col-lg-3 d-flex align-items-end"><div class="form-check mb-2"><input asp-for="Form.IsActive" class="form-check-input" disabled="@f.IsSystem" /><label asp-for="Form.IsActive" class="form-check-label">Active</label></div></div>
+            <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save</button>@if (editing) { <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a> }</div>
+        </form></div></div>
+}
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

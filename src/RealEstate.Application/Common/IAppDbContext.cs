@@ -83,6 +83,18 @@ public interface IAppDbContext
     DbSet<AccountingPostingRequest> AccountingPostingRequests { get; }
     DbSet<RecoveryAssignment> RecoveryAssignments { get; }
     DbSet<CustomerFollowUp> CustomerFollowUps { get; }
+    DbSet<ExpenseCategory> ExpenseCategories { get; }
+    DbSet<Vendor> Vendors { get; }
+    DbSet<Expense> Expenses { get; }
+    DbSet<ExpenseApproval> ExpenseApprovals { get; }
+    DbSet<ExpenseAttachment> ExpenseAttachments { get; }
+    DbSet<VendorInvoice> VendorInvoices { get; }
+    DbSet<VendorPayment> VendorPayments { get; }
+    DbSet<GovernmentFeeType> GovernmentFeeTypes { get; }
+    DbSet<GovernmentFeeAssessment> GovernmentFeeAssessments { get; }
+    DbSet<GovernmentFeeCollection> GovernmentFeeCollections { get; }
+    DbSet<GovernmentFeePayment> GovernmentFeePayments { get; }
+    DbSet<GovernmentFeeDocument> GovernmentFeeDocuments { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

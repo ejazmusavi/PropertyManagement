@@ -1,0 +1,42 @@
+@model ExpenseDashboardViewModel
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Expense dashboard"; await Ui.LoadAsync(); var d = Model.Dashboard; var s = d.CurrencySymbol; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Expense dashboard</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.ExpensesManage)) { <a class="btn btn-primary" asp-action="Create">Register expense</a> }
+        <a class="btn btn-outline-secondary" asp-action="Index">All expenses</a>
+        @if (Ui.Has(Permissions.ExpensesApprove)) { <a class="btn btn-outline-secondary" asp-action="Approvals">Approvals (@d.PendingApprovalCount)</a> }
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-4"><select name="projectId" class="form-select" aria-label="Project"><option value="">All my projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(Model.ProjectId == x.Id)">@x.ProjectCode &ndash; @x.ProjectName</option> }</select></div>
+    <div class="col-6 col-lg-3"><input type="date" name="from" value="@d.From.ToString("yyyy-MM-dd")" class="form-control" aria-label="From" /></div>
+    <div class="col-6 col-lg-3"><input type="date" name="to" value="@d.To.ToString("yyyy-MM-dd")" class="form-control" aria-label="To" /></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Apply</button></div>
+</form>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Approved expenses</div><div class="fs-4 fw-semibold">@s @d.TotalApproved.ToString("N2")</div><div class="small text-muted">@d.From.ToString("yyyy-MM-dd") to @d.To.ToString("yyyy-MM-dd")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Paid</div><div class="fs-4 fw-semibold">@s @d.TotalPaid.ToString("N2")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Payables outstanding</div><div class="fs-4 fw-semibold">@s @d.PayablesOutstanding.ToString("N2")</div><div class="small @(d.PayablesOverdue > 0 ? "text-danger" : "text-muted")">Overdue: @s @d.PayablesOverdue.ToString("N2")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Pending approval</div><div class="fs-4 fw-semibold">@d.PendingApprovalCount</div><div class="small text-muted">@s @d.PendingApprovalAmount.ToString("N2") &middot; @d.DraftCount drafts</div></div></div></div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">By category</div>
+        @if (d.ByCategory.Count == 0) { <div class="card-body text-muted">No approved expenses in this period.</div> }
+        else { <ul class="list-group list-group-flush">@foreach (var r in d.ByCategory) { <li class="list-group-item d-flex justify-content-between"><span>@r.Label <span class="text-muted small">(@r.Count)</span></span><span>@s @r.Amount.ToString("N2")</span></li> }</ul> }</div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">By project</div>
+        @if (d.ByProject.Count == 0) { <div class="card-body text-muted">No approved expenses in this period.</div> }
+        else { <ul class="list-group list-group-flush">@foreach (var r in d.ByProject) { <li class="list-group-item d-flex justify-content-between"><span>@r.Label <span class="text-muted small">(@r.Count)</span></span><span>@s @r.Amount.ToString("N2")</span></li> }</ul> }</div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">By month</div>
+        @if (d.ByMonth.Count == 0) { <div class="card-body text-muted">No approved expenses in this period.</div> }
+        else { <ul class="list-group list-group-flush">@foreach (var r in d.ByMonth) { <li class="list-group-item d-flex justify-content-between"><span>@r.Label</span><span>@s @r.Amount.ToString("N2")</span></li> }</ul> }</div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Largest vendor payables</div>
+        @if (d.TopVendorPayables.Count == 0) { <div class="card-body text-muted">No outstanding vendor payables.</div> }
+        else { <ul class="list-group list-group-flush">@foreach (var r in d.TopVendorPayables) { <li class="list-group-item d-flex justify-content-between"><span>@r.Label <span class="text-muted small">(@r.Count)</span></span><span>@s @r.Amount.ToString("N2")</span></li> }</ul> }</div></div>
+</div>
+<div class="card"><div class="card-header fw-semibold">Government fees (all open assessments)</div><div class="card-body row g-3">
+    <div class="col-12 col-md-6"><div class="text-muted small">Company-borne fee expense</div><div class="fs-5 fw-semibold">@s @d.GovernmentFeeCompanyBorne.ToString("N2")</div></div>
+    <div class="col-12 col-md-6"><div class="text-muted small">Payable to government</div><div class="fs-5 fw-semibold">@s @d.GovernmentFeePayable.ToString("N2")</div>@if (Ui.Has(Permissions.GovFeesView)) { <a asp-controller="GovernmentFees" asp-action="Index">Open government fees</a> }</div>
+</div></div>

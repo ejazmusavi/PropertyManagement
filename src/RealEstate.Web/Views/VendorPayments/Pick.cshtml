@@ -1,0 +1,24 @@
+@model VendorPaymentPickerViewModel
+@{ ViewData["Title"] = "Record vendor payment"; var p = Model.Payables; }
+<h1 class="h3 mb-3">Record vendor payment</h1>
+<p class="text-muted">Choose the approved expense to pay.</p>
+<form method="get" asp-action="Create" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-6"><input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Expense number, description or vendor" aria-label="Find payable" autofocus /></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Search</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No approved expenses with an unpaid balance were found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Expense</th><th>Project</th><th>Vendor</th><th>Due</th><th class="text-end">Outstanding</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Expense">@x.ExpenseNumber<div class="small text-muted">@x.Description</div></td><td data-label="Project">@x.ProjectCode</td><td data-label="Vendor">@(x.VendorName ?? "-")</td><td data-label="Due">@(x.DueDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                <td data-label="Outstanding" class="text-end">@x.Outstanding.ToString("N2")</td><td class="text-end"><a class="btn btn-sm btn-primary" asp-action="Create" asp-route-expenseId="@x.Id">Select</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <p class="text-muted small mt-2">Showing up to 20 matches; refine the search to narrow them down.</p>
+}

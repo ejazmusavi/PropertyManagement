@@ -1,0 +1,41 @@
+@model VendorInvoiceListViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Vendor invoices"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Invoices;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["vendorId"] = f.VendorId?.ToString(), ["paymentStatus"] = f.PaymentStatus?.ToString(), ["overdueOnly"] = f.OverdueOnly ? "true" : null }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Vendor invoices</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.VendorsManage)) { <a class="btn btn-primary" asp-action="Create">Register invoice</a> }
+        <a class="btn btn-outline-secondary" asp-action="Index" asp-route-overdueOnly="true">Overdue</a>
+        <a class="btn btn-outline-secondary" asp-controller="Vendors" asp-action="Index">Vendors</a>
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    @if (f.OverdueOnly) { <input type="hidden" name="overdueOnly" value="true" /> }
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Invoice, vendor or expense number" aria-label="Search invoices" /></div>
+    <div class="col-6 col-lg-3"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-3"><select name="vendorId" class="form-select" aria-label="Vendor"><option value="">All vendors</option>@foreach (var x in Model.Vendors) { <option value="@x.Id" selected="@(f.VendorId == x.Id)">@x.Name</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="paymentStatus" class="form-select" aria-label="Payment"><option value="">Any payment status</option>@foreach (var s in Enum.GetValues<ExpensePaymentStatus>()) { <option value="@s" selected="@(f.PaymentStatus == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No vendor invoices found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Invoice</th><th>Vendor</th><th>Project</th><th>Due</th><th class="text-end">Amount</th><th class="text-end">Outstanding</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Invoice">@x.InvoiceNumber<div class="small text-muted">@x.ExpenseNumber</div></td><td data-label="Vendor">@x.VendorName</td><td data-label="Project">@x.ProjectCode</td>
+                <td data-label="Due" class="@(x.IsOverdue ? "text-danger" : "")">@x.DueDate.ToString("yyyy-MM-dd")@(x.IsOverdue ? " (overdue)" : "")</td>
+                <td data-label="Amount" class="text-end">@x.Amount.ToString("N2")</td><td data-label="Outstanding" class="text-end">@x.Outstanding.ToString("N2")</td>
+                <td data-label="Status">@x.ExpenseStatus.Label()@(x.ExpenseStatus == ExpenseStatus.Approved ? " / " + x.PaymentStatus.Label() : "")</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "invoices", route, "page")' />
+}
