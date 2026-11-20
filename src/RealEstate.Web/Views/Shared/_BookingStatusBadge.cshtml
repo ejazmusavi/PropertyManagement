@@ -1,0 +1,4 @@
+@model RealEstate.Domain.Enums.BookingStatus
+@{ var cls = Model switch { RealEstate.Domain.Enums.BookingStatus.Draft => "text-bg-secondary", RealEstate.Domain.Enums.BookingStatus.PendingApproval => "text-bg-warning",
+    RealEstate.Domain.Enums.BookingStatus.Confirmed => "text-bg-success", RealEstate.Domain.Enums.BookingStatus.Rejected => "text-bg-danger", _ => "text-bg-dark" }; }
+<span class="badge @cls">@(Model == RealEstate.Domain.Enums.BookingStatus.PendingApproval ? "Pending approval" : Model.ToString())</span>

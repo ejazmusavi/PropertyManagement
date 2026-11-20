@@ -1,0 +1,204 @@
+@model BookingWizardViewModel
+@using RealEstate.Domain.Enums
+@using System.Text.Json
+@{ ViewData["Title"] = "New booking";
+   var selected = Model.Lines.Select(l => l.PropertyId).ToHashSet();
+   var owners = Model.Owners.Count > 0 ? Model.Owners : [new WizardOwner()];
+   var init = JsonSerializer.Serialize(Model.Lines.Select(l => new { id = l.PropertyId, discount = l.ExtraDiscount, reason = l.ExtraDiscountReason })); }
+<h1 class="h3 mb-1">New booking</h1>
+<p class="text-muted">@Model.ProjectName</p>
+
+<ol class="nav nav-pills mb-3 gap-1" id="wizardSteps" aria-label="Booking steps">
+    <li class="nav-item"><button type="button" class="nav-link active" data-go="1">1. Property</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-go="2">2. Customers &amp; ownership</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-go="3">3. Price, charges &amp; payment</button></li>
+    <li class="nav-item"><button type="button" class="nav-link" data-go="4">4. Review &amp; submit</button></li>
+</ol>
+
+<form id="wizard" asp-action="Create" method="post" data-loading-form data-symbol="@Model.CurrencySymbol" data-quote-url="@Url.Action("Quote")" data-lookup-url="@Url.Action("CustomerLookup")">
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="ProjectId" /><input type="hidden" asp-for="IdempotencyKey" /><input type="hidden" asp-for="Q" />
+    <script type="application/json" id="initLines">@Html.Raw(init)</script>
+
+    <section data-step="1">
+        <div class="card mb-3"><div class="card-header fw-semibold">Select available properties (up to 10)</div>
+        <div class="card-body border-bottom"><div class="input-group"><input type="search" id="propFilter" class="form-control" placeholder="Filter the list below by code, number or type" aria-label="Filter properties" /></div></div>
+        @if (Model.Available.Count == 0) { <div class="card-body text-muted">No available properties in this project.</div> }
+        else {
+        <div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack" id="propTable"><thead><tr><th></th><th>Code</th><th>No.</th><th>Block</th><th>Type</th><th class="text-end">Size</th><th>Status</th></tr></thead><tbody>
+        @foreach (var x in Model.Available)
+        {
+            <tr><td data-label="Select"><input type="checkbox" class="form-check-input prop-check" value="@x.Id" data-code="@x.PropertyCode" data-label="@x.PropertyCode (@x.Size.ToString("0.####") @x.Unit)" checked="@selected.Contains(x.Id)" aria-label="Select @x.PropertyCode" /></td>
+                <td data-label="Code">@x.PropertyCode</td><td data-label="No.">@x.PropertyNumber</td><td data-label="Block">@(x.Block ?? "-")</td><td data-label="Type">@x.TypeName</td>
+                <td data-label="Size" class="text-end">@x.Size.ToString("0.####") @x.Unit</td><td data-label="Status"><partial name="_StatusBadge" model="x.Status" /></td></tr>
+        }</tbody></table></div> }
+        </div>
+    </section>
+
+    <section data-step="2" class="d-none">
+        <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Customers and ownership structure</span><button type="button" class="btn btn-sm btn-outline-primary" id="addOwner">Add joint owner</button></div>
+        <div class="card-body"><p class="text-muted small">The first owner is the primary customer (their negotiated pricing applies). Ownership shares must total exactly 100%. Search by name, code, CNIC or mobile. <a asp-controller="Customers" asp-action="Create" target="_blank" rel="noopener">Register a new customer</a> in another tab first if needed.</p>
+        <div id="ownerRows">
+        @for (var i = 0; i < owners.Count; i++)
+        {
+            <div class="row g-2 mb-2 owner-row"><div class="col-12 col-md-4"><input type="search" class="form-control owner-search" placeholder="Search customer" aria-label="Search customer" autocomplete="off" /></div>
+                <div class="col-12 col-md-5"><select name="Owners[@i].CustomerId" class="form-select owner-select" aria-label="Customer">@if (owners[i].CustomerId > 0) { <option value="@owners[i].CustomerId" selected>@owners[i].CustomerLabel</option> } else { <option value="">- Search first -</option> }</select><input type="hidden" name="Owners[@i].CustomerLabel" value="@owners[i].CustomerLabel" class="owner-label" /></div>
+                <div class="col-8 col-md-2"><div class="input-group"><input name="Owners[@i].SharePercent" type="number" step="0.0001" min="0" max="100" value="@(owners[i].SharePercent == 0 ? "" : owners[i].SharePercent.ToString("0.####"))" class="form-control owner-share" placeholder="Share" aria-label="Share percent" /><span class="input-group-text">%</span></div></div>
+                <div class="col-4 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-owner" aria-label="Remove owner">&times;</button></div></div>
+        }</div>
+        <div class="fw-semibold">Total: <span id="shareTotal">0</span>%</div></div></div>
+    </section>
+
+    <section data-step="3" class="d-none">
+        <div class="card mb-3"><div class="card-header fw-semibold">Price per property</div><div class="card-body"><p class="text-muted small">Prices come from the pricing engine and are frozen in the booking as an immutable snapshot. An additional discount needs the discount permission and a reason.</p><div id="lines"></div></div></div>
+        <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Additional charges</span><button type="button" class="btn btn-sm btn-outline-primary" id="addCharge">Add charge</button></div>
+            <div class="card-body"><div id="chargeRows">
+            @for (var i = 0; i < Model.Charges.Count; i++)
+            {
+                <div class="row g-2 mb-2 charge-row"><div class="col-6 col-md-3"><select name="Charges[@i].ChargeType" class="form-select" aria-label="Charge type">@foreach (var t in Enum.GetValues<BookingChargeType>()) { <option value="@t" selected="@(Model.Charges[i].ChargeType == t)">@t</option> }</select></div>
+                    <div class="col-12 col-md-5"><input name="Charges[@i].Description" value="@Model.Charges[i].Description" class="form-control" placeholder="Description" aria-label="Charge description" maxlength="200" /></div>
+                    <div class="col-8 col-md-3"><input name="Charges[@i].Amount" value="@Model.Charges[i].Amount" type="number" step="0.01" min="0" class="form-control charge-amount" placeholder="Amount" aria-label="Charge amount" /></div>
+                    <div class="col-4 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-charge" aria-label="Remove charge">&times;</button></div></div>
+            }</div></div></div>
+        <div class="card mb-3"><div class="card-header fw-semibold">Payment</div><div class="card-body"><div class="row g-3">
+            <div class="col-12 col-lg-4"><label asp-for="PaymentMode" class="form-label">Payment mode</label><select asp-for="PaymentMode" asp-items="Html.GetEnumSelectList<PaymentMode>()" class="form-select" id="paymentMode"></select>
+                <div class="form-text">Cash: paid in full at booking unless an authorized balance is approved. Installment: the schedule is created in the installment phase.</div></div>
+            <div class="col-12 col-lg-4"><label asp-for="BookingAmount" class="form-label">Amount due at booking</label><input asp-for="BookingAmount" type="number" step="0.01" min="0" class="form-control" id="bookingAmount" /><span asp-validation-for="BookingAmount" class="text-danger small"></span></div>
+            <div class="col-12 col-lg-4"><label asp-for="Remarks" class="form-label"></label><input asp-for="Remarks" class="form-control" maxlength="2000" /></div>
+            <div class="col-12" id="authBlock"><div class="alert alert-warning mb-0">The cash booking amount is below the total payable. An outstanding balance must be authorized.
+                @if (Model.CanAuthorizeBalance)
+                {
+                    <div class="form-check mt-2"><input asp-for="AuthorizeOutstandingBalance" class="form-check-input" /><label asp-for="AuthorizeOutstandingBalance" class="form-check-label">I authorize this outstanding balance</label></div>
+                    <label asp-for="BalanceAuthorizationReason" class="form-label mt-2">Reason for authorization</label><input asp-for="BalanceAuthorizationReason" class="form-control" maxlength="1000" />
+                }
+                else { <div class="mt-2">You do not hold the permission to authorize a balance; use installments, pay in full, or ask an authorized user to create this booking.</div> }
+            </div></div>
+        </div></div></div>
+    </section>
+
+    <section data-step="4" class="d-none">
+        <div class="card mb-3"><div class="card-header fw-semibold">Review</div><div class="card-body" id="review"></div></div>
+        <div class="form-check mb-3"><input asp-for="SubmitForApproval" class="form-check-input" /><label asp-for="SubmitForApproval" class="form-check-label">Submit for approval now (otherwise saved as a draft)</label></div>
+    </section>
+
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-secondary" id="btnBack">Back</button>
+        <button type="button" class="btn btn-primary" id="btnNext">Next</button>
+        <button type="submit" class="btn btn-success d-none" id="btnSubmit"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Create booking</button>
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  var form = document.getElementById('wizard'); var sym = form.dataset.symbol;
+  var steps = Array.prototype.slice.call(form.querySelectorAll('[data-step]')); var cur = 1; var quotes = {}; var seed = {};
+  JSON.parse(document.getElementById('initLines').textContent).forEach(function (l) { seed[l.id] = l; });
+  function $(s, r) { return (r || form).querySelector(s); } function $$(s, r) { return Array.prototype.slice.call((r || form).querySelectorAll(s)); }
+  function fmt(v) { return sym + ' ' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function primary() { var s = $('[name="Owners[0].CustomerId"]'); return s && s.value ? s.value : ''; }
+  function selected() { return $$('.prop-check:checked'); }
+
+  function show(n) {
+    cur = n; steps.forEach(function (s) { s.classList.toggle('d-none', Number(s.dataset.step) !== n); });
+    $$('[data-go]', document).forEach(function (b) { b.classList.toggle('active', Number(b.dataset.go) === n); });
+    $('#btnBack').classList.toggle('d-none', n === 1); $('#btnNext').classList.toggle('d-none', n === 4); $('#btnSubmit').classList.toggle('d-none', n !== 4);
+    if (n === 3 || n === 4) rebuildLines(); if (n === 4) renderReview();
+  }
+  function problem(n) {
+    if (n >= 2 && selected().length === 0) return 'Select at least one property.';
+    if (n >= 3) { var total = 0; var ids = {}; for (var r of $$('.owner-row')) { var sel = $('.owner-select', r); if (!sel.value) return 'Choose a customer for every owner row.'; if (ids[sel.value]) return 'A customer can appear only once.'; ids[sel.value] = 1; total += num($('.owner-share', r).value); } if (Math.abs(total - 100) > 0.00005) return 'Ownership shares must total exactly 100% (now ' + total + '%).'; }
+    return null;
+  }
+  function go(n) {
+    if (n > cur) { for (var s = cur; s < n; s++) { var p = problem(s + 1); if (p) { alert(p); return; } } }
+    show(n);
+  }
+  document.addEventListener('click', function (e) { var g = e.target.closest('[data-go]'); if (g) go(Number(g.dataset.go)); });
+  $('#btnNext').addEventListener('click', function () { go(cur + 1); }); $('#btnBack').addEventListener('click', function () { go(cur - 1); });
+
+  // ----- step 1 -----
+  $('#propFilter')?.addEventListener('input', function () { var t = this.value.toLowerCase(); $$('#propTable tbody tr').forEach(function (r) { r.classList.toggle('d-none', t && r.textContent.toLowerCase().indexOf(t) < 0); }); });
+  $$('.prop-check').forEach(function (c) { c.addEventListener('change', function () { if (selected().length > 10) { c.checked = false; alert('A booking can include at most 10 properties.'); } }); });
+
+  // ----- step 2 -----
+  function renumberOwners() { $$('.owner-row').forEach(function (row, i) { $$('input,select', row).forEach(function (el) { if (el.name) el.name = el.name.replace(/Owners\[\d+\]/, 'Owners[' + i + ']'); }); }); updateTotal(); }
+  function updateTotal() { var t = 0; $$('.owner-share').forEach(function (i) { t += num(i.value); }); $('#shareTotal').textContent = Math.round(t * 10000) / 10000; }
+  function wireOwner(row) {
+    var box = $('.owner-search', row), sel = $('.owner-select', row), label = $('.owner-label', row), timer;
+    sel.addEventListener('change', function () { label.value = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : ''; quotes = {}; });
+    box.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        fetch(form.dataset.lookupUrl + '?term=' + encodeURIComponent(box.value), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+          var keep = sel.value ? sel.options[sel.selectedIndex].cloneNode(true) : null; sel.innerHTML = '';
+          rows.forEach(function (x) { var o = document.createElement('option'); o.value = x.id; o.textContent = x.customerCode + ' – ' + x.fullName + ' (' + x.mobile + ')'; sel.appendChild(o); });
+          if (!sel.options.length && keep) sel.appendChild(keep); if (!sel.options.length) { var o = document.createElement('option'); o.value = ''; o.textContent = 'No matches'; sel.appendChild(o); }
+          label.value = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : ''; quotes = {};
+        });
+      }, 250);
+    });
+    $('.owner-share', row).addEventListener('input', updateTotal);
+  }
+  $$('.owner-row').forEach(wireOwner); updateTotal();
+  $('#addOwner').addEventListener('click', function () {
+    var i = $$('.owner-row').length; var d = document.createElement('div');
+    d.innerHTML = '<div class="row g-2 mb-2 owner-row"><div class="col-12 col-md-4"><input type="search" class="form-control owner-search" placeholder="Search customer" aria-label="Search customer" autocomplete="off" /></div><div class="col-12 col-md-5"><select name="Owners[' + i + '].CustomerId" class="form-select owner-select" aria-label="Customer"><option value="">- Search first -</option></select><input type="hidden" name="Owners[' + i + '].CustomerLabel" class="owner-label" /></div><div class="col-8 col-md-2"><div class="input-group"><input name="Owners[' + i + '].SharePercent" type="number" step="0.0001" min="0" max="100" class="form-control owner-share" placeholder="Share" aria-label="Share percent" /><span class="input-group-text">%</span></div></div><div class="col-4 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-owner" aria-label="Remove owner">&times;</button></div></div>';
+    var row = d.firstElementChild; $('#ownerRows').appendChild(row); wireOwner(row);
+  });
+  document.addEventListener('click', function (e) { var b = e.target.closest('.remove-owner'); if (!b) return; if ($$('.owner-row').length === 1) return; b.closest('.owner-row').remove(); renumberOwners(); quotes = {}; });
+
+  // ----- step 3 -----
+  function quote(id) {
+    var key = id + ':' + primary(); if (quotes[key]) return Promise.resolve(quotes[key]);
+    return fetch(form.dataset.quoteUrl + '?propertyId=' + id + (primary() ? '&customerId=' + primary() : ''), { credentials: 'same-origin' })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); }).then(function (x) { quotes[key] = x; return x; });
+  }
+  function rebuildLines() {
+    var box = $('#lines'); var keep = {};
+    $$('.line-row', box).forEach(function (r) { keep[$('.line-id', r).value] = { discount: $('.line-discount', r).value, reason: $('.line-reason', r).value }; });
+    box.innerHTML = '';
+    selected().forEach(function (cb, i) {
+      var id = cb.value; var k = keep[id] || (seed[id] ? { discount: seed[id].discount || '', reason: seed[id].reason || '' } : { discount: '', reason: '' });
+      var row = document.createElement('div'); row.className = 'row g-2 mb-3 line-row border-bottom pb-3';
+      row.innerHTML = '<div class="col-12 col-lg-4"><div class="fw-semibold">' + esc(cb.dataset.label) + '</div><div class="small quote-text text-muted">Calculating price…</div><input type="hidden" class="line-id" name="Lines[' + i + '].PropertyId" value="' + id + '" /></div>' +
+        '<div class="col-6 col-lg-3"><label class="form-label small">Additional discount</label><input type="number" step="0.01" min="0" class="form-control line-discount" name="Lines[' + i + '].ExtraDiscount" value="' + esc(k.discount) + '"' + (@(Model.CanDiscount ? "true" : "false") ? '' : ' disabled title="Requires the discount permission"') + ' /></div>' +
+        '<div class="col-6 col-lg-5"><label class="form-label small">Discount reason</label><input class="form-control line-reason" name="Lines[' + i + '].ExtraDiscountReason" maxlength="1000" value="' + esc(k.reason) + '"' + (@(Model.CanDiscount ? "true" : "false") ? '' : ' disabled') + ' /></div>';
+      box.appendChild(row);
+      $$('.line-discount,.line-reason', row).forEach(function (el) { el.addEventListener('input', renderReview); });
+      quote(id).then(function (x) { var t = $('.quote-text', row); t.className = 'small quote-text ' + (x.ok ? '' : 'text-danger'); t.textContent = x.ok ? ('Price ' + fmt(x.j.finalPrice) + (x.j.isOverridden ? ' (approved override)' : '') + ' · base ' + fmt(x.j.basePrice)) : (x.j.error || x.j.detail || x.j.title || 'The price could not be calculated.'); row.dataset.price = x.ok ? x.j.finalPrice : ''; renderReview(); });
+    });
+    renderReview();
+  }
+  $('#addCharge').addEventListener('click', function () {
+    var i = $$('.charge-row').length; var d = document.createElement('div');
+    d.innerHTML = '<div class="row g-2 mb-2 charge-row"><div class="col-6 col-md-3"><select name="Charges[' + i + '].ChargeType" class="form-select" aria-label="Charge type"><option>Registration</option><option>Transfer</option><option>Development</option><option>Tax</option><option>Other</option></select></div><div class="col-12 col-md-5"><input name="Charges[' + i + '].Description" class="form-control" placeholder="Description" aria-label="Charge description" maxlength="200" /></div><div class="col-8 col-md-3"><input name="Charges[' + i + '].Amount" type="number" step="0.01" min="0" class="form-control charge-amount" placeholder="Amount" aria-label="Charge amount" /></div><div class="col-4 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-charge" aria-label="Remove charge">&times;</button></div></div>';
+    $('#chargeRows').appendChild(d.firstElementChild);
+  });
+  document.addEventListener('click', function (e) { var b = e.target.closest('.remove-charge'); if (!b) return; b.closest('.charge-row').remove(); $$('.charge-row').forEach(function (row, i) { $$('input,select', row).forEach(function (el) { el.name = el.name.replace(/Charges\[\d+\]/, 'Charges[' + i + ']'); }); }); renderReview(); });
+  form.addEventListener('input', function (e) { if (e.target.closest('.charge-row') || e.target.id === 'bookingAmount') renderReview(); });
+  $('#paymentMode').addEventListener('change', renderReview);
+
+  function totals() {
+    var price = 0, disc = 0, ok = true;
+    $$('.line-row').forEach(function (r) { var p = r.dataset.price; if (p === undefined || p === '') ok = false; else price += Number(p); disc += num($('.line-discount', r).value); });
+    var ch = 0; $$('.charge-amount').forEach(function (i) { ch += num(i.value); });
+    return { price: price, disc: disc, charges: ch, total: price - disc + ch, ok: ok };
+  }
+  function renderReview() {
+    var t = totals(); var amt = num($('#bookingAmount').value); var cash = $('#paymentMode').value === 'Cash';
+    $('#authBlock').classList.toggle('d-none', !(cash && amt < t.total - 0.005));
+    var html = '<h2 class="h6">Properties</h2><ul>' + $$('.line-row').map(function (r) { return '<li>' + esc($('.fw-semibold', r).textContent) + ' – ' + esc($('.quote-text', r).textContent) + '</li>'; }).join('') + '</ul>';
+    html += '<h2 class="h6">Owners</h2><ul>' + $$('.owner-row').map(function (r) { var s = $('.owner-select', r); return '<li>' + esc(s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : '') + ' – ' + esc($('.owner-share', r).value) + '%</li>'; }).join('') + '</ul>';
+    html += '<dl class="row mb-0"><dt class="col-sm-4">Price of properties</dt><dd class="col-sm-8">' + fmt(t.price) + '</dd><dt class="col-sm-4">Additional discount</dt><dd class="col-sm-8">' + fmt(t.disc) + '</dd><dt class="col-sm-4">Additional charges</dt><dd class="col-sm-8">' + fmt(t.charges) + '</dd><dt class="col-sm-4">Total payable (estimate)</dt><dd class="col-sm-8 fw-semibold">' + fmt(t.total) + '</dd><dt class="col-sm-4">Payment mode</dt><dd class="col-sm-8">' + esc($('#paymentMode').value) + '</dd><dt class="col-sm-4">Due at booking</dt><dd class="col-sm-8">' + fmt(amt) + '</dd><dt class="col-sm-4">Balance after booking</dt><dd class="col-sm-8">' + fmt(t.total - amt) + '</dd></dl><p class="text-muted small mt-2">The final price is recalculated by the server when the booking is created.</p>';
+    $('#review').innerHTML = html;
+  }
+  show(@(ViewData.ModelState.IsValid ? 1 : (Model.Lines.Count > 0 ? 4 : 1)));
+  form.addEventListener('submit', function () { $$('.owner-row').forEach(function (r, i) { var sel = $('.owner-select', r); $('.owner-label', r).value = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : ''; }); });
+})();
+</script>
+}

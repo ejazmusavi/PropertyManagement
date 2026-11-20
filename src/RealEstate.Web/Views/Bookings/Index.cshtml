@@ -1,0 +1,41 @@
+@model BookingListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Bookings"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Bookings;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["status"] = f.Status?.ToString(), ["paymentMode"] = f.PaymentMode?.ToString(),
+       ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd"), ["sortBy"] = f.SortBy, ["desc"] = Model.Descending ? "true" : null };
+   string Sort(string key) => Url.Action("Index", new { search = f.Search, projectId = f.ProjectId, status = f.Status, paymentMode = f.PaymentMode, from = f.From, to = f.To, sortBy = key, desc = f.SortBy == key && !Model.Descending })!; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Bookings</h1>
+    <div class="d-flex gap-2">
+        @if (Ui.Has("bookings.approve")) { <a class="btn btn-outline-secondary" asp-action="Approvals">Approvals</a> }
+        @if (Ui.Has("bookings.create")) { <a class="btn btn-primary" asp-action="Create">New booking</a> }
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-md-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Booking no., customer or property" aria-label="Search bookings" /></div>
+    <div class="col-6 col-md-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-md-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<BookingStatus>()) { <option value="@s" selected="@(f.Status == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-2"><select name="paymentMode" class="form-select" aria-label="Payment mode"><option value="">Cash and installment</option>@foreach (var s in Enum.GetValues<PaymentMode>()) { <option value="@s" selected="@(f.PaymentMode == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-1"><input type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" aria-label="From date" /></div>
+    <div class="col-6 col-md-1"><input type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" aria-label="To date" /></div>
+    <div class="col-12 col-md-1 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No bookings found@(Ui.Has("bookings.create") ? ". Create the first booking to get started." : ".")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Booking</th><th><a href="@Sort("date")">Date</a></th><th>Project</th><th>Customer</th><th>Properties</th><th>Payment</th><th class="text-end"><a href="@Sort("amount")">Total payable</a></th><th><a href="@Sort("status")">Status</a></th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Booking">@x.BookingNumber</td><td data-label="Date">@x.BookingDate.ToString("yyyy-MM-dd")</td><td data-label="Project">@x.ProjectCode</td>
+                <td data-label="Customer">@(x.PrimaryCustomer ?? "-")@(x.OwnerCount > 1 ? $" +{x.OwnerCount - 1}" : "")</td><td data-label="Properties">@x.Properties</td><td data-label="Payment">@x.PaymentMode</td>
+                <td data-label="Total payable" class="text-end">@x.TotalPayable.ToString("N2")</td><td data-label="Status"><partial name="_BookingStatusBadge" model="x.Status" /></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Details</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "bookings", route, "page")' />
+}

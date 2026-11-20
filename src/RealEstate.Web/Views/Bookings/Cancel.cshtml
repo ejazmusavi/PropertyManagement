@@ -1,0 +1,34 @@
+@model CancelBookingViewModel
+@{ var b = Model.Booking; ViewData["Title"] = "Cancel booking"; }
+<h1 class="h3 mb-1">Cancel booking @b.BookingNumber</h1>
+<p class="text-muted">@b.ProjectCode &middot; <partial name="_BookingStatusBadge" model="b.Status" /> &middot; total payable @b.TotalPayable.ToString("N2")</p>
+@if (b.Status == RealEstate.Domain.Enums.BookingStatus.Confirmed)
+{
+    <div class="alert alert-warning">Cancelling a confirmed booking cancels its agreement, closes the customers' ownership (the history is kept) and returns the properties to Available.</div>
+}
+else { <div class="alert alert-info">Cancelling releases the properties so they can be booked again.</div> }
+<form asp-action="Cancel" asp-route-id="@b.Id" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12"><label asp-for="Reason" class="form-label"></label><textarea asp-for="Reason" class="form-control" rows="2" maxlength="1000"></textarea><span asp-validation-for="Reason" class="text-danger small"></span></div>
+        @if (Model.CanRefund)
+        {
+            <div class="col-12"><div class="form-check"><input asp-for="RequestRefund" class="form-check-input" id="requestRefund" /><label asp-for="RequestRefund" class="form-check-label">Request a refund for the customer</label></div></div>
+            <div class="col-12 col-lg-4 refund-field d-none"><label asp-for="RefundAmount" class="form-label">Refund amount</label><input asp-for="RefundAmount" type="number" step="0.01" min="0" class="form-control" /></div>
+            <div class="col-12 col-lg-8 refund-field d-none"><label asp-for="RefundReason" class="form-label">Refund reason (defaults to the cancellation reason)</label><input asp-for="RefundReason" class="form-control" maxlength="1000" /></div>
+            <div class="col-12 refund-field d-none text-muted small">The refund must be approved by another user before it is paid; payment is handled in the payments module.</div>
+        }
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-danger"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Cancel booking</button><a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@b.Id">Keep booking</a></div>
+</form>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  var cb = document.getElementById('requestRefund'); if (!cb) return;
+  function sync() { document.querySelectorAll('.refund-field').forEach(function (e) { e.classList.toggle('d-none', !cb.checked); }); }
+  cb.addEventListener('change', sync); sync();
+})();
+</script>
+}

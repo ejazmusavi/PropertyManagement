@@ -10,6 +10,8 @@ using RealEstate.Application.LandManagement;
 using RealEstate.Application.Inventory;
 using RealEstate.Application.Pricing;
 using RealEstate.Application.Projects;
+using RealEstate.Application.Customers;
+using RealEstate.Application.Sales;
 
 namespace RealEstate.Application;
 
@@ -33,6 +35,8 @@ public static class DependencyInjection
         services.AddScoped<PricingCalculationService>();
         services.AddScoped<PropertyPricingService>();
         services.AddScoped<PricingApprovalService>();
+        services.AddScoped<CustomerService>();
+        services.AddScoped<BookingService>();
         services.AddScoped<UserAdministrationService>();
         services.AddScoped<RoleService>();
         services.AddScoped<ProjectAccessAdminService>();

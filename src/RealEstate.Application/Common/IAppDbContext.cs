@@ -42,6 +42,25 @@ public interface IAppDbContext
     DbSet<PropertyPriceHistory> PropertyPriceHistories { get; }
     DbSet<PropertyPriceAdjustment> PropertyPriceAdjustments { get; }
     DbSet<PricingApproval> PricingApprovals { get; }
+    DbSet<Customer> Customers { get; }
+    DbSet<CustomerAddress> CustomerAddresses { get; }
+    DbSet<CustomerContact> CustomerContacts { get; }
+    DbSet<CustomerNominee> CustomerNominees { get; }
+    DbSet<CustomerRelationship> CustomerRelationships { get; }
+    DbSet<CustomerDocument> CustomerDocuments { get; }
+    DbSet<CustomerOwnership> CustomerOwnerships { get; }
+    DbSet<Booking> Bookings { get; }
+    DbSet<BookingCustomer> BookingCustomers { get; }
+    DbSet<BookingProperty> BookingProperties { get; }
+    DbSet<BookingPricingSnapshot> BookingPricingSnapshots { get; }
+    DbSet<BookingCharge> BookingCharges { get; }
+    DbSet<BookingApproval> BookingApprovals { get; }
+    DbSet<BookingStatusHistory> BookingStatusHistories { get; }
+    DbSet<BookingRefund> BookingRefunds { get; }
+    DbSet<CustomerAgreement> CustomerAgreements { get; }
+    DbSet<AgreementVersion> AgreementVersions { get; }
+    DbSet<AgreementDocument> AgreementDocuments { get; }
+    DbSet<AgreementAmendment> AgreementAmendments { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

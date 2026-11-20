@@ -1,0 +1,89 @@
+@model CustomerFormViewModel
+@using RealEstate.Domain.Enums
+@{ var editing = Model.Id.HasValue; ViewData["Title"] = editing ? "Edit customer" : "Register customer"; }
+<h1 class="h3 mb-1">@ViewData["Title"]</h1>
+@if (editing) { <p class="text-muted">@Model.CustomerCode</p> }
+<form asp-action="@(editing ? "Edit" : "Create")" asp-route-id="@Model.Id" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" /><input type="hidden" asp-for="OriginalStatus" />
+    <div class="card mb-3"><div class="card-header fw-semibold">Customer</div><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="FullName" class="form-label"></label><input asp-for="FullName" class="form-control" maxlength="200" /><span asp-validation-for="FullName" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="IdentityType" class="form-label"></label><select asp-for="IdentityType" asp-items="Html.GetEnumSelectList<IdentityDocumentType>()" class="form-select"></select></div>
+        <div class="col-12 col-lg-4"><label asp-for="IdentityNumber" class="form-label"></label><input asp-for="IdentityNumber" class="form-control" maxlength="30" placeholder="35202-1234567-1" /><span asp-validation-for="IdentityNumber" class="text-danger small"></span><div class="form-text">CNIC: 13 digits; passport: 5–20 letters/digits.</div></div>
+        <div class="col-12 col-lg-4"><label asp-for="Mobile" class="form-label"></label><input asp-for="Mobile" class="form-control" maxlength="30" inputmode="tel" /><span asp-validation-for="Mobile" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Email" class="form-label"></label><input asp-for="Email" type="email" class="form-control" maxlength="256" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Address" class="form-label"></label><input asp-for="Address" class="form-control" maxlength="500" /></div>
+        @if (editing)
+        {
+            <div class="col-12 col-lg-4"><label asp-for="Status" class="form-label"></label><select asp-for="Status" asp-items="Html.GetEnumSelectList<CustomerStatus>()" class="form-select"></select></div>
+            <div class="col-12 col-lg-8"><label asp-for="StatusReason" class="form-label"></label><input asp-for="StatusReason" class="form-control" maxlength="1000" /><div class="form-text">Required when the status changes.</div></div>
+        }
+        <div class="col-12"><label asp-for="Remarks" class="form-label"></label><textarea asp-for="Remarks" class="form-control" rows="2" maxlength="2000"></textarea></div>
+    </div></div></div>
+
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Addresses</span><button type="button" class="btn btn-sm btn-outline-primary" data-add="addr">Add address</button></div>
+        <div class="card-body"><div id="addrRows" data-prefix="Addresses">
+        @for (var i = 0; i < Model.Addresses.Count; i++)
+        {
+            <div class="row g-2 mb-2 dyn-row"><div class="col-6 col-md-2"><select name="Addresses[@i].AddressType" class="form-select" aria-label="Address type">@foreach (var t in Enum.GetValues<AddressType>()) { <option value="@t" selected="@(Model.Addresses[i].AddressType == t)">@t</option> }</select></div>
+                <div class="col-12 col-md-4"><input name="Addresses[@i].Line1" value="@Model.Addresses[i].Line1" class="form-control" placeholder="Address line" aria-label="Address line" maxlength="300" /></div>
+                <div class="col-6 col-md-2"><input name="Addresses[@i].City" value="@Model.Addresses[i].City" class="form-control" placeholder="City" aria-label="City" maxlength="100" /></div>
+                <div class="col-6 col-md-2"><input name="Addresses[@i].Country" value="@Model.Addresses[i].Country" class="form-control" placeholder="Country" aria-label="Country" maxlength="100" /></div>
+                <div class="col-4 col-md-1 pt-2"><div class="form-check"><input type="checkbox" name="Addresses[@i].IsPrimary" value="true" class="form-check-input" checked="@Model.Addresses[i].IsPrimary" aria-label="Primary" /><input type="hidden" name="Addresses[@i].IsPrimary" value="false" /><label class="form-check-label small">Primary</label></div></div>
+                <div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove address">&times;</button></div></div>
+        }</div></div></div>
+
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Additional contacts</span><button type="button" class="btn btn-sm btn-outline-primary" data-add="contact">Add contact</button></div>
+        <div class="card-body"><div id="contactRows" data-prefix="Contacts">
+        @for (var i = 0; i < Model.Contacts.Count; i++)
+        {
+            <div class="row g-2 mb-2 dyn-row"><div class="col-12 col-md-3"><input name="Contacts[@i].Name" value="@Model.Contacts[i].Name" class="form-control" placeholder="Name" aria-label="Contact name" maxlength="200" /></div>
+                <div class="col-6 col-md-2"><input name="Contacts[@i].Relation" value="@Model.Contacts[i].Relation" class="form-control" placeholder="Relation" aria-label="Relation" maxlength="100" /></div>
+                <div class="col-6 col-md-3"><input name="Contacts[@i].Phone" value="@Model.Contacts[i].Phone" class="form-control" placeholder="Phone" aria-label="Phone" maxlength="30" /></div>
+                <div class="col-10 col-md-3"><input name="Contacts[@i].Email" value="@Model.Contacts[i].Email" class="form-control" placeholder="Email" aria-label="Contact email" maxlength="256" /></div>
+                <div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove contact">&times;</button></div></div>
+        }</div></div></div>
+
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Nominees</span><button type="button" class="btn btn-sm btn-outline-primary" data-add="nominee">Add nominee</button></div>
+        <div class="card-body"><p class="text-muted small">Nominee shares may total at most 100%.</p><div id="nomineeRows" data-prefix="Nominees">
+        @for (var i = 0; i < Model.Nominees.Count; i++)
+        {
+            <div class="row g-2 mb-2 dyn-row"><div class="col-12 col-md-3"><input name="Nominees[@i].FullName" value="@Model.Nominees[i].FullName" class="form-control" placeholder="Full name" aria-label="Nominee name" maxlength="200" /></div>
+                <div class="col-6 col-md-2"><input name="Nominees[@i].Relationship" value="@Model.Nominees[i].Relationship" class="form-control" placeholder="Relationship" aria-label="Relationship" maxlength="100" /></div>
+                <div class="col-6 col-md-2"><input name="Nominees[@i].IdentityNumber" value="@Model.Nominees[i].IdentityNumber" class="form-control" placeholder="CNIC" aria-label="Nominee CNIC" maxlength="30" /></div>
+                <div class="col-6 col-md-2"><input name="Nominees[@i].Mobile" value="@Model.Nominees[i].Mobile" class="form-control" placeholder="Mobile" aria-label="Nominee mobile" maxlength="30" /></div>
+                <div class="col-4 col-md-2"><input name="Nominees[@i].SharePercent" value="@Model.Nominees[i].SharePercent" type="number" step="0.0001" min="0" max="100" class="form-control" placeholder="Share %" aria-label="Share percent" /></div>
+                <div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove nominee">&times;</button></div></div>
+        }</div></div></div>
+
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save customer</button>
+        <a class="btn btn-outline-secondary" href="@(editing ? Url.Action("Details", new { id = Model.Id }) : Url.Action("Index"))">Cancel</a></div>
+</form>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  var templates = {
+    addr: ['addrRows', '<div class="row g-2 mb-2 dyn-row"><div class="col-6 col-md-2"><select name="Addresses[__i__].AddressType" class="form-select" aria-label="Address type"><option value="Home">Home</option><option value="Office">Office</option><option value="Mailing">Mailing</option><option value="Permanent">Permanent</option></select></div><div class="col-12 col-md-4"><input name="Addresses[__i__].Line1" class="form-control" placeholder="Address line" aria-label="Address line" maxlength="300" /></div><div class="col-6 col-md-2"><input name="Addresses[__i__].City" class="form-control" placeholder="City" aria-label="City" maxlength="100" /></div><div class="col-6 col-md-2"><input name="Addresses[__i__].Country" class="form-control" placeholder="Country" aria-label="Country" maxlength="100" /></div><div class="col-4 col-md-1 pt-2"><div class="form-check"><input type="checkbox" name="Addresses[__i__].IsPrimary" value="true" class="form-check-input" aria-label="Primary" /><input type="hidden" name="Addresses[__i__].IsPrimary" value="false" /><label class="form-check-label small">Primary</label></div></div><div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove address">&times;</button></div></div>'],
+    contact: ['contactRows', '<div class="row g-2 mb-2 dyn-row"><div class="col-12 col-md-3"><input name="Contacts[__i__].Name" class="form-control" placeholder="Name" aria-label="Contact name" maxlength="200" /></div><div class="col-6 col-md-2"><input name="Contacts[__i__].Relation" class="form-control" placeholder="Relation" aria-label="Relation" maxlength="100" /></div><div class="col-6 col-md-3"><input name="Contacts[__i__].Phone" class="form-control" placeholder="Phone" aria-label="Phone" maxlength="30" /></div><div class="col-10 col-md-3"><input name="Contacts[__i__].Email" class="form-control" placeholder="Email" aria-label="Contact email" maxlength="256" /></div><div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove contact">&times;</button></div></div>'],
+    nominee: ['nomineeRows', '<div class="row g-2 mb-2 dyn-row"><div class="col-12 col-md-3"><input name="Nominees[__i__].FullName" class="form-control" placeholder="Full name" aria-label="Nominee name" maxlength="200" /></div><div class="col-6 col-md-2"><input name="Nominees[__i__].Relationship" class="form-control" placeholder="Relationship" aria-label="Relationship" maxlength="100" /></div><div class="col-6 col-md-2"><input name="Nominees[__i__].IdentityNumber" class="form-control" placeholder="CNIC" aria-label="Nominee CNIC" maxlength="30" /></div><div class="col-6 col-md-2"><input name="Nominees[__i__].Mobile" class="form-control" placeholder="Mobile" aria-label="Nominee mobile" maxlength="30" /></div><div class="col-4 col-md-2"><input name="Nominees[__i__].SharePercent" type="number" step="0.0001" min="0" max="100" class="form-control" placeholder="Share %" aria-label="Share percent" /></div><div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-row" aria-label="Remove nominee">&times;</button></div></div>']
+  };
+  function renumber(c) {
+    var prefix = c.dataset.prefix;
+    c.querySelectorAll('.dyn-row').forEach(function (row, i) {
+      row.querySelectorAll('input,select').forEach(function (el) { el.name = el.name.replace(new RegExp(prefix + '\\[\\d+\\]'), prefix + '[' + i + ']'); });
+    });
+  }
+  document.querySelectorAll('[data-add]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = templates[b.dataset.add]; var c = document.getElementById(t[0]); var i = c.querySelectorAll('.dyn-row').length;
+      var d = document.createElement('div'); d.innerHTML = t[1].replace(/__i__/g, i); c.appendChild(d.firstElementChild);
+    });
+  });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.remove-row'); if (!b) return;
+    var row = b.closest('.dyn-row'); var c = row.parentElement; row.remove(); renumber(c);
+  });
+})();
+</script>
+}

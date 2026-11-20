@@ -42,6 +42,20 @@ public static class Permissions
     public const string PricingRequest = "pricing.request";
     public const string PricingApprove = "pricing.approve";
 
+    // Phase 4
+    public const string CustomersView = "customers.view";
+    public const string CustomersManage = "customers.manage";
+    public const string CustomersDocuments = "customers.documents";
+    public const string BookingsView = "bookings.view";
+    public const string BookingsCreate = "bookings.create";
+    public const string BookingsApprove = "bookings.approve";
+    public const string BookingsCancel = "bookings.cancel";
+    public const string BookingsTransfer = "bookings.transfer";
+    public const string BookingsDiscount = "bookings.discount";
+    public const string BookingsAuthorizeBalance = "bookings.balance.authorize";
+    public const string BookingsRefund = "bookings.refund";
+    public const string AgreementsDocuments = "agreements.documents";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -74,6 +88,18 @@ public static class Permissions
         new(PricingManage, "Manage pricing rules and discounts and publish property prices", "Pricing"),
         new(PricingRequest, "Request price overrides, customer discounts, special pricing and exceptions", "Pricing"),
         new(PricingApprove, "Approve or reject pricing requests and revoke adjustments", "Pricing"),
+        new(CustomersView, "View customers", "Customers"),
+        new(CustomersManage, "Register and edit customers, nominees and relationships", "Customers"),
+        new(CustomersDocuments, "Upload and remove customer documents", "Customers"),
+        new(BookingsView, "View bookings, agreements and approvals", "Sales"),
+        new(BookingsCreate, "Create bookings and submit them for approval", "Sales"),
+        new(BookingsApprove, "Approve or reject bookings and refund requests", "Sales"),
+        new(BookingsCancel, "Cancel bookings and agreements", "Sales"),
+        new(BookingsTransfer, "Transfer bookings between customers and change ownership shares", "Sales"),
+        new(BookingsDiscount, "Apply additional booking discounts", "Sales"),
+        new(BookingsAuthorizeBalance, "Authorize a cash sale with an outstanding balance", "Sales"),
+        new(BookingsRefund, "Request refunds when cancelling a booking", "Sales"),
+        new(AgreementsDocuments, "Upload and remove agreement documents", "Sales"),
     ];
 }
 
@@ -103,18 +129,23 @@ public static class DefaultRoles
              Permissions.ProjectsView, Permissions.ProjectsCreate, Permissions.ProjectsEdit, Permissions.ProjectsStatus, Permissions.ProjectsDocuments,
              Permissions.ProjectsAccessAll, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust, Permissions.LandApprove,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments, Permissions.InventoryReserve, Permissions.InventoryStatus,
-             Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.PricingApprove]),
+             Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.PricingApprove,
+             Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsApprove,
+             Permissions.BookingsCancel, Permissions.BookingsTransfer, Permissions.BookingsDiscount, Permissions.BookingsAuthorizeBalance, Permissions.BookingsRefund, Permissions.AgreementsDocuments]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
-             Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest]),
-        new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest]),
-        new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.PricingView]),
-        new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView]),
-        new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView]),
+             Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.CustomersView, Permissions.BookingsView]),
+        new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest,
+             Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsCancel, Permissions.AgreementsDocuments]),
+        new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.PricingView,
+             Permissions.CustomersView, Permissions.BookingsView]),
+        new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView]),
+        new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView]),
         new(RoleNames.InventoryManager, "Maintains property inventory.",
             [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
              Permissions.InventoryReserve, Permissions.InventoryStatus, Permissions.PricingView]),
-        new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView, Permissions.PricingView]),
+        new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView, Permissions.PricingView,
+             Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView]),
     ];
 }

@@ -62,3 +62,30 @@ public enum AdjustmentKind { Override = 1, Discount = 2, Surcharge = 3 }
 public enum AdjustmentStatus { Active = 1, Revoked = 2 }
 
 public enum PriceChangeSource { Published = 1, ApprovalApplied = 2, AdjustmentRevoked = 3 }
+
+// ---------- Phase 4: customers, bookings and agreements ----------
+public enum CustomerStatus { Active = 1, Inactive = 2, Blocked = 3 }
+
+public enum IdentityDocumentType { Cnic = 1, Passport = 2 }
+
+public enum AddressType { Home = 1, Office = 2, Mailing = 3, Permanent = 4 }
+
+public enum CustomerRelationshipType { Spouse = 1, Parent = 2, Child = 3, Sibling = 4, BusinessPartner = 5, Other = 6 }
+
+public enum CustomerDocumentType { Cnic = 1, Passport = 2, Photo = 3, ProofOfAddress = 4, Other = 5 }
+
+public enum PaymentMode { Cash = 1, Installment = 2 }
+
+public enum BookingStatus { Draft = 1, PendingApproval = 2, Confirmed = 3, Rejected = 4, Cancelled = 5 }
+
+public enum BookingChargeType { Registration = 1, Transfer = 2, Development = 3, Tax = 4, Other = 5 }
+
+public enum BookingDecision { Approved = 1, Rejected = 2 }
+
+public enum RefundStatus { Requested = 1, Approved = 2, Rejected = 3 }
+
+public enum AgreementStatus { Active = 1, Cancelled = 2 }
+
+public enum AgreementDocumentType { Signed = 1, Supporting = 2, Other = 3 }
+
+public enum AmendmentType { Transfer = 1, OwnershipChange = 2 }

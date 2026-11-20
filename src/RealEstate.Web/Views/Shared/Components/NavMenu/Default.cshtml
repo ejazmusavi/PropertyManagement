@@ -21,6 +21,13 @@
         <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Pricing</li>
         <li class="nav-item"><a class="nav-link @Active("Pricing")" asp-controller="Pricing" asp-action="Rules">Pricing engine</a></li>
     }
+    @if (Model.Contains("customers.view") || Model.Contains("bookings.view"))
+    {
+        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Sales</li>
+        @if (Model.Contains("customers.view")) { <li class="nav-item"><a class="nav-link @Active("Customers")" asp-controller="Customers" asp-action="Index">Customers</a></li> }
+        @if (Model.Contains("bookings.view")) { <li class="nav-item"><a class="nav-link @Active("Bookings")" asp-controller="Bookings" asp-action="Index">Bookings</a></li> }
+        @if (Model.Contains("bookings.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Bookings" asp-action="Approvals">Booking approvals</a></li> }
+    }
     @if (Model.Contains("company.view"))
     {
         <li class="nav-item"><a class="nav-link @Active("Company")" asp-controller="Company" asp-action="Index">Company</a></li>

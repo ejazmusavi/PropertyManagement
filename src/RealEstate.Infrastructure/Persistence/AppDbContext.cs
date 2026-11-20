@@ -42,6 +42,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<PropertyPriceHistory> PropertyPriceHistories => Set<PropertyPriceHistory>();
     public DbSet<PropertyPriceAdjustment> PropertyPriceAdjustments => Set<PropertyPriceAdjustment>();
     public DbSet<PricingApproval> PricingApprovals => Set<PricingApproval>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
+    public DbSet<CustomerContact> CustomerContacts => Set<CustomerContact>();
+    public DbSet<CustomerNominee> CustomerNominees => Set<CustomerNominee>();
+    public DbSet<CustomerRelationship> CustomerRelationships => Set<CustomerRelationship>();
+    public DbSet<CustomerDocument> CustomerDocuments => Set<CustomerDocument>();
+    public DbSet<CustomerOwnership> CustomerOwnerships => Set<CustomerOwnership>();
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<BookingCustomer> BookingCustomers => Set<BookingCustomer>();
+    public DbSet<BookingProperty> BookingProperties => Set<BookingProperty>();
+    public DbSet<BookingPricingSnapshot> BookingPricingSnapshots => Set<BookingPricingSnapshot>();
+    public DbSet<BookingCharge> BookingCharges => Set<BookingCharge>();
+    public DbSet<BookingApproval> BookingApprovals => Set<BookingApproval>();
+    public DbSet<BookingStatusHistory> BookingStatusHistories => Set<BookingStatusHistory>();
+    public DbSet<BookingRefund> BookingRefunds => Set<BookingRefund>();
+    public DbSet<CustomerAgreement> CustomerAgreements => Set<CustomerAgreement>();
+    public DbSet<AgreementVersion> AgreementVersions => Set<AgreementVersion>();
+    public DbSet<AgreementDocument> AgreementDocuments => Set<AgreementDocument>();
+    public DbSet<AgreementAmendment> AgreementAmendments => Set<AgreementAmendment>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();

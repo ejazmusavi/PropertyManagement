@@ -1,0 +1,47 @@
+@model AgreementViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var a = Model.Agreement; var b = Model.Booking; ViewData["Title"] = "Agreement " + a.AgreementNumber; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3 d-print-none">
+    <div><h1 class="h3 mb-1">Agreement @a.AgreementNumber <span class="badge @(a.Status == AgreementStatus.Active ? "text-bg-success" : "text-bg-dark")">@a.Status</span></h1>
+        <div class="text-muted">Booking @a.BookingNumber &middot; version @a.ViewingVersionNo of @a.CurrentVersionNo &middot; generated @a.GeneratedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div></div>
+    <div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-outline-primary" onclick="window.print()">Print</button><a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@a.BookingId">Back to booking</a></div>
+</div>
+@if (a.Status == AgreementStatus.Cancelled) { <div class="alert alert-dark d-print-none">This agreement was cancelled: @a.CancelReason</div> }
+@if (!a.ContentVerified) { <div class="alert alert-danger d-print-none">The stored text of this version does not match its recorded checksum.</div> }
+<div class="card mb-3"><div class="card-header fw-semibold d-print-none">Agreement preview</div><div class="card-body"><pre class="mb-0" style="white-space:pre-wrap;font-family:inherit">@a.Content</pre></div></div>
+<div class="card mb-3"><div class="card-header fw-semibold d-print-none">Booking confirmation receipt</div><div class="card-body"><pre class="mb-0" style="white-space:pre-wrap;font-family:inherit">@a.ReceiptContent</pre></div></div>
+<div class="row g-3 mb-3 d-print-none">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Versions</div>
+    <ul class="list-group list-group-flush">@foreach (var v in a.Versions.OrderByDescending(v => v.VersionNo)) { <li class="list-group-item d-flex justify-content-between align-items-start"><span><a asp-action="Agreement" asp-route-id="@a.BookingId" asp-route-version="@v.VersionNo">Version @v.VersionNo</a>@(v.VersionNo == a.ViewingVersionNo ? " (viewing)" : "")<div class="text-muted small">@v.Reason &middot; @v.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") by @v.CreatedBy</div></span></li> }</ul></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Amendments</div>
+    @if (a.Amendments.Count == 0) { <div class="card-body text-muted">No amendments.</div> }
+    else { <ul class="list-group list-group-flush">@foreach (var m in a.Amendments) { <li class="list-group-item">@m.AmendmentType: v@(m.FromVersionNo) → v@(m.ToVersionNo) by @m.ApprovedBy on @m.CreatedAtUtc.ToString("yyyy-MM-dd")<div class="text-muted small">@m.Reason</div></li> }</ul> }</div></div>
+</div>
+<div class="card mb-3 d-print-none"><div class="card-header fw-semibold">Agreement documents (signed copies)</div>
+@if (a.Documents.Count == 0) { <div class="card-body text-muted">No documents uploaded.</div> }
+else {
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Title</th><th>Type</th><th>File</th><th class="text-end">Size</th><th>Uploaded</th><th></th></tr></thead><tbody>
+@foreach (var d in a.Documents) { <tr><td data-label="Title">@d.Title</td><td data-label="Type">@d.DocumentType</td><td data-label="File">@d.FileName</td><td data-label="Size" class="text-end">@((d.SizeBytes / 1024.0).ToString("N0")) KB</td><td data-label="Uploaded">@d.UploadedAtUtc.ToString("yyyy-MM-dd") by @d.UploadedBy</td>
+    <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="DownloadAgreementDocument" asp-route-id="@a.BookingId" asp-route-documentId="@d.Id">Download</a>
+    @if (Ui.Has("agreements.documents")) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDocModal" data-doc-id="@d.Id" data-doc-title="@d.Title">Remove</button> }</td></tr> }
+</tbody></table></div> }
+@if (Ui.Has("agreements.documents"))
+{
+    <div class="card-body border-top"><form asp-action="UploadAgreementDocument" asp-route-id="@a.BookingId" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+        <div class="col-12 col-lg-4"><label class="form-label">File</label><input type="file" name="file" class="form-control" required /></div>
+        <div class="col-6 col-lg-3"><label class="form-label">Type</label><select name="type" asp-items="Html.GetEnumSelectList<AgreementDocumentType>()" class="form-select"></select></div>
+        <div class="col-6 col-lg-4"><label class="form-label">Title</label><input name="title" class="form-control" maxlength="200" /></div>
+        <div class="col-12 col-lg-1"><button class="btn btn-primary w-100" type="submit">Upload</button></div></form></div>
+}
+</div>
+<div class="modal fade" id="deleteDocModal" tabindex="-1" aria-labelledby="deleteDocTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" asp-action="DeleteAgreementDocument" asp-route-id="@a.BookingId" method="post"><input type="hidden" name="documentId" id="deleteDocId" />
+        <div class="modal-header"><h2 class="modal-title fs-5" id="deleteDocTitle">Remove document</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body"><p>Remove <strong id="deleteDocName"></strong>? The file is archived and the removal is audited.</p><label class="form-label">Reason (required)</label><input name="reason" class="form-control" required maxlength="1000" /></div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Remove</button></div></form></div></div>
+@section Scripts {
+<script>
+document.getElementById('deleteDocModal')?.addEventListener('show.bs.modal', function (e) { document.getElementById('deleteDocId').value = e.relatedTarget.dataset.docId; document.getElementById('deleteDocName').textContent = e.relatedTarget.dataset.docTitle; });
+</script>
+}

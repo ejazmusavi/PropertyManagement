@@ -1,0 +1,57 @@
+@model TransferBookingViewModel
+@{ var b = Model.Booking; ViewData["Title"] = "Transfer / change ownership"; }
+<h1 class="h3 mb-1">Transfer or change ownership – @b.BookingNumber</h1>
+<p class="text-muted">@string.Join(", ", b.Properties.Select(p => p.PropertyCode)) &middot; agreement @b.AgreementNumber v@(b.AgreementVersion)</p>
+<div class="alert alert-info">The original owners and the earlier agreement versions stay on record. Saving ends the current ownership, records the new shares and creates a new agreement version with an amendment.</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Current ownership</div>
+<ul class="list-group list-group-flush">@foreach (var c in b.Customers.Where(c => c.IsActive)) { <li class="list-group-item d-flex justify-content-between"><span>@c.CustomerCode – @c.FullName</span><span>@c.SharePercent.ToString("0.####")%</span></li> }</ul></div>
+<form id="transferForm" asp-action="Transfer" asp-route-id="@b.Id" method="post" data-loading-form data-lookup-url="@Url.Action("CustomerLookup")">
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">New ownership (must total 100%)</span><button type="button" class="btn btn-sm btn-outline-primary" id="addOwner">Add owner</button></div>
+    <div class="card-body"><div id="ownerRows">
+    @for (var i = 0; i < Model.Owners.Count; i++)
+    {
+        <div class="row g-2 mb-2 owner-row"><div class="col-12 col-md-4"><input type="search" class="form-control owner-search" placeholder="Search customer" aria-label="Search customer" autocomplete="off" /></div>
+            <div class="col-12 col-md-5"><select name="Owners[@i].CustomerId" class="form-select owner-select" aria-label="Customer">@if (Model.Owners[i].CustomerId > 0) { <option value="@Model.Owners[i].CustomerId" selected>@Model.Owners[i].CustomerLabel</option> } else { <option value="">- Search first -</option> }</select><input type="hidden" name="Owners[@i].CustomerLabel" value="@Model.Owners[i].CustomerLabel" class="owner-label" /></div>
+            <div class="col-8 col-md-2"><div class="input-group"><input name="Owners[@i].SharePercent" type="number" step="0.0001" min="0" max="100" value="@Model.Owners[i].SharePercent.ToString("0.####")" class="form-control owner-share" aria-label="Share percent" /><span class="input-group-text">%</span></div></div>
+            <div class="col-4 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-owner" aria-label="Remove owner">&times;</button></div></div>
+    }</div><div class="fw-semibold">Total: <span id="shareTotal">0</span>%</div></div></div>
+    <div class="card mb-3"><div class="card-body"><label asp-for="Reason" class="form-label"></label><textarea asp-for="Reason" class="form-control" rows="2" maxlength="1000"></textarea><span asp-validation-for="Reason" class="text-danger small"></span></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save ownership change</button><a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@b.Id">Cancel</a></div>
+</form>
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+(function () {
+  var form = document.getElementById('transferForm');
+  function $(s, r) { return (r || form).querySelector(s); } function $$(s, r) { return Array.prototype.slice.call((r || form).querySelectorAll(s)); }
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function updateTotal() { var t = 0; $$('.owner-share').forEach(function (i) { t += num(i.value); }); $('#shareTotal').textContent = Math.round(t * 10000) / 10000; }
+  function renumber() { $$('.owner-row').forEach(function (row, i) { $$('input,select', row).forEach(function (el) { if (el.name) el.name = el.name.replace(/Owners\[\d+\]/, 'Owners[' + i + ']'); }); }); updateTotal(); }
+  function wire(row) {
+    var box = $('.owner-search', row), sel = $('.owner-select', row), label = $('.owner-label', row), timer;
+    sel.addEventListener('change', function () { label.value = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : ''; });
+    box.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        fetch(form.dataset.lookupUrl + '?term=' + encodeURIComponent(box.value), { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+          var keep = sel.value ? sel.options[sel.selectedIndex].cloneNode(true) : null; sel.innerHTML = '';
+          rows.forEach(function (x) { var o = document.createElement('option'); o.value = x.id; o.textContent = x.customerCode + ' – ' + x.fullName + ' (' + x.mobile + ')'; sel.appendChild(o); });
+          if (!sel.options.length && keep) sel.appendChild(keep); if (!sel.options.length) { var o = document.createElement('option'); o.value = ''; o.textContent = 'No matches'; sel.appendChild(o); }
+          label.value = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+        });
+      }, 250);
+    });
+    $('.owner-share', row).addEventListener('input', updateTotal);
+  }
+  $$('.owner-row').forEach(wire); updateTotal();
+  $('#addOwner').addEventListener('click', function () {
+    var i = $$('.owner-row').length; var d = document.createElement('div');
+    d.innerHTML = '<div class="row g-2 mb-2 owner-row"><div class="col-12 col-md-4"><input type="search" class="form-control owner-search" placeholder="Search customer" aria-label="Search customer" autocomplete="off" /></div><div class="col-12 col-md-5"><select name="Owners[' + i + '].CustomerId" class="form-select owner-select" aria-label="Customer"><option value="">- Search first -</option></select><input type="hidden" name="Owners[' + i + '].CustomerLabel" class="owner-label" /></div><div class="col-8 col-md-2"><div class="input-group"><input name="Owners[' + i + '].SharePercent" type="number" step="0.0001" min="0" max="100" class="form-control owner-share" aria-label="Share percent" /><span class="input-group-text">%</span></div></div><div class="col-4 col-md-1"><button type="button" class="btn btn-outline-danger w-100 remove-owner" aria-label="Remove owner">&times;</button></div></div>';
+    var row = d.firstElementChild; $('#ownerRows').appendChild(row); wire(row);
+  });
+  document.addEventListener('click', function (e) { var b = e.target.closest('.remove-owner'); if (!b) return; if ($$('.owner-row').length === 1) return; b.closest('.owner-row').remove(); renumber(); });
+})();
+</script>
+}

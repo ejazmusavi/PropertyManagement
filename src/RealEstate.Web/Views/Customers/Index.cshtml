@@ -1,0 +1,33 @@
+@model CustomerListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Customers"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Customers;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["status"] = f.Status?.ToString(), ["sortBy"] = f.SortBy, ["desc"] = Model.Descending ? "true" : null };
+   string Sort(string key) => Url.Action("Index", new { search = f.Search, status = f.Status, sortBy = key, desc = f.SortBy == key && !Model.Descending })!; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Customers</h1>
+    @if (Ui.Has("customers.manage")) { <a class="btn btn-primary" asp-action="Create">Register customer</a> }
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-md-5"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Code, name, CNIC/passport, mobile or email" aria-label="Search customers" /></div>
+    <div class="col-6 col-md-3"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<CustomerStatus>()) { <option value="@s" selected="@(f.Status == s)">@s</option> }</select></div>
+    <div class="col-6 col-md-3 d-flex gap-2"><button class="btn btn-outline-primary flex-fill" type="submit">Filter</button><a class="btn btn-outline-secondary" asp-action="Index">Clear</a></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No customers found@(Ui.Has("customers.manage") ? ". Register the first customer to get started." : ".")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th><a href="@Sort("code")">Code</a></th><th><a href="@Sort("name")">Name</a></th><th>Identity</th><th>Mobile</th><th><a href="@Sort("status")">Status</a></th><th class="text-end">Properties</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Code">@x.CustomerCode</td><td data-label="Name">@x.FullName</td><td data-label="Identity">@x.IdentityType @x.IdentityNumber</td><td data-label="Mobile">@x.Mobile</td>
+                <td data-label="Status"><span class="badge @(x.Status switch { CustomerStatus.Active => "text-bg-success", CustomerStatus.Inactive => "text-bg-secondary", _ => "text-bg-danger" })">@x.Status</span></td>
+                <td data-label="Properties" class="text-end">@x.ActiveOwnerships</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Details</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "customers", route, "page")' />
+}

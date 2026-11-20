@@ -1,0 +1,51 @@
+@model BookingApprovalsViewModel
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{ ViewData["Title"] = "Booking approvals"; var p = Model.Bookings; var route = new Dictionary<string, string?>(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Booking approvals</h1>
+    <a class="btn btn-outline-secondary" asp-action="Index">All bookings</a>
+</div>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No bookings are waiting for approval.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Booking</th><th>Date</th><th>Project</th><th>Customer</th><th>Properties</th><th>Payment</th><th class="text-end">Total payable</th><th>Submitted by</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            var mine = x.SubmittedBy is not null && x.SubmittedBy == Model.CurrentUserName;
+            <tr><td data-label="Booking"><a asp-action="Details" asp-route-id="@x.Id">@x.BookingNumber</a></td><td data-label="Date">@x.BookingDate.ToString("yyyy-MM-dd")</td><td data-label="Project">@x.ProjectCode</td>
+                <td data-label="Customer">@(x.PrimaryCustomer ?? "-")@(x.OwnerCount > 1 ? $" +{x.OwnerCount - 1}" : "")</td><td data-label="Properties">@x.Properties</td><td data-label="Payment">@x.PaymentMode</td>
+                <td data-label="Total payable" class="text-end">@x.TotalPayable.ToString("N2")</td><td data-label="Submitted by">@x.SubmittedBy</td>
+                <td class="text-end text-nowrap">
+                    @if (mine) { <span class="text-muted small">Submitted by you</span> }
+                    else
+                    {
+                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#decideModal" data-id="@x.Id" data-no="@x.BookingNumber" data-mode="approve">Approve</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#decideModal" data-id="@x.Id" data-no="@x.BookingNumber" data-mode="reject">Reject</button>
+                    }
+                </td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "bookings pending approval", route, "page")' />
+}
+<div class="modal fade" id="decideModal" tabindex="-1" aria-labelledby="decideTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" id="decideForm" method="post">
+    <input type="hidden" name="returnTo" value="approvals" /><input type="hidden" name="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+    <div class="modal-header"><h2 class="modal-title fs-5" id="decideTitle"></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><p id="decideHelp"></p><label class="form-label" id="decideLabel">Comments</label><input name="comments" id="decideComments" class="form-control" maxlength="1000" /></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button><button type="submit" class="btn btn-primary" id="decideSubmit">Save</button></div></form></div></div>
+@section Scripts {
+<script>
+document.getElementById('decideModal').addEventListener('show.bs.modal', function (e) {
+  var d = e.relatedTarget.dataset; var approve = d.mode === 'approve'; var f = document.getElementById('decideForm');
+  f.action = '@Url.Action("Approve")'.replace(/Approve.*$/, '') + (approve ? 'Approve' : 'Reject') + '/' + d.id;
+  document.getElementById('decideTitle').textContent = (approve ? 'Approve ' : 'Reject ') + d.no;
+  document.getElementById('decideHelp').textContent = approve ? 'Confirming sells the property, creates the agreement and records ownership.' : 'The properties return to Available.';
+  document.getElementById('decideLabel').textContent = approve ? 'Comments (optional)' : 'Comment (required)';
+  document.getElementById('decideComments').required = !approve;
+  var s = document.getElementById('decideSubmit'); s.textContent = approve ? 'Approve' : 'Reject'; s.className = 'btn ' + (approve ? 'btn-success' : 'btn-danger');
+});
+</script>
+}

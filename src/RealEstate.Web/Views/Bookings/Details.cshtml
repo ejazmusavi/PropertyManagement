@@ -1,0 +1,120 @@
+@model BookingDetailsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var b = Model.Booking; ViewData["Title"] = b.BookingNumber; await Ui.LoadAsync();
+   var mine = b.SubmittedBy is not null && b.SubmittedBy == Model.CurrentUserName;
+   var canCancel = Ui.Has("bookings.cancel") && b.Status is BookingStatus.Draft or BookingStatus.PendingApproval or BookingStatus.Confirmed;
+   var canDecide = Ui.Has("bookings.approve") && b.Status == BookingStatus.PendingApproval && !mine; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@b.BookingNumber <partial name="_BookingStatusBadge" model="b.Status" /></h1>
+        <div class="text-muted">@b.ProjectCode – @b.ProjectName &middot; @b.BookingDate.ToString("yyyy-MM-dd") &middot; @b.PaymentMode</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (b.AgreementId is not null) { <a class="btn btn-outline-primary" asp-action="Agreement" asp-route-id="@b.Id">Agreement</a> }
+        @if (Ui.Has("bookings.create") && b.Status == BookingStatus.Draft)
+        { <form asp-action="Submit" asp-route-id="@b.Id" method="post"><input type="hidden" name="rowVersion" value="@b.RowVersion" /><button class="btn btn-primary" type="submit">Submit for approval</button></form> }
+        @if (canDecide)
+        {
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">Approve</button>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button>
+        }
+        @if (Ui.Has("bookings.transfer") && b.Status == BookingStatus.Confirmed && b.AgreementStatus == AgreementStatus.Active) { <a class="btn btn-outline-secondary" asp-action="Transfer" asp-route-id="@b.Id">Transfer / change ownership</a> }
+        @if (canCancel) { <a class="btn btn-outline-danger" asp-action="Cancel" asp-route-id="@b.Id">Cancel booking</a> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
+    </div>
+</div>
+@if (b.Status == BookingStatus.PendingApproval && mine && Ui.Has("bookings.approve")) { <div class="alert alert-info">You submitted this booking, so another approver must decide it.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Totals</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-6">Price of properties</dt><dd class="col-sm-6 text-end">@b.TotalPrice.ToString("N2")</dd>
+        <dt class="col-sm-6">Additional discount</dt><dd class="col-sm-6 text-end">-@b.TotalExtraDiscount.ToString("N2")</dd>
+        <dt class="col-sm-6">Additional charges</dt><dd class="col-sm-6 text-end">@b.TotalCharges.ToString("N2")</dd>
+        <dt class="col-sm-6">Total payable</dt><dd class="col-sm-6 text-end fw-semibold">@b.TotalPayable.ToString("N2")</dd>
+        <dt class="col-sm-6">Due at booking</dt><dd class="col-sm-6 text-end">@b.BookingAmount.ToString("N2")</dd>
+        <dt class="col-sm-6">Balance after booking</dt><dd class="col-sm-6 text-end">@b.BalanceAfterBooking.ToString("N2")</dd>
+    </dl>
+    @if (b.BalanceAuthorizedBy is not null) { <div class="alert alert-warning mt-3 mb-0"><strong>Outstanding balance authorized</strong> by @b.BalanceAuthorizedBy: @b.BalanceAuthorizationReason</div> }
+    <div class="text-muted small mt-2">Recording payments, receipts and installment schedules is handled in the payment and installment modules.</div></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Booking</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Created</dt><dd class="col-sm-8">@b.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") by @b.CreatedBy</dd>
+        @if (b.SubmittedAtUtc is { } sa) { <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">@sa.ToString("yyyy-MM-dd HH:mm") by @b.SubmittedBy</dd> }
+        @if (b.ConfirmedAtUtc is { } ca) { <dt class="col-sm-4">Confirmed</dt><dd class="col-sm-8">@ca.ToString("yyyy-MM-dd HH:mm") by @b.ConfirmedBy</dd> }
+        @if (b.CancelledAtUtc is { } xa) { <dt class="col-sm-4">Cancelled</dt><dd class="col-sm-8">@xa.ToString("yyyy-MM-dd HH:mm") by @b.CancelledBy – @b.CancelReason</dd> }
+        @if (b.AgreementNumber is not null) { <dt class="col-sm-4">Agreement</dt><dd class="col-sm-8">@b.AgreementNumber (v@(b.AgreementVersion), @b.AgreementStatus)</dd> }
+        <dt class="col-sm-4">Remarks</dt><dd class="col-sm-8">@(b.Remarks ?? "-")</dd>
+    </dl></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Properties and price snapshot</div>
+<div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Property</th><th class="text-end">Size</th><th class="text-end">Base price</th><th class="text-end">Premiums</th><th class="text-end">Discounts</th><th class="text-end">Charges</th><th class="text-end">Snapshot price</th><th class="text-end">Extra discount</th><th class="text-end">Net price</th><th>Status</th></tr></thead><tbody>
+@foreach (var p in b.Properties)
+{
+    <tr><td data-label="Property">@if (Ui.Has("inventory.view")) { <a asp-controller="Properties" asp-action="Details" asp-route-id="@p.PropertyId">@p.PropertyCode</a> } else { @p.PropertyCode }<div class="small text-muted" title="@p.SnapshotHash">Priced @p.PricedAsOf.ToString("yyyy-MM-dd") · #@p.SnapshotHash[..10]</div></td>
+        <td data-label="Size" class="text-end">@p.Size.ToString("0.####") @p.Unit</td><td data-label="Base price" class="text-end">@p.BasePrice.ToString("N2")</td><td data-label="Premiums" class="text-end">@p.TotalPremiums.ToString("N2")</td>
+        <td data-label="Discounts" class="text-end">@p.TotalDiscounts.ToString("N2")</td><td data-label="Charges" class="text-end">@p.TotalPricingCharges.ToString("N2")</td>
+        <td data-label="Snapshot price" class="text-end">@p.FinalPrice.ToString("N2")@(p.IsOverridden ? " *" : "")</td>
+        <td data-label="Extra discount" class="text-end">@p.ExtraDiscount.ToString("N2")@(p.ExtraDiscountReason is null ? "" : " (" + p.ExtraDiscountReason + ")")</td><td data-label="Net price" class="text-end fw-semibold">@p.LinePrice.ToString("N2")</td>
+        <td data-label="Status"><partial name="_StatusBadge" model="p.PropertyStatus" /></td></tr>
+}
+</tbody></table></div></div>
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-7"><div class="card h-100"><div class="card-header fw-semibold">Customers and ownership</div>
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>Customer</th><th class="text-end">Share</th><th>Status</th><th>From</th><th>To</th></tr></thead><tbody>
+    @foreach (var c in b.Customers)
+    {
+        <tr class="@(c.IsActive ? "" : "text-muted")"><td data-label="Customer">@if (Ui.Has("customers.view")) { <a asp-controller="Customers" asp-action="Details" asp-route-id="@c.CustomerId">@c.CustomerCode – @c.FullName</a> } else { @c.FullName }@(c.IsPrimary && c.IsActive ? " (primary)" : "")</td>
+            <td data-label="Share" class="text-end">@c.SharePercent.ToString("0.####")%</td><td data-label="Status">@(c.IsActive ? "Current" : "Former")</td><td data-label="From">@c.EffectiveFromUtc.ToString("yyyy-MM-dd")</td><td data-label="To">@(c.EffectiveToUtc?.ToString("yyyy-MM-dd") ?? "-")@(c.EndReason is null ? "" : " – " + c.EndReason)</td></tr>
+    }
+    </tbody></table></div></div></div>
+    <div class="col-12 col-lg-5"><div class="card h-100"><div class="card-header fw-semibold">Additional charges</div>
+    @if (b.Charges.Count == 0) { <div class="card-body text-muted">None.</div> }
+    else { <ul class="list-group list-group-flush">@foreach (var c in b.Charges) { <li class="list-group-item d-flex justify-content-between"><span>@c.ChargeType – @c.Description</span><span>@c.Amount.ToString("N2")</span></li> }</ul> }
+    </div></div>
+</div>
+@if (b.Refunds.Count > 0)
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Refunds</div>
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th class="text-end">Amount</th><th>Reason</th><th>Requested by</th><th>Status</th><th>Decision</th><th></th></tr></thead><tbody>
+    @foreach (var r in b.Refunds)
+    {
+        <tr><td data-label="Amount" class="text-end">@r.Amount.ToString("N2")</td><td data-label="Reason">@r.Reason</td><td data-label="Requested by">@r.RequestedBy</td><td data-label="Status">@r.Status</td>
+            <td data-label="Decision">@(r.DecidedBy is null ? "-" : r.DecidedBy + " " + r.DecidedAtUtc?.ToString("yyyy-MM-dd") + (r.DecisionComments is null ? "" : " – " + r.DecisionComments))</td>
+            <td class="text-end">@if (Ui.Has("bookings.approve") && r.Status == RefundStatus.Requested && r.RequestedBy != Model.CurrentUserName) { <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#refundModal" data-refund-id="@r.Id" data-refund-version="@r.RowVersion" data-refund-amount="@r.Amount.ToString("N2")">Decide</button> }</td></tr>
+    }
+    </tbody></table></div><div class="card-footer text-muted small">Approving a refund records the decision; paying it out is handled in the payments module.</div></div>
+}
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Approvals</div>
+    @if (b.Approvals.Count == 0) { <div class="card-body text-muted">No decisions yet.</div> }
+    else { <ul class="list-group list-group-flush">@foreach (var a in b.Approvals) { <li class="list-group-item">@a.Decision by @a.ApproverName on @a.DecidedAtUtc.ToString("yyyy-MM-dd HH:mm")@(a.Comments is null ? "" : " – " + a.Comments)</li> }</ul> }</div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Status history</div>
+    <ul class="list-group list-group-flush">@foreach (var h in b.History) { <li class="list-group-item">@h.ChangedAtUtc.ToString("yyyy-MM-dd HH:mm") – @(h.FromStatus?.ToString() ?? "-") → <strong>@h.ToStatus</strong> by @h.ChangedBy<div class="text-muted small">@h.Reason</div></li> }</ul></div></div>
+</div>
+
+@if (canDecide)
+{
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="Approve" asp-route-id="@b.Id" method="post">
+    <input type="hidden" name="rowVersion" value="@b.RowVersion" />
+    <div class="modal-header"><h2 class="modal-title fs-5" id="approveTitle">Approve @b.BookingNumber</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><p>Confirming sells the property, creates the agreement and records ownership. Total payable: <strong>@b.TotalPayable.ToString("N2")</strong>.</p><label class="form-label">Comments (optional)</label><input name="comments" class="form-control" maxlength="1000" /></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button><button type="submit" class="btn btn-success">Approve</button></div></form></div></div>
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="Reject" asp-route-id="@b.Id" method="post">
+    <input type="hidden" name="rowVersion" value="@b.RowVersion" />
+    <div class="modal-header"><h2 class="modal-title fs-5" id="rejectTitle">Reject @b.BookingNumber</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><p>The properties return to Available.</p><label class="form-label">Comment (required)</label><input name="comments" class="form-control" required maxlength="1000" /></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button><button type="submit" class="btn btn-danger">Reject</button></div></form></div></div>
+}
+@if (b.Refunds.Any(r => r.Status == RefundStatus.Requested) && Ui.Has("bookings.approve"))
+{
+<div class="modal fade" id="refundModal" tabindex="-1" aria-labelledby="refundTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" asp-action="DecideRefund" asp-route-id="@b.Id" method="post">
+    <input type="hidden" name="refundId" id="refundId" /><input type="hidden" name="rowVersion" id="refundVersion" />
+    <div class="modal-header"><h2 class="modal-title fs-5" id="refundTitle">Refund decision</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body"><p>Refund amount: <strong id="refundAmount"></strong></p><label class="form-label">Decision</label><select name="approve" class="form-select mb-3"><option value="true">Approve</option><option value="false">Reject</option></select>
+        <label class="form-label">Comments (required when rejecting)</label><input name="comments" class="form-control" maxlength="1000" /></div>
+    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button><button type="submit" class="btn btn-primary">Save decision</button></div></form></div></div>
+}
+@section Scripts {
+<script>
+document.getElementById('refundModal')?.addEventListener('show.bs.modal', function (e) {
+  document.getElementById('refundId').value = e.relatedTarget.dataset.refundId; document.getElementById('refundVersion').value = e.relatedTarget.dataset.refundVersion; document.getElementById('refundAmount').textContent = e.relatedTarget.dataset.refundAmount;
+});
+</script>
+}
