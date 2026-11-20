@@ -1,0 +1,15 @@
+@model ReportPageViewModel<CashFlowDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project,from,to")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">@r.From.ToString("yyyy-MM-dd") to @r.To.ToString("yyyy-MM-dd") &middot; direct method: cash and bank movements classified by the cash flow section of the counter-account's group &middot; amounts in @r.CurrencySymbol</p>
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm align-middle mb-0"><tbody>
+        <tr class="fw-semibold"><td>Opening cash and bank</td><td class="text-end">@r.OpeningCash.ToString("N2")</td></tr>
+        @foreach (var l in r.Details) { <tr class="@(l.IsTotal ? "fw-semibold table-light" : "")"><td style="padding-left:@(0.5 + l.Level * 1.25)rem">@l.Name</td><td class="text-end">@l.Amount.ToString("N2")</td></tr> }
+        <tr class="fw-semibold border-top"><td>Net change in cash</td><td class="text-end">@r.NetChange.ToString("N2")</td></tr>
+        <tr class="fw-bold"><td>Closing cash and bank</td><td class="text-end">@r.ClosingCash.ToString("N2")</td></tr>
+        <tr><td class="text-muted">Closing balance per ledger</td><td class="text-end">@r.ClosingCashPerLedger.ToString("N2") @if (r.Reconciles) { <span class="badge text-bg-success">agrees</span> } else { <span class="badge text-bg-danger">differs</span> }</td></tr>
+    </tbody></table></div></div>
+}

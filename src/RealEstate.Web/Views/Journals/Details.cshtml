@@ -1,0 +1,87 @@
+@model JournalDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var j = Model.Journal; var s = j.CurrencySymbol; ViewData["Title"] = "Journal " + (j.VoucherNumber ?? j.EntryNumber);
+   var editable = j.Source == JournalSource.Manual && j.Status is JournalStatus.Draft or JournalStatus.Rejected;
+   var canSubmit = j.Status is JournalStatus.Draft or JournalStatus.Rejected && Ui.Has(Permissions.AccountingJournalsManage);
+   var canDecide = j.Status == JournalStatus.PendingApproval && Ui.Has(Permissions.AccountingJournalsApprove) && !Model.IsMaker;
+   var canCancel = j.Status is JournalStatus.Draft or JournalStatus.Rejected or JournalStatus.PendingApproval && Ui.Has(Permissions.AccountingJournalsManage);
+   var canReverse = j.Status == JournalStatus.Posted && j.ReversedByJournalId is null && j.Source is not (JournalSource.Automatic or JournalSource.Reversal) && Ui.Has(Permissions.AccountingJournalsReverse);
+   var canOverride = Ui.Has(Permissions.AccountingPeriodsOverride); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Journal @(j.VoucherNumber ?? j.EntryNumber) <span class="badge text-bg-secondary">@j.Status.Label()</span> <span class="badge text-bg-light border">@j.Source.Label()</span></h1>
+        <div class="text-muted">@j.EntryNumber &middot; dated @j.EntryDate.ToString("yyyy-MM-dd")@(j.PeriodName is null ? "" : " · period " + j.PeriodName) &middot; created by @j.CreatedBy</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (editable && Ui.Has(Permissions.AccountingJournalsManage)) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@j.Id">Edit</a> }
+        @if (canSubmit) { <form asp-action="Submit" asp-route-id="@j.Id" method="post" class="d-inline"><input type="hidden" name="rowVersion" value="@j.RowVersion" /><button class="btn btn-primary" type="submit">Submit for approval</button></form> }
+        @if (canDecide) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">Approve and post</button><button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button> }
+        @if (canReverse) { <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reverseModal">Reverse</button> }
+        @if (canCancel) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancel journal</button> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
+    </div>
+</div>
+@if (j.Status == JournalStatus.PendingApproval && Model.IsMaker) { <div class="alert alert-info">You created or submitted this journal, so another user must approve it.</div> }
+@if (j.Status == JournalStatus.Rejected) { <div class="alert alert-warning">Rejected by @j.RejectedBy: @j.RejectionComment</div> }
+@if (j.ReversedByJournalId is { } rid) { <div class="alert alert-warning">Reversed by <a asp-action="Details" asp-route-id="@rid">@j.ReversedByNumber</a>: @j.ReversalReason</div> }
+@if (j.ReversalOfJournalId is { } oid) { <div class="alert alert-info">This journal reverses <a asp-action="Details" asp-route-id="@oid">@j.ReversalOfNumber</a>.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Journal</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Narration</dt><dd class="col-sm-8">@j.Narration</dd>
+        @if (j.Reference is not null) { <dt class="col-sm-4">Reference</dt><dd class="col-sm-8">@j.Reference</dd> }
+        <dt class="col-sm-4">Total</dt><dd class="col-sm-8 fs-5 fw-semibold">@s @j.TotalDebit.ToString("N2") @if (j.TotalDebit == j.TotalCredit) { <span class="badge text-bg-success">balanced</span> } else { <span class="badge text-bg-danger">not balanced</span> }</dd>
+        @if (j.SourceType is not null) { <dt class="col-sm-4">Source</dt><dd class="col-sm-8">@j.SourceType #@j.SourceId</dd> }
+        @if (j.PostingRuleName is not null) { <dt class="col-sm-4">Posting rule</dt><dd class="col-sm-8"><a asp-controller="PostingRules" asp-action="Details" asp-route-id="@j.PostingRuleId">@j.PostingRuleName</a></dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Approval and posting</div><div class="card-body"><dl class="row mb-0">
+        @if (j.SubmittedBy is not null) { <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">@j.SubmittedBy on @j.SubmittedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</dd> }
+        @if (j.ApprovedBy is not null) { <dt class="col-sm-4">Approved</dt><dd class="col-sm-8">@j.ApprovedBy on @j.ApprovedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</dd> }
+        @if (j.ApprovalComment is not null) { <dt class="col-sm-4">Comment</dt><dd class="col-sm-8">@j.ApprovalComment</dd> }
+        @if (j.PostedAtUtc is not null) { <dt class="col-sm-4">Posted</dt><dd class="col-sm-8">@j.PostedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC as @j.VoucherNumber</dd> }
+        @if (j.ClosedPeriodReason is not null) { <dt class="col-sm-4">Closed period</dt><dd class="col-sm-8">Posted into a closed period: @j.ClosedPeriodReason</dd> }
+        @if (j.CancelledBy is not null) { <dt class="col-sm-4">Cancelled</dt><dd class="col-sm-8">@j.CancelledBy: @j.CancelReason</dd> }
+        @if (j.Status is JournalStatus.Draft) { <dt class="col-sm-4">Next step</dt><dd class="col-sm-8">Submit the journal for approval.</dd> }
+    </dl></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Lines</div><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>#</th><th>Account</th><th>Project</th><th>Cost center</th><th>Description</th><th class="text-end">Debit</th><th class="text-end">Credit</th></tr></thead><tbody>
+    @foreach (var l in j.Lines) { <tr><td data-label="#">@l.LineNo</td><td data-label="Account"><a asp-controller="Accounting" asp-action="AccountDetails" asp-route-id="@l.AccountId">@l.AccountCode @l.AccountName</a></td><td data-label="Project">@(l.ProjectCode ?? "Company")</td>
+        <td data-label="Cost center">@(l.CostCenterCode ?? "-")</td><td data-label="Description">@l.Description</td><td data-label="Debit" class="text-end">@(l.Debit == 0m ? "" : l.Debit.ToString("N2"))</td><td data-label="Credit" class="text-end">@(l.Credit == 0m ? "" : l.Credit.ToString("N2"))</td></tr> }
+    </tbody><tfoot><tr class="fw-semibold"><td colspan="5" class="text-end">Total</td><td class="text-end">@j.TotalDebit.ToString("N2")</td><td class="text-end">@j.TotalCredit.ToString("N2")</td></tr></tfoot></table></div></div>
+
+@if (canDecide)
+{
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Approve" asp-route-id="@j.Id" method="post"><input type="hidden" name="rowVersion" value="@j.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="approveTitle">Approve and post journal</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Posting is final: the journal gets a voucher number and goes to the general ledger. Afterwards it can only be reversed.</p>
+                <label class="form-label" for="ac">Comments (optional)</label><input id="ac" name="comments" class="form-control" maxlength="500" />
+                @if (canOverride) { <div class="form-check mt-3"><input class="form-check-input" type="checkbox" name="postToClosedPeriod" value="true" id="ocp" /><label class="form-check-label" for="ocp">Post into a closed period (authorized override)</label></div>
+                    <label class="form-label mt-2" for="ocr">Reason for posting into a closed period</label><input id="ocr" name="closedPeriodReason" class="form-control" maxlength="500" /> }</div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success">Approve and post</button></div></form></div></div>
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Reject" asp-route-id="@j.Id" method="post"><input type="hidden" name="rowVersion" value="@j.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="rejectTitle">Reject journal</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="rc">Reason (at least 5 characters)</label><textarea id="rc" name="comments" class="form-control" required minlength="5" maxlength="500"></textarea></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Reject</button></div></form></div></div>
+}
+@if (canReverse)
+{
+    <div class="modal fade" id="reverseModal" tabindex="-1" aria-labelledby="reverseTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Reverse" asp-route-id="@j.Id" method="post">
+            <div class="modal-header"><h2 class="modal-title fs-5" id="reverseTitle">Reverse journal</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>A reversal journal with debits and credits swapped is posted immediately. The original stays in the ledger.</p>
+                <label class="form-label" for="rd">Reversal date</label><input id="rd" type="date" name="reversalDate" class="form-control" value="@Model.Today.ToString("yyyy-MM-dd")" />
+                <label class="form-label mt-2" for="rr">Reason (at least 5 characters)</label><textarea id="rr" name="reason" class="form-control" required minlength="5" maxlength="500"></textarea>
+                @if (canOverride) { <div class="form-check mt-3"><input class="form-check-input" type="checkbox" name="postToClosedPeriod" value="true" id="rocp" /><label class="form-check-label" for="rocp">Post into a closed period (authorized override)</label></div>
+                    <label class="form-label mt-2" for="rocr">Reason for posting into a closed period</label><input id="rocr" name="closedPeriodReason" class="form-control" maxlength="500" /> }</div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Post reversal</button></div></form></div></div>
+}
+@if (canCancel)
+{
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Cancel" asp-route-id="@j.Id" method="post"><input type="hidden" name="rowVersion" value="@j.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="cancelTitle">Cancel journal</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="cr">Reason (at least 5 characters)</label><textarea id="cr" name="reason" class="form-control" required minlength="5" maxlength="500"></textarea></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Keep</button><button type="submit" class="btn btn-danger">Cancel journal</button></div></form></div></div>
+}

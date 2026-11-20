@@ -1,0 +1,18 @@
+@model ReportPageViewModel<JournalRegisterDto>
+@{ ViewData["Title"] = Model.Title; var f = Model.Filter;
+   var route = new Dictionary<string, string?> { ["source"] = f.Source?.ToString(), ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") }; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "source,from,to")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">Posted journals: @r.Journals.TotalCount &middot; total debit @r.TotalDebit.ToString("N2") &middot; total credit @r.TotalCredit.ToString("N2")</p>
+    @if (r.Journals.Items.Count == 0) { <div class="empty-state card card-body text-center text-muted">No posted journals in this range.</div> }
+    @foreach (var j in r.Journals.Items)
+    {
+        <div class="card mb-2"><div class="card-header d-flex flex-wrap justify-content-between gap-2"><span><a asp-controller="Journals" asp-action="Details" asp-route-id="@j.Id" class="fw-semibold">@j.VoucherNumber</a> &middot; @j.EntryDate.ToString("yyyy-MM-dd") &middot; @j.Source.Label()</span><span class="text-muted">@j.Narration</span></div>
+        <div class="table-responsive-md"><table class="table table-sm mb-0 table-stack"><tbody>
+        @foreach (var l in j.Lines) { <tr><td data-label="Account">@l.AccountCode @l.AccountName</td><td data-label="Project">@(l.ProjectCode ?? "Company")</td><td data-label="Debit" class="text-end">@(l.Debit == 0m ? "" : l.Debit.ToString("N2"))</td><td data-label="Credit" class="text-end">@(l.Credit == 0m ? "" : l.Credit.ToString("N2"))</td></tr> }
+        </tbody></table></div></div>
+    }
+    <partial name="_Pager" model='(r.Journals.Page, r.Journals.TotalPages, r.Journals.TotalCount, "journals", route, "page")' />
+}

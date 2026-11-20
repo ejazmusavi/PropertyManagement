@@ -1,0 +1,3 @@
+@model (string Title, string? Message)
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h1 class="h3 mb-0">@Model.Title</h1><a class="btn btn-outline-secondary d-print-none" asp-action="Index">All reports</a></div>
+@if (Model.Message is not null) { <div class="alert alert-info">@Model.Message</div> }

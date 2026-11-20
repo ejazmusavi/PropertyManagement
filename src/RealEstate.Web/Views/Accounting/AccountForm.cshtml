@@ -1,0 +1,26 @@
+@model AccountFormViewModel
+@{ ViewData["Title"] = Model.Id is null ? "New account" : "Edit account"; }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form asp-action="@(Model.Id is null ? "CreateAccount" : "EditAccount")" asp-route-id="@Model.Id" method="post" class="card card-body">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="row g-3">
+        <div class="col-12 col-md-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-12 col-md-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-md-6"><label asp-for="AccountGroupId" class="form-label"></label>
+            <select asp-for="AccountGroupId" class="form-select"><option value="0">Choose...</option>
+            @foreach (var g in Model.Groups) { <option value="@g.Id">@(new string(' ', (g.Depth - 1) * 3))@g.Name (@g.Nature.Label())</option> }</select>
+            <span asp-validation-for="AccountGroupId" class="text-danger small"></span></div>
+        <div class="col-12 col-md-6"><label asp-for="ParentAccountId" class="form-label"></label>
+            <select asp-for="ParentAccountId" class="form-select"><option value="">None (top-level account)</option>
+            @foreach (var p in Model.Parents) { <option value="@p.Id">@(new string(' ', p.Depth * 3))@p.Code @p.Name</option> }</select>
+            <div class="form-text">A parent account stops taking postings; it must have no journal lines.</div><span asp-validation-for="ParentAccountId" class="text-danger small"></span></div>
+        <div class="col-12 col-md-6"><div class="form-check"><input asp-for="AllowManualEntries" class="form-check-input" /><label asp-for="AllowManualEntries" class="form-check-label"></label></div>
+            <div class="form-text">Untick for control accounts (customer receivables, advances) that only automatic postings should change.</div></div>
+        <div class="col-12 col-md-6"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div>
+            <div class="form-text">An account with a balance cannot be deactivated.</div></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="2"></textarea></div>
+    </div>
+    <div class="d-flex gap-2 mt-3"><button type="submit" class="btn btn-primary">Save account</button><a class="btn btn-outline-secondary" asp-action="Accounts">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

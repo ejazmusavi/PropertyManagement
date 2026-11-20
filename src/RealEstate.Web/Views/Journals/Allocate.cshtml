@@ -1,0 +1,32 @@
+@model CostAllocationFormViewModel
+@{ ViewData["Title"] = "New cost allocation"; }
+<h1 class="h3 mb-3">New project cost allocation</h1>
+<form asp-action="Allocate" method="post" class="card card-body">
+    <div asp-validation-summary="All" class="alert alert-danger"></div>
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4"><label asp-for="AllocationDate" class="form-label"></label><input asp-for="AllocationDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-md-4"><label asp-for="AccountId" class="form-label"></label><select asp-for="AccountId" class="form-select"><option value="0">Choose...</option>@foreach (var a in Model.ExpenseAccounts) { <option value="@a.Id">@a.Code @a.Name</option> }</select><span asp-validation-for="AccountId" class="text-danger small"></span></div>
+        <div class="col-12 col-md-4"><label asp-for="Amount" class="form-label"></label><input asp-for="Amount" type="number" min="0.01" step="0.01" class="form-control" /><span asp-validation-for="Amount" class="text-danger small"></span></div>
+        <div class="col-12 col-md-4"><label asp-for="SourceProjectId" class="form-label"></label><select asp-for="SourceProjectId" class="form-select">@if (Model.CompanyLevelAllowed) { <option value="">Company level</option> }@foreach (var p in Model.Projects) { <option value="@p.Id">@p.ProjectCode - @p.ProjectName</option> }</select></div>
+        <div class="col-12 col-md-8"><label asp-for="Basis" class="form-label">Allocation basis</label><input asp-for="Basis" class="form-control" placeholder="e.g. shared site office by number of plots" /><span asp-validation-for="Basis" class="text-danger small"></span></div>
+    </div>
+    <h2 class="h6">Target projects</h2>
+    <div id="allocLines" data-rows="Lines" data-template="allocTemplate" data-min="1">
+        @for (var i = 0; i < Model.Lines.Count; i++)
+        {
+            <div class="row g-2 align-items-end mb-2" data-row>
+                <div class="col-7 col-md-6"><label class="form-label small" for="Lines_@(i)__ProjectId">Project</label><select class="form-select" id="Lines_@(i)__ProjectId" name="Lines[@i].ProjectId"><option value="">Choose...</option>@foreach (var p in Model.Projects) { <option value="@p.Id" selected="@(Model.Lines[i].ProjectId == p.Id)">@p.ProjectCode - @p.ProjectName</option> }</select></div>
+                <div class="col-3 col-md-3"><label class="form-label small" for="Lines_@(i)__Percentage">Percent</label><input class="form-control text-end" id="Lines_@(i)__Percentage" name="Lines[@i].Percentage" type="number" min="0" max="100" step="0.0001" value="@(Model.Lines[i].Percentage == 0 ? "" : Model.Lines[i].Percentage.ToString(System.Globalization.CultureInfo.InvariantCulture))" data-percent /></div>
+                <div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger" data-remove-row aria-label="Remove target">&times;</button></div>
+            </div>
+        }
+    </div>
+    <template id="allocTemplate"><div class="row g-2 align-items-end mb-2" data-row>
+        <div class="col-7 col-md-6"><label class="form-label small" for="Lines___i____ProjectId">Project</label><select class="form-select" id="Lines___i____ProjectId" name="Lines[__i__].ProjectId"><option value="">Choose...</option>@foreach (var p in Model.Projects) { <option value="@p.Id">@p.ProjectCode - @p.ProjectName</option> }</select></div>
+        <div class="col-3 col-md-3"><label class="form-label small" for="Lines___i____Percentage">Percent</label><input class="form-control text-end" id="Lines___i____Percentage" name="Lines[__i__].Percentage" type="number" min="0" max="100" step="0.0001" data-percent /></div>
+        <div class="col-2 col-md-1"><button type="button" class="btn btn-outline-danger" data-remove-row aria-label="Remove target">&times;</button></div></div></template>
+    <div class="d-flex justify-content-between align-items-center mb-3"><button type="button" class="btn btn-outline-secondary" data-add-row="allocLines">Add project</button><div>Total <span data-total-percent class="badge text-bg-warning">0%</span></div></div>
+    <div class="alert alert-info small mb-3">The cost is credited to the source project and debited to the targets on the same expense account. The journal goes to another user for approval.</div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary">Submit for approval</button><a class="btn btn-outline-secondary" asp-action="Allocations">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/accounting.js" asp-append-version="true"></script> }

@@ -1,0 +1,17 @@
+@model (string Index, JournalLineForm Line, JournalLookups L)
+@{ var i = Model.Index; var l = Model.Line; var p = $"Lines[{i}]"; var id = $"Lines_{i}__"; }
+<div class="row g-2 align-items-end border-bottom pb-2 mb-2" data-row>
+    <div class="col-12 col-lg-3"><label class="form-label small" for="@(id)AccountId">Account <span data-row-no></span></label>
+        <select class="form-select" id="@(id)AccountId" name="@(p).AccountId" required><option value="">Choose...</option>
+        @foreach (var a in Model.L.Accounts) { <option value="@a.Id" selected="@(l.AccountId == a.Id)">@a.Code @a.Name</option> }</select></div>
+    <div class="col-6 col-lg-2"><label class="form-label small" for="@(id)ProjectId">Project</label>
+        <select class="form-select" id="@(id)ProjectId" name="@(p).ProjectId">@if (Model.L.CompanyLevelAllowed) { <option value="">Company level</option> }
+        @foreach (var x in Model.L.Projects) { <option value="@x.Id" selected="@(l.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><label class="form-label small" for="@(id)CostCenterId">Cost center</label>
+        <select class="form-select" id="@(id)CostCenterId" name="@(p).CostCenterId"><option value="">None</option>
+        @foreach (var c in Model.L.CostCenters) { <option value="@c.Id" selected="@(l.CostCenterId == c.Id)">@c.Code</option> }</select></div>
+    <div class="col-6 col-lg-1"><label class="form-label small" for="@(id)Debit">Debit</label><input class="form-control text-end" id="@(id)Debit" name="@(p).Debit" type="number" min="0" step="0.01" value="@(l.Debit == 0m ? "" : l.Debit.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))" data-debit /></div>
+    <div class="col-6 col-lg-1"><label class="form-label small" for="@(id)Credit">Credit</label><input class="form-control text-end" id="@(id)Credit" name="@(p).Credit" type="number" min="0" step="0.01" value="@(l.Credit == 0m ? "" : l.Credit.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))" data-credit /></div>
+    <div class="col-10 col-lg-2"><label class="form-label small" for="@(id)Description">Line description</label><input class="form-control" id="@(id)Description" name="@(p).Description" value="@l.Description" maxlength="500" /></div>
+    <div class="col-2 col-lg-1 text-end"><button type="button" class="btn btn-outline-danger" data-remove-row aria-label="Remove line">&times;</button></div>
+</div>

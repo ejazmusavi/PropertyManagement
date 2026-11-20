@@ -1,0 +1,32 @@
+@model PostingRuleFormViewModel
+@{ ViewData["Title"] = Model.Id is null ? "New posting rule" : "Edit posting rule";
+   var ev = Model.Catalog.FirstOrDefault(c => c.EventType == Model.EventType);
+   var catalogJson = System.Text.Json.JsonSerializer.Serialize(Model.Catalog.ToDictionary(c => c.EventType.ToString(), c => new { amounts = c.AmountKeys, conditions = c.ConditionFields, accounts = c.AccountKeys, spec = c.SpecItems })); }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form asp-action="@(Model.Id is null ? "Create" : "Edit")" asp-route-id="@Model.Id" method="post" class="card card-body">
+    <div asp-validation-summary="All" class="alert alert-danger"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-md-6"><label asp-for="EventType" class="form-label"></label>
+            <select asp-for="EventType" class="form-select">@foreach (var c in Model.Catalog) { <option value="@c.EventType">@c.Label</option> }</select>
+            <div class="form-text" id="eventHelp">@ev?.SpecItems</div></div>
+        <div class="col-12 col-md-4"><label asp-for="ProjectId" class="form-label"></label><select asp-for="ProjectId" class="form-select">@if (Model.Lookups.CompanyLevelAllowed) { <option value="">Company-wide</option> }@foreach (var p in Model.Lookups.Projects) { <option value="@p.Id">@p.ProjectCode - @p.ProjectName</option> }</select></div>
+        <div class="col-6 col-md-4"><label asp-for="ConditionField" class="form-label"></label>
+            <select asp-for="ConditionField" class="form-select"><option value="">No condition</option>@foreach (var k in ev?.ConditionFields ?? []) { <option value="@k">@k</option> }</select></div>
+        <div class="col-6 col-md-4"><label asp-for="ConditionValue" class="form-label"></label><input asp-for="ConditionValue" class="form-control" placeholder="e.g. Cash, DevelopmentCharges, 5" /></div>
+        <div class="col-6 col-md-4"><label asp-for="Priority" class="form-label"></label><input asp-for="Priority" class="form-control" /></div>
+        <div class="col-6 col-md-4"><label asp-for="EffectiveFrom" class="form-label"></label><input asp-for="EffectiveFrom" type="date" class="form-control" /></div>
+        <div class="col-12 col-md-4"><label asp-for="Description" class="form-label"></label><input asp-for="Description" class="form-control" /></div>
+    </div>
+    <div class="small text-muted mb-2">Condition values: Method = Cash, BankTransfer, Cheque, OnlineTransfer, Card, PaymentGateway &middot; ChargeCategory = SaleConsideration, DevelopmentCharges, UtilityCharges, GovernmentFees, OtherCharges &middot; CategoryId / VendorId = record id &middot; Kind = StampDuty, Registration, TransferFee, Tax, NocFee, DevelopmentCharge, Other.</div>
+    <h2 class="h6">Lines (debits must equal credits for every event)</h2>
+    <div id="ruleLines" data-rows="Lines" data-template="ruleTemplate" data-min="2">
+        @for (var i = 0; i < Model.Lines.Count; i++) { <partial name="_RuleLine" model='(i.ToString(), Model.Lines[i], Model)' /> }
+    </div>
+    <template id="ruleTemplate"><partial name="_RuleLine" model='("__i__", new RuleLineForm(), Model)' /></template>
+    <div class="mb-3"><button type="button" class="btn btn-outline-secondary" data-add-row="ruleLines">Add line</button></div>
+    <div class="alert alert-info small mb-3">The rule is saved as a draft. Submit it, then a second user with policy approval rights approves it; only then does it post events.</div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary">Save rule</button><a class="btn btn-outline-secondary" asp-action="Index">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script>window.postingCatalog = @Html.Raw(catalogJson);</script><script src="~/js/accounting.js" asp-append-version="true"></script> }

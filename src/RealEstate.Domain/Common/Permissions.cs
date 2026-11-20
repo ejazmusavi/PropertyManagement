@@ -94,6 +94,21 @@ public static class Permissions
     public const string GovFeesAssess = "govfees.assess";
     public const string GovFeesPay = "govfees.pay";
 
+    // Phase 8 - accounting
+    public const string AccountingView = "accounting.view";
+    public const string AccountingSetup = "accounting.setup";
+    public const string AccountingJournalsManage = "accounting.journals.manage";
+    public const string AccountingJournalsApprove = "accounting.journals.approve";
+    public const string AccountingJournalsReverse = "accounting.journals.reverse";
+    public const string AccountingJournalsControl = "accounting.journals.control";
+    public const string AccountingRulesManage = "accounting.rules.manage";
+    public const string AccountingRulesApprove = "accounting.rules.approve";
+    public const string AccountingPostingsProcess = "accounting.postings.process";
+    public const string AccountingPeriodsManage = "accounting.periods.manage";
+    public const string AccountingPeriodsOverride = "accounting.periods.override";
+    public const string AccountingReports = "accounting.reports";
+    public const string AccountingBankReconcile = "accounting.bank.reconcile";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -170,6 +185,19 @@ public static class Permissions
         new(GovFeesSetup, "Configure government fee types", "Government fees"),
         new(GovFeesAssess, "Assess fees to customers, record collections and manage fee documents", "Government fees"),
         new(GovFeesPay, "Record payments to government and reverse fee collections and payments", "Government fees"),
+        new(AccountingView, "View chart of accounts, journals, ledgers, posting rules and bank accounts", "Accounting"),
+        new(AccountingSetup, "Manage account groups, chart of accounts, cost centers and bank/cash accounts", "Accounting"),
+        new(AccountingJournalsManage, "Create, edit and submit manual journals, fund transfers and cost allocations", "Accounting"),
+        new(AccountingJournalsApprove, "Approve (post) or reject journals (maker-checker)", "Accounting"),
+        new(AccountingJournalsReverse, "Reverse posted journals", "Accounting"),
+        new(AccountingJournalsControl, "Post manual journals to control accounts", "Accounting"),
+        new(AccountingRulesManage, "Create and submit posting rules", "Accounting"),
+        new(AccountingRulesApprove, "Approve, reject and retire posting rules (accounting policy approval)", "Accounting"),
+        new(AccountingPostingsProcess, "Run automatic postings, retry failed events and mark events as not posted", "Accounting"),
+        new(AccountingPeriodsManage, "Manage fiscal years and close, lock and reopen accounting periods", "Accounting"),
+        new(AccountingPeriodsOverride, "Post into closed (not locked) accounting periods", "Accounting"),
+        new(AccountingReports, "View financial reports and statements", "Accounting"),
+        new(AccountingBankReconcile, "Import bank statements, match transactions and reconcile bank accounts", "Accounting"),
     ];
 }
 
@@ -207,13 +235,17 @@ public static class DefaultRoles
              Permissions.PaymentsReceipts, Permissions.RefundsRequest, Permissions.RefundsApprove, Permissions.RefundsPay, Permissions.LedgersView,
              Permissions.RecoveryView, Permissions.RecoveryAssign, Permissions.RecoveryFollowUp,
              Permissions.ExpensesView, Permissions.ExpensesManage, Permissions.ExpensesApprove, Permissions.ExpensesPay, Permissions.ExpensesReverse, Permissions.ExpensesSetup,
-             Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay]),
+             Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay,
+             Permissions.AccountingView, Permissions.AccountingSetup, Permissions.AccountingJournalsManage, Permissions.AccountingJournalsApprove, Permissions.AccountingJournalsReverse,
+             Permissions.AccountingJournalsControl, Permissions.AccountingRulesManage, Permissions.AccountingRulesApprove, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage,
+             Permissions.AccountingPeriodsOverride, Permissions.AccountingReports, Permissions.AccountingBankReconcile]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
              Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.CustomersView, Permissions.BookingsView,
              Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.PaymentsView, Permissions.LedgersView, Permissions.RecoveryView,
-             Permissions.ExpensesView, Permissions.ExpensesManage, Permissions.VendorsView, Permissions.GovFeesView]),
+             Permissions.ExpensesView, Permissions.ExpensesManage, Permissions.VendorsView, Permissions.GovFeesView,
+             Permissions.AccountingView, Permissions.AccountingReports]),
         new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsCancel, Permissions.AgreementsDocuments,
              Permissions.InstallmentsView, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend,
@@ -224,7 +256,9 @@ public static class DefaultRoles
              Permissions.PaymentsView, Permissions.PaymentsVerify, Permissions.PaymentsApprove, Permissions.PaymentsAllocate, Permissions.PaymentsReverse, Permissions.PaymentsReceipts,
              Permissions.RefundsApprove, Permissions.RefundsPay, Permissions.LedgersView, Permissions.RecoveryView,
              Permissions.ExpensesView, Permissions.ExpensesApprove, Permissions.ExpensesPay, Permissions.ExpensesReverse, Permissions.ExpensesSetup,
-             Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay]),
+             Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay,
+             Permissions.AccountingView, Permissions.AccountingSetup, Permissions.AccountingJournalsManage, Permissions.AccountingJournalsApprove, Permissions.AccountingJournalsReverse,
+             Permissions.AccountingRulesManage, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage, Permissions.AccountingReports, Permissions.AccountingBankReconcile]),
         new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView,
              Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsAllocate, Permissions.PaymentsReceipts, Permissions.LedgersView]),
         new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmend,

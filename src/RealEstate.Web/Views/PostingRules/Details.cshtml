@@ -1,0 +1,63 @@
+@model PostingRuleDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var r = Model.Rule; ViewData["Title"] = "Posting rule " + r.Name;
+   var editable = r.Status is PostingRuleStatus.Draft or PostingRuleStatus.Rejected;
+   var canDecide = r.Status == PostingRuleStatus.PendingApproval && Ui.Has(Permissions.AccountingRulesApprove) && !Model.IsMaker;
+   var canRetire = r.Status is PostingRuleStatus.Active or PostingRuleStatus.Draft or PostingRuleStatus.Rejected && Ui.Has(Permissions.AccountingRulesApprove); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@r.Name <span class="badge text-bg-secondary">@r.Status.Label()</span></h1><div class="text-muted">@r.EventLabel &middot; @(r.ProjectCode ?? "company-wide") &middot; created by @r.CreatedBy</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (editable && Ui.Has(Permissions.AccountingRulesManage)) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@r.Id">Edit</a>
+            <form asp-action="Submit" asp-route-id="@r.Id" method="post" class="d-inline"><input type="hidden" name="rowVersion" value="@r.RowVersion" /><button class="btn btn-primary" type="submit">Submit for policy approval</button></form> }
+        @if (canDecide) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">Approve policy</button><button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button> }
+        @if (canRetire) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#retireModal">Retire</button> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to rules</a>
+    </div>
+</div>
+@if (r.Status == PostingRuleStatus.PendingApproval && Model.IsMaker) { <div class="alert alert-info">You created or submitted this rule, so another user must approve it.</div> }
+@if (r.Status == PostingRuleStatus.Rejected) { <div class="alert alert-warning">Rejected: @r.DecisionComment</div> }
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Rule</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Event</dt><dd class="col-sm-8">@r.EventLabel<div class="small text-muted">@Model.Event.SpecItems</div></dd>
+        <dt class="col-sm-4">Scope</dt><dd class="col-sm-8">@(r.ProjectCode ?? "Company-wide (a project rule wins)")</dd>
+        <dt class="col-sm-4">Condition</dt><dd class="col-sm-8">@(r.ConditionField is null ? "None (applies to every event of this type)" : $"{r.ConditionField} = {r.ConditionValue}")</dd>
+        <dt class="col-sm-4">Priority</dt><dd class="col-sm-8">@r.Priority (lower wins among equally specific rules)</dd>
+        <dt class="col-sm-4">Effective from</dt><dd class="col-sm-8">@r.EffectiveFrom.ToString("yyyy-MM-dd")</dd>
+        @if (!string.IsNullOrEmpty(r.Description)) { <dt class="col-sm-4">Description</dt><dd class="col-sm-8">@r.Description</dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Policy approval</div><div class="card-body"><dl class="row mb-0">
+        @if (r.SubmittedBy is not null) { <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">@r.SubmittedBy on @r.SubmittedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</dd> }
+        @if (r.ApprovedBy is not null) { <dt class="col-sm-4">Approved</dt><dd class="col-sm-8">@r.ApprovedBy on @r.ApprovedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</dd> }
+        @if (r.DecisionComment is not null) { <dt class="col-sm-4">Comment</dt><dd class="col-sm-8">@r.DecisionComment</dd> }
+        @if (r.RetiredBy is not null) { <dt class="col-sm-4">Retired by</dt><dd class="col-sm-8">@r.RetiredBy</dd> }
+        <dt class="col-sm-4">Journals posted</dt><dd class="col-sm-8">@r.JournalCount</dd>
+    </dl></div></div></div>
+</div>
+<div class="card"><div class="card-header fw-semibold">Lines</div><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>#</th><th>Side</th><th>Account</th><th>Amount</th><th>Cost center</th><th>Description</th></tr></thead><tbody>
+    @foreach (var l in r.Lines) { <tr><td data-label="#">@l.LineNo</td><td data-label="Side">@l.Side.Label()</td><td data-label="Account">@(l.AccountId is null ? "Event account: " + l.AccountKey : l.AccountCode + " " + l.AccountName)</td>
+        <td data-label="Amount">@l.AmountKey</td><td data-label="Cost center">@(l.CostCenterId?.ToString() ?? "-")</td><td data-label="Description">@l.Description</td></tr> }
+    </tbody></table></div></div>
+@if (canDecide)
+{
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Approve" asp-route-id="@r.Id" method="post"><input type="hidden" name="rowVersion" value="@r.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="approveTitle">Approve accounting policy</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Once approved, the rule posts every matching event automatically. Active rules cannot be edited, only retired.</p><label class="form-label" for="ac">Comments</label><input id="ac" name="comments" class="form-control" maxlength="500" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success">Approve</button></div></form></div></div>
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Reject" asp-route-id="@r.Id" method="post"><input type="hidden" name="rowVersion" value="@r.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="rejectTitle">Reject rule</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="rc">Reason (at least 5 characters)</label><textarea id="rc" name="comments" class="form-control" required minlength="5" maxlength="500"></textarea></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Reject</button></div></form></div></div>
+}
+@if (canRetire)
+{
+    <div class="modal fade" id="retireModal" tabindex="-1" aria-labelledby="retireTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Retire" asp-route-id="@r.Id" method="post"><input type="hidden" name="rowVersion" value="@r.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="retireTitle">Retire rule</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>New events will no longer use this rule; journals already posted keep their link.</p><label class="form-label" for="tc">Reason (at least 5 characters)</label><textarea id="tc" name="comments" class="form-control" required minlength="5" maxlength="500"></textarea></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Retire</button></div></form></div></div>
+}

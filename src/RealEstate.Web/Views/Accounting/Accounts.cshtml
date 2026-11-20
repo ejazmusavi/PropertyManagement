@@ -1,0 +1,40 @@
+@model AccountsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Chart of accounts"; await Ui.LoadAsync();
+   var route = new Dictionary<string, string?> { ["search"] = Model.Search, ["groupId"] = Model.GroupId?.ToString(), ["nature"] = Model.Nature?.ToString(), ["active"] = Model.Active?.ToString() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Chart of accounts</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.AccountingSetup)) { <a class="btn btn-primary" asp-action="CreateAccount" asp-route-groupId="@Model.GroupId">New account</a> }
+        <a class="btn btn-outline-secondary" asp-action="Groups">Account groups</a>
+        <a class="btn btn-outline-secondary" asp-action="CostCenters">Cost centers</a>
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-4"><input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Code or name" aria-label="Search accounts" /></div>
+    <div class="col-6 col-lg-3"><select name="groupId" class="form-select" aria-label="Group"><option value="">All groups</option>@foreach (var g in Model.Groups.Where(g => g.Depth > 0)) { <option value="@g.Id" selected="@(Model.GroupId == g.Id)">@g.Name</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="nature" class="form-select" aria-label="Nature"><option value="">All natures</option>@foreach (var n in Enum.GetValues<AccountNature>()) { <option value="@n" selected="@(Model.Nature == n)">@n.Label()</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="active" class="form-select" aria-label="Status"><option value="">Any status</option><option value="true" selected="@(Model.Active == true)">Active</option><option value="false" selected="@(Model.Active == false)">Inactive</option></select></div>
+    <div class="col-6 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (Model.Accounts.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-1 text-muted">No accounts found.</p>@if (Ui.Has(Permissions.AccountingSetup)) { <p class="mb-0 small">Create the company's accounts below the standard groups (for example "Cash in hand" under Cash).</p> }</div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Code</th><th>Account</th><th>Group</th><th>Nature</th><th>Posting</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var a in Model.Accounts)
+        {
+            <tr><td data-label="Code" class="text-nowrap">@a.Code</td><td data-label="Account"><span style="padding-left:@(a.Depth * 1.25)rem">@a.Name</span></td><td data-label="Group">@a.GroupName</td>
+                <td data-label="Nature">@a.Nature.Label()</td>
+                <td data-label="Posting">@(a.IsPostable ? (a.AllowManualEntries ? "Postable" : "Automatic only (control)") : "Parent (no postings)")</td>
+                <td data-label="Status">@(a.IsActive ? "Active" : "Inactive")</td>
+                <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="AccountDetails" asp-route-id="@a.Id">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(Model.Page, Model.TotalPages, Model.TotalCount, "accounts", route, "page")' />
+}

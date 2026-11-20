@@ -1,0 +1,59 @@
+@model FiscalYearDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var y = Model.Year; ViewData["Title"] = "Fiscal year " + y.Name; var canManage = Ui.Has(Permissions.AccountingPeriodsManage) && y.Status == FiscalYearStatus.Open; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Fiscal year @y.Name <span class="badge text-bg-secondary">@y.Status.Label()</span></h1><div class="text-muted">@y.StartDate.ToString("yyyy-MM-dd") to @y.EndDate.ToString("yyyy-MM-dd")@(y.ClosedBy is null ? "" : " · closed by " + y.ClosedBy)</div></div>
+    <div class="d-flex gap-2">@if (canManage) { <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#closeYearModal">Close fiscal year</button> }<a class="btn btn-outline-secondary" asp-action="Index">Back</a></div>
+</div>
+<div class="alert alert-info small">Open: postings allowed. Closed: only users holding the override permission may post, with a reason. Locked: no postings at all. Reopening is recorded with a reason.</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Accounting periods and period locking</div><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>#</th><th>Period</th><th>Dates</th><th class="text-end">Posted journals</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var p in y.Periods)
+    {
+        <tr><td data-label="#">@p.PeriodNo</td><td data-label="Period">@p.Name</td><td data-label="Dates">@p.StartDate.ToString("yyyy-MM-dd") - @p.EndDate.ToString("yyyy-MM-dd")</td><td data-label="Posted journals" class="text-end">@p.PostedJournals</td>
+            <td data-label="Status"><span class="badge text-bg-@(p.Status == AccountingPeriodStatus.Open ? "success" : p.Status == AccountingPeriodStatus.Closed ? "warning" : "dark")">@p.Status.Label()</span></td>
+            <td class="text-end text-nowrap">@if (canManage)
+            {
+                foreach (var a in Enum.GetValues<PeriodLockAction>().Where(a => (p.Status, a) is (AccountingPeriodStatus.Open, PeriodLockAction.Close) or (AccountingPeriodStatus.Open or AccountingPeriodStatus.Closed, PeriodLockAction.Lock) or (AccountingPeriodStatus.Closed or AccountingPeriodStatus.Locked, PeriodLockAction.Reopen)))
+                {
+                    <button type="button" class="btn btn-sm btn-outline-@(a == PeriodLockAction.Reopen ? "success" : "secondary")" data-bs-toggle="modal" data-bs-target="#periodModal" data-period-id="@p.Id" data-period-name="@p.Name" data-action="@a" data-row-version="@p.RowVersion">@a.Label()</button>
+                }
+            }</td></tr>
+    }
+    </tbody></table></div></div>
+<div class="card"><div class="card-header fw-semibold">Period lock history</div>
+@if (Model.History.Items.Count == 0) { <div class="card-body text-muted">No period has been closed, locked or reopened.</div> }
+else {
+    <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack"><thead><tr><th>When</th><th>Period</th><th>Action</th><th>Change</th><th>By</th><th>Reason</th></tr></thead><tbody>
+    @foreach (var h in Model.History.Items) { <tr><td data-label="When">@h.AtUtc.ToString("yyyy-MM-dd HH:mm") UTC</td><td data-label="Period">@h.PeriodName</td><td data-label="Action">@h.Action.Label()</td><td data-label="Change">@h.FromStatus.Label() &rarr; @h.ToStatus.Label()</td><td data-label="By">@h.By</td><td data-label="Reason">@h.Reason</td></tr> }
+    </tbody></table></div> }
+</div>
+@if (canManage)
+{
+    <div class="modal fade" id="periodModal" tabindex="-1" aria-labelledby="periodTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="ChangePeriod" asp-route-id="@y.Id" method="post"><input type="hidden" name="periodId" id="pmId" /><input type="hidden" name="periodAction" id="pmAction" /><input type="hidden" name="rowVersion" id="pmRv" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="periodTitle">Change period</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p id="pmText"></p><label class="form-label" for="pmReason">Reason (at least 5 characters)</label><textarea id="pmReason" name="reason" class="form-control" required minlength="5" maxlength="500"></textarea></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Confirm</button></div></form></div></div>
+    <div class="modal fade" id="closeYearModal" tabindex="-1" aria-labelledby="closeYearTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Close" asp-route-id="@y.Id" method="post"><input type="hidden" name="rowVersion" value="@y.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="closeYearTitle">Close fiscal year @y.Name</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Closing is final: nothing can be posted into the year afterwards. Every period must be closed or locked and no journal or automatic posting event may be outstanding.</p>
+                <label class="form-label" for="cyr">Reason (at least 5 characters)</label><textarea id="cyr" name="reason" class="form-control" required minlength="5" maxlength="500"></textarea></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Close fiscal year</button></div></form></div></div>
+}
+@section Scripts {<script>
+    (function () {
+        var m = document.getElementById('periodModal'); if (!m) return;
+        m.addEventListener('show.bs.modal', function (e) {
+            var b = e.relatedTarget, a = b.getAttribute('data-action');
+            document.getElementById('pmId').value = b.getAttribute('data-period-id');
+            document.getElementById('pmAction').value = a;
+            document.getElementById('pmRv').value = b.getAttribute('data-row-version');
+            document.getElementById('periodTitle').textContent = a + ' period ' + b.getAttribute('data-period-name');
+            document.getElementById('pmText').textContent = a === 'Lock' ? 'A locked period rejects every posting.' : a === 'Close' ? 'Only authorized users can post into a closed period.' : 'Reopening allows postings again.';
+        });
+    })();
+</script>}

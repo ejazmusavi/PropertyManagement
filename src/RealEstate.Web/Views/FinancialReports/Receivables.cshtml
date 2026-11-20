@@ -1,0 +1,21 @@
+@model ReportPageViewModel<AccountsReceivableDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project,asof")' />
+@if (Model.Report is { } r)
+{
+    var s = r.CurrencySymbol;
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Receivable (customers owing)</div><div class="fs-5 fw-semibold">@s @r.TotalReceivable.ToString("N2")</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Advances (customers in credit)</div><div class="fs-5 fw-semibold">@s @r.TotalAdvance.ToString("N2")</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Net per customer ledger / per control accounts</div><div class="fs-6 fw-semibold">@r.NetBalance.ToString("N2") / @r.ControlBalance.ToString("N2")</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Difference</div><div class="fs-5 fw-semibold @(r.Difference == 0m ? "text-success" : "text-danger")">@r.Difference.ToString("N2")</div></div></div>
+    </div>
+    @if (r.Rows.Count == 0) { <div class="empty-state card card-body text-center text-muted">No open customer balances.</div> }
+    else {
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Agreement</th><th>Project</th><th>Customer</th><th class="text-end">Charged</th><th class="text-end">Paid / credited</th><th class="text-end">Balance</th></tr></thead><tbody>
+        @foreach (var x in r.Rows) { <tr><td data-label="Agreement"><a asp-controller="Ledgers" asp-action="Agreement" asp-route-id="@x.AgreementId">@x.AgreementNumber</a></td><td data-label="Project">@x.ProjectCode</td><td data-label="Customer">@x.CustomerName</td>
+            <td data-label="Charged" class="text-end">@x.Debit.ToString("N2")</td><td data-label="Paid / credited" class="text-end">@x.Credit.ToString("N2")</td><td data-label="Balance" class="text-end @(x.Balance < 0 ? "text-success" : "")">@x.Balance.ToString("N2")</td></tr> }
+        </tbody></table></div></div> }
+}

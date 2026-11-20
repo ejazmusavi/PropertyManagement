@@ -1,0 +1,9 @@
+@model (RealEstate.Application.Accounting.StatementSectionDto Section, string TotalLabel)
+<div class="table-responsive-md"><table class="table table-sm align-middle mb-0">
+    <thead><tr><th colspan="2">@Model.Section.Title</th></tr></thead><tbody>
+    @if (Model.Section.Lines.Count == 0) { <tr><td colspan="2" class="text-muted">No balances.</td></tr> }
+    @foreach (var l in Model.Section.Lines)
+    {
+        <tr class="@(l.IsTotal ? "fw-semibold table-light" : "")"><td style="padding-left:@(0.5 + l.Level * 1.25)rem">@if (l.AccountId is { } id) { <a asp-action="GeneralLedger" asp-route-accountId="@id">@l.Code @l.Name</a> } else { @l.Name }</td><td class="text-end">@l.Amount.ToString("N2")</td></tr>
+    }
+    </tbody><tfoot><tr class="fw-bold border-top"><td>@Model.TotalLabel</td><td class="text-end">@Model.Section.Total.ToString("N2")</td></tr></tfoot></table></div>

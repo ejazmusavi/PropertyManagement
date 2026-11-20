@@ -1,0 +1,19 @@
+@model ReportPageViewModel<BalanceSheetDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project,asof")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">As at @r.AsOf.ToString("yyyy-MM-dd") &middot; amounts in @r.CurrencySymbol &middot; @if (r.IsBalanced) { <span class="badge text-bg-success">Assets = liabilities + equity</span> } else { <span class="badge text-bg-danger">Not balanced</span> }</p>
+    <div class="row g-3">
+        <div class="col-12 col-lg-6"><div class="card"><div class="card-body"><partial name="_StatementSection" model='(r.Assets, "Total assets")' /></div></div></div>
+        <div class="col-12 col-lg-6"><div class="card"><div class="card-body">
+            <partial name="_StatementSection" model='(r.Liabilities, "Total liabilities")' />
+            <div class="mt-3"><partial name="_StatementSection" model='(r.Equity, "Total equity accounts")' /></div>
+            <table class="table table-sm mt-2 mb-0"><tbody>
+                <tr><td>Retained earnings (profit of earlier fiscal years)</td><td class="text-end">@r.RetainedEarningsComputed.ToString("N2")</td></tr>
+                <tr><td>Current-year profit</td><td class="text-end">@r.CurrentYearProfit.ToString("N2")</td></tr>
+                <tr class="fw-bold border-top"><td>Total liabilities and equity</td><td class="text-end">@r.TotalLiabilitiesAndEquity.ToString("N2")</td></tr></tbody></table>
+        </div></div></div>
+    </div>
+}

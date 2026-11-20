@@ -1,0 +1,13 @@
+@model ReportPageViewModel<IncomeStatementDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project,from,to")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">@r.From.ToString("yyyy-MM-dd") to @r.To.ToString("yyyy-MM-dd") &middot; amounts in @r.CurrencySymbol</p>
+    <div class="card"><div class="card-body">
+        <partial name="_StatementSection" model='(r.Revenue, "Total revenue")' />
+        <div class="mt-3"><partial name="_StatementSection" model='(r.Expenses, "Total expenses")' /></div>
+        <table class="table table-sm mt-2 mb-0"><tbody><tr class="fw-bold fs-5 border-top"><td>@(r.NetProfit >= 0 ? "Net profit" : "Net loss")</td><td class="text-end">@r.NetProfit.ToString("N2")</td></tr></tbody></table>
+    </div></div>
+}

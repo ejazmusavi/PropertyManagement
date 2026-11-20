@@ -248,6 +248,12 @@ public class AccountingPostingRequest : Entity<long>
     public AccountingPostingStatus Status { get; set; } = AccountingPostingStatus.Pending;
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? ProcessedAtUtc { get; set; }
+    // Phase 8: processing state of the posting engine (rows are locked FOR UPDATE while processed)
+    public int Attempts { get; set; }
+    public string? LastError { get; set; }
+    public long? JournalEntryId { get; set; }
+    public string? ProcessedBy { get; set; }
+    public string? SkipReason { get; set; }
 }
 
 /// <summary>A recovery officer assigned to follow up an agreement. One active assignment per agreement; closed rows are kept.</summary>

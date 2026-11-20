@@ -1,0 +1,32 @@
+@model AccountingDashboardViewModel
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Accounting"; await Ui.LoadAsync(); var d = Model.Dashboard; var s = d.CurrencySymbol; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Accounting</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.AccountingJournalsManage)) { <a class="btn btn-primary" asp-controller="Journals" asp-action="Create">New journal</a> }
+        @if (Ui.Has(Permissions.AccountingReports)) { <a class="btn btn-outline-secondary" asp-controller="FinancialReports" asp-action="Index">Financial reports</a> }
+    </div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Journals awaiting approval</div><div class="fs-3 fw-semibold">@d.PendingApprovals</div>
+        @if (Ui.Has(Permissions.AccountingJournalsApprove)) { <a class="small" asp-controller="Journals" asp-action="Approvals">Open approval queue</a> }</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Draft or rejected journals</div><div class="fs-3 fw-semibold">@d.DraftJournals</div>
+        <a class="small" asp-controller="Journals" asp-action="Index" asp-route-status="Draft">Show drafts</a></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Automatic postings pending / failed</div><div class="fs-3 fw-semibold">@d.Queue.Pending / <span class="@(d.Queue.Failed > 0 ? "text-danger" : "")">@d.Queue.Failed</span></div>
+        <a class="small" asp-controller="PostingRules" asp-action="Queue">Open posting queue</a></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Posting rules awaiting policy approval</div><div class="fs-3 fw-semibold">@d.PendingRules</div>
+        <a class="small" asp-controller="PostingRules" asp-action="Index" asp-route-status="PendingApproval">Review rules</a></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Current period</div><div class="fs-5 fw-semibold">@(d.CurrentPeriod ?? "No fiscal year covers today")</div>
+        @if (d.CurrentPeriodStatus is { } ps) { <span class="badge text-bg-@(ps == RealEstate.Domain.Enums.AccountingPeriodStatus.Open ? "success" : "secondary")">@ps.Label()</span> }
+        <div><a class="small" asp-controller="FiscalYears" asp-action="Index">Financial years</a></div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Cash balance</div><div class="fs-5 fw-semibold">@s @d.CashBalance.ToString("N2")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Bank balance</div><div class="fs-5 fw-semibold">@s @d.BankBalance.ToString("N2")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Unmatched bank statement lines</div><div class="fs-3 fw-semibold">@d.UnmatchedBankLines</div>
+        <a class="small" asp-controller="Banking" asp-action="Index">Bank reconciliation</a></div></div></div>
+</div>
+<div class="card"><div class="card-header fw-semibold">Accounting policy</div><div class="card-body">
+    <p class="mb-2">Automatic journals are created only by <strong>approved posting rules</strong>. Accounting treatment (revenue recognition, advances, development charges, taxes) is the company accountant's policy: configure a rule per accounting event, have a second user approve it, then run the automatic postings.</p>
+    <p class="mb-0 text-muted small">Events without an applicable rule stay in the posting queue as failed with the reason; they post once a rule is approved, or can be marked as not posted with a reason when the approved policy says so.</p>
+</div></div>

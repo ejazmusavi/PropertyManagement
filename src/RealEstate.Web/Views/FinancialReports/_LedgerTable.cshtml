@@ -1,0 +1,23 @@
+@model (RealEstate.Application.Accounting.GeneralLedgerDto L, Dictionary<string, string?> Route)
+@{ var l = Model.L; var s = l.CurrencySymbol; }
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Opening balance</div><div class="fs-5 fw-semibold">@s @l.OpeningBalance.ToString("N2")</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Debits</div><div class="fs-5 fw-semibold">@l.TotalDebit.ToString("N2")</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Credits</div><div class="fs-5 fw-semibold">@l.TotalCredit.ToString("N2")</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Closing balance</div><div class="fs-5 fw-semibold">@s @l.ClosingBalance.ToString("N2")</div></div></div>
+</div>
+<p class="text-muted small">@l.AccountCode @l.AccountName (@l.Nature.Label()) &middot; @(l.From?.ToString("yyyy-MM-dd") ?? "beginning") to @l.To.ToString("yyyy-MM-dd"). Balances are shown in the account's normal direction.</p>
+@if (l.Lines.Items.Count == 0) { <div class="empty-state card card-body text-center text-muted">No postings in this range.</div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Date</th><th>Voucher</th><th>Narration</th><th>Project</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Balance</th></tr></thead><tbody>
+        @foreach (var x in l.Lines.Items)
+        {
+            <tr><td data-label="Date">@x.EntryDate.ToString("yyyy-MM-dd")</td><td data-label="Voucher"><a asp-controller="Journals" asp-action="Details" asp-route-id="@x.JournalEntryId">@x.VoucherNumber</a></td>
+                <td data-label="Narration">@x.Narration@if (x.Reference is not null) { <div class="small text-muted">Ref @x.Reference</div> }</td><td data-label="Project">@(x.ProjectCode ?? "Company")@(x.CostCenterCode is null ? "" : " / " + x.CostCenterCode)</td>
+                <td data-label="Debit" class="text-end">@(x.Debit == 0m ? "" : x.Debit.ToString("N2"))</td><td data-label="Credit" class="text-end">@(x.Credit == 0m ? "" : x.Credit.ToString("N2"))</td><td data-label="Balance" class="text-end">@x.Balance.ToString("N2")</td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(l.Lines.Page, l.Lines.TotalPages, l.Lines.TotalCount, "postings", Model.Route, "page")' />
+}

@@ -1,0 +1,36 @@
+@model MoneyAccountsViewModel
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Bank and cash accounts"; await Ui.LoadAsync(); var s = Model.CurrencySymbol; var canSetup = Ui.Has(Permissions.AccountingSetup); var canReport = Ui.Has(Permissions.AccountingReports); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Bank and cash accounts</h1>
+    <div class="d-flex flex-wrap gap-2">@if (canSetup) { <a class="btn btn-primary" asp-action="BankForm">New bank account</a><a class="btn btn-outline-primary" asp-action="CashForm">New cash account</a> }
+        @if (Ui.Has(Permissions.AccountingJournalsManage)) { <a class="btn btn-outline-secondary" asp-controller="Journals" asp-action="Transfer">Fund transfer</a> }</div>
+</div>
+<h2 class="h5">Bank accounts</h2>
+@if (Model.Banks.Count == 0) { <div class="empty-state card card-body text-center text-muted mb-3">No bank accounts. Create a ledger account under the Bank group first, then register the bank account.</div> }
+else {
+<div class="card mb-4"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+    <thead><tr><th>Account</th><th>Bank</th><th>Ledger account</th><th class="text-end">Book balance</th><th class="text-end">Unmatched lines</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var b in Model.Banks)
+    {
+        <tr><td data-label="Account">@b.Name<div class="small text-muted">@b.Code &middot; @b.AccountNumber</div></td><td data-label="Bank">@b.BankName@(b.Branch is null ? "" : ", " + b.Branch)</td><td data-label="Ledger account">@b.GlAccountCode @b.GlAccountName</td>
+            <td data-label="Book balance" class="text-end">@s @b.BookBalance.ToString("N2")</td><td data-label="Unmatched lines" class="text-end">@b.UnmatchedCount</td><td data-label="Status">@(b.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" asp-action="Reconcile" asp-route-id="@b.Id">Reconcile</a>
+                @if (canReport) { <a class="btn btn-sm btn-outline-secondary" asp-controller="FinancialReports" asp-action="Bankbook" asp-route-bankAccountId="@b.Id">Bankbook</a> }
+                @if (canSetup) { <a class="btn btn-sm btn-outline-secondary" asp-action="BankForm" asp-route-id="@b.Id">Edit</a> }</td></tr>
+    }
+    </tbody></table></div></div> }
+<h2 class="h5">Cash accounts</h2>
+@if (Model.Cash.Count == 0) { <div class="empty-state card card-body text-center text-muted">No cash accounts. Create a ledger account under the Cash group first, then register the cash account.</div> }
+else {
+<div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+    <thead><tr><th>Account</th><th>Custodian</th><th>Ledger account</th><th class="text-end">Book balance</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var c in Model.Cash)
+    {
+        <tr><td data-label="Account">@c.Name<div class="small text-muted">@c.Code</div></td><td data-label="Custodian">@(c.Custodian ?? "-")</td><td data-label="Ledger account">@c.GlAccountCode @c.GlAccountName</td>
+            <td data-label="Book balance" class="text-end">@s @c.BookBalance.ToString("N2")</td><td data-label="Status">@(c.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end text-nowrap">@if (canReport) { <a class="btn btn-sm btn-outline-secondary" asp-controller="FinancialReports" asp-action="Cashbook" asp-route-cashAccountId="@c.Id">Cashbook</a> }
+                @if (canSetup) { <a class="btn btn-sm btn-outline-secondary" asp-action="CashForm" asp-route-id="@c.Id">Edit</a> }</td></tr>
+    }
+    </tbody></table></div></div> }

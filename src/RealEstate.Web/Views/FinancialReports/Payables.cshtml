@@ -1,0 +1,21 @@
+@model ReportPageViewModel<AccountsPayableDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project")' />
+@if (Model.Report is { } r)
+{
+    var s = r.CurrencySymbol;
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Vendor payables (approved, unpaid)</div><div class="fs-5 fw-semibold">@s @r.TotalOutstanding.ToString("N2")</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Vendor payable accounts / difference</div><div class="fs-6 fw-semibold">@r.ControlBalance.ToString("N2") / <span class="@(r.Difference == 0m ? "text-success" : "text-danger")">@r.Difference.ToString("N2")</span></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Government fees payable (assessed, unpaid)</div><div class="fs-5 fw-semibold">@s @r.GovernmentPayableOutstanding.ToString("N2")</div></div></div>
+        <div class="col-6 col-lg-3"><div class="card card-body"><div class="small text-muted">Government payable accounts</div><div class="fs-5 fw-semibold">@s @r.GovernmentControlBalance.ToString("N2")</div></div></div>
+    </div>
+    @if (r.Rows.Count == 0) { <div class="empty-state card card-body text-center text-muted">No open vendor payables.</div> }
+    else {
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Vendor</th><th class="text-end">Open expenses</th><th class="text-end">Approved</th><th class="text-end">Paid</th><th class="text-end">Outstanding</th><th class="text-end">Overdue</th></tr></thead><tbody>
+        @foreach (var x in r.Rows) { <tr><td data-label="Vendor">@if (x.VendorId is { } v) { <a asp-controller="Vendors" asp-action="Details" asp-route-id="@v">@x.VendorName</a> } else { @x.VendorName }</td><td data-label="Open expenses" class="text-end">@x.OpenExpenses</td>
+            <td data-label="Approved" class="text-end">@x.Approved.ToString("N2")</td><td data-label="Paid" class="text-end">@x.Paid.ToString("N2")</td><td data-label="Outstanding" class="text-end">@x.Outstanding.ToString("N2")</td><td data-label="Overdue" class="text-end @(x.Overdue > 0 ? "text-danger" : "")">@x.Overdue.ToString("N2")</td></tr> }
+        </tbody></table></div></div> }
+}

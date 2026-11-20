@@ -1,0 +1,48 @@
+@model AccountGroupsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Account groups"; await Ui.LoadAsync(); var f = Model.Form; var canEdit = Ui.Has(Permissions.AccountingSetup); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Account groups</h1>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-action="Accounts">Chart of accounts</a></div>
+</div>
+<div class="row g-3">
+    <div class="@(canEdit ? "col-12 col-xl-8" : "col-12")">
+        <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+            <thead><tr><th>Group</th><th>Nature</th><th>Classification</th><th>Cash flow</th><th class="text-end">Accounts</th><th>Status</th><th></th></tr></thead><tbody>
+            @foreach (var g in Model.Groups)
+            {
+                <tr><td data-label="Group"><span style="padding-left:@(g.Depth * 1.25)rem" class="@(g.Depth == 0 ? "fw-semibold" : "")">@g.Name</span> <span class="small text-muted">@g.Code</span>@if (g.IsSystem) { <span class="badge text-bg-light border ms-1">standard</span> }</td>
+                    <td data-label="Nature">@g.Nature.Label()</td><td data-label="Classification">@(g.Classification == AccountClassification.None ? "-" : g.Classification.Label())</td>
+                    <td data-label="Cash flow">@(g.Depth == 0 ? "-" : g.CashFlowSection.Label())</td><td data-label="Accounts" class="text-end">@g.AccountCount</td>
+                    <td data-label="Status">@(g.IsActive ? "Active" : "Inactive")</td>
+                    <td class="text-end text-nowrap">@if (g.Depth > 0) { <a class="btn btn-sm btn-outline-primary" asp-action="Accounts" asp-route-groupId="@g.Id">Accounts</a> }
+                        @if (canEdit && g.Depth > 0) { <a class="btn btn-sm btn-outline-secondary" asp-action="Groups" asp-route-edit="@g.Id">Edit</a> }</td></tr>
+            }
+            </tbody></table></div></div>
+    </div>
+    @if (canEdit)
+    {
+        <div class="col-12 col-xl-4"><div class="card"><div class="card-header fw-semibold">@(f.Id is null ? "New group" : "Edit group " + f.Code)</div><div class="card-body">
+            <form asp-action="SaveGroup" method="post" class="row g-2">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                <input type="hidden" asp-for="Form.Id" /><input type="hidden" asp-for="Form.RowVersion" /><input type="hidden" asp-for="Form.IsSystem" />
+                <div class="col-12 col-md-6 col-xl-12"><label asp-for="Form.Code" class="form-label">Code</label><input asp-for="Form.Code" class="form-control" readonly="@f.IsSystem" /><span asp-validation-for="Form.Code" class="text-danger small"></span></div>
+                <div class="col-12 col-md-6 col-xl-12"><label asp-for="Form.Name" class="form-label">Name</label><input asp-for="Form.Name" class="form-control" /><span asp-validation-for="Form.Name" class="text-danger small"></span></div>
+                <div class="col-12"><label asp-for="Form.ParentGroupId" class="form-label">Parent group</label>
+                    <select asp-for="Form.ParentGroupId" class="form-select" disabled="@f.IsSystem"><option value="">Choose...</option>
+                    @foreach (var g in Model.Groups.Where(g => g.Id != f.Id)) { <option value="@g.Id" selected="@(f.ParentGroupId == g.Id)">@(new string(' ', g.Depth * 3))@g.Name</option> }</select>
+                    @if (f.IsSystem) { <input type="hidden" asp-for="Form.ParentGroupId" /> }<span asp-validation-for="Form.ParentGroupId" class="text-danger small"></span></div>
+                <div class="col-12 col-md-6 col-xl-12"><label asp-for="Form.Classification" class="form-label">Classification</label>
+                    <select asp-for="Form.Classification" asp-items="EnumText.Options<AccountClassification>()" class="form-select" disabled="@f.IsSystem"></select>
+                    @if (f.IsSystem) { <input type="hidden" asp-for="Form.Classification" /> }<div class="form-text">"None" inherits the parent's classification.</div></div>
+                <div class="col-12 col-md-6 col-xl-12"><label asp-for="Form.CashFlowSection" class="form-label">Cash flow section</label><select asp-for="Form.CashFlowSection" asp-items="EnumText.Options<CashFlowSection>()" class="form-select"></select></div>
+                <div class="col-6"><label asp-for="Form.SortOrder" class="form-label">Sort order</label><input asp-for="Form.SortOrder" class="form-control" /></div>
+                <div class="col-6 d-flex align-items-end"><div class="form-check"><input asp-for="Form.IsActive" class="form-check-input" disabled="@f.IsSystem" /><label asp-for="Form.IsActive" class="form-check-label">Active</label></div>@if (f.IsSystem) { <input type="hidden" asp-for="Form.IsActive" /> }</div>
+                <div class="col-12"><label asp-for="Form.Description" class="form-label">Description</label><textarea asp-for="Form.Description" class="form-control" rows="2"></textarea></div>
+                <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-primary">Save group</button>@if (f.Id is not null) { <a class="btn btn-outline-secondary" asp-action="Groups">New group instead</a> }</div>
+            </form></div></div></div>
+    }
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

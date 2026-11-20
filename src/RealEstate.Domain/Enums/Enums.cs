@@ -174,9 +174,15 @@ public enum AccountingEventType
     // Phase 7 (stored as text, max 25 characters)
     ExpenseApproved = 4, ExpenseCancelled = 5, ExpensePaid = 6, ExpensePaymentReversed = 7,
     GovFeeAssessed = 8, GovFeeAssessmentCancelled = 9, GovFeeCollected = 10, GovFeeCollectionReversed = 11, GovFeePaid = 12, GovFeePaymentReversed = 13,
+    // Phase 8: fed by the accounting module from the agreement ledger and from confirmed/cancelled bookings
+    ReceivableRecognized = 14, ReceivableDerecognized = 15, CustomerWaiver = 16, CustomerWaiverReversed = 17,
+    BookingConfirmed = 18, BookingCancelled = 19,
+    // Phase 8: fund transfers between bank and cash accounts (rules only; the transfer is itself a journal)
+    BankTransfer = 20, CashTransfer = 21,
 }
 
-public enum AccountingPostingStatus { Pending = 1, Posted = 2, Failed = 3 }
+/// <summary>Phase 8 adds Skipped: an accountant decided, with a reason, that the event creates no journal under the approved policy.</summary>
+public enum AccountingPostingStatus { Pending = 1, Posted = 2, Failed = 3, Skipped = 4 }
 
 public enum RecoveryAssignmentStatus { Active = 1, Closed = 2 }
 
@@ -206,3 +212,47 @@ public enum GovernmentFeeAssessmentStatus { Assessed = 1, Cancelled = 2 }
 public enum FeeEntryStatus { Posted = 1, Reversed = 2 }
 
 public enum GovernmentFeeDocumentType { GovernmentReceipt = 1, Challan = 2, Other = 3 }
+
+// Phase 8 - double-entry accounting
+public enum AccountNature { Asset = 1, Liability = 2, Equity = 3, Revenue = 4, Expense = 5 }
+
+/// <summary>
+/// Statement classification of an account group (spec 8.2 main groups). Drives the balance sheet, income statement, cash/bank books, the cash flow statement
+/// and the control-account reconciliations.
+/// </summary>
+public enum AccountClassification
+{
+    None = 0,
+    Cash = 1, Bank = 2, CustomerReceivables = 3, LandInventory = 4, PropertyInventory = 5, FixedAssets = 6, OtherAssets = 7,
+    CustomerAdvances = 20, GovernmentPayables = 21, VendorPayables = 22, TaxLiabilities = 23, OtherLiabilities = 24,
+    Capital = 40, RetainedEarnings = 41, Reserves = 42,
+    PropertySalesRevenue = 60, DevelopmentRevenue = 61, OtherIncome = 62,
+    OperatingExpenses = 80, ConstructionExpenses = 81, Marketing = 82, Salaries = 83, AdministrativeExpenses = 84, OtherExpenses = 85,
+}
+
+/// <summary>Cash flow statement section of the counter-entries to cash and bank (direct method).</summary>
+public enum CashFlowSection { Operating = 1, Investing = 2, Financing = 3 }
+
+public enum FiscalYearStatus { Open = 1, Closed = 2 }
+
+/// <summary>Open: postings allowed. Closed: only holders of accounting.periods.override may post, with a reason. Locked: no postings at all.</summary>
+public enum AccountingPeriodStatus { Open = 1, Closed = 2, Locked = 3 }
+
+public enum PeriodLockAction { Close = 1, Lock = 2, Reopen = 3 }
+
+public enum JournalSource { Manual = 1, Automatic = 2, Reversal = 3, Transfer = 4, CostAllocation = 5 }
+
+public enum JournalStatus { Draft = 1, PendingApproval = 2, Posted = 3, Rejected = 4, Cancelled = 5 }
+
+/// <summary>Voucher series; numbers run per series and fiscal year (e.g. JV-FY2026-000001).</summary>
+public enum VoucherType { JV = 1, AJ = 2, RV = 3, TR = 4, CA = 5 }
+
+public enum PostingRuleStatus { Draft = 1, PendingApproval = 2, Active = 3, Rejected = 4, Retired = 5 }
+
+public enum EntrySide { Debit = 1, Credit = 2 }
+
+public enum BankTransactionStatus { Unmatched = 1, Matched = 2, Ignored = 3 }
+
+public enum BankReconciliationStatus { InProgress = 1, Completed = 2 }
+
+public enum CostAllocationStatus { PendingApproval = 1, Posted = 2, Rejected = 3, Cancelled = 4 }

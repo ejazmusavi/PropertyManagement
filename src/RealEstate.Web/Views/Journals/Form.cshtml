@@ -1,0 +1,28 @@
+@model JournalFormViewModel
+@{ ViewData["Title"] = Model.Id is null ? "New journal" : "Edit journal"; }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form asp-action="@(Model.Id is null ? "Create" : "Edit")" asp-route-id="@Model.Id" method="post" class="card card-body">
+    <div asp-validation-summary="All" class="alert alert-danger"></div>
+    <input type="hidden" asp-for="RowVersion" /><input type="hidden" asp-for="IdempotencyKey" />
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3"><label asp-for="EntryDate" class="form-label"></label><input asp-for="EntryDate" type="date" class="form-control" /></div>
+        <div class="col-12 col-md-6"><label asp-for="Narration" class="form-label"></label><input asp-for="Narration" class="form-control" /><span asp-validation-for="Narration" class="text-danger small"></span></div>
+        <div class="col-12 col-md-3"><label asp-for="Reference" class="form-label">Posting reference</label><input asp-for="Reference" class="form-control" /></div>
+    </div>
+    <h2 class="h6">Lines</h2>
+    <div id="journalLines" data-rows="Lines" data-template="lineTemplate" data-min="2">
+        @for (var i = 0; i < Model.Lines.Count; i++) { <partial name="_JournalLine" model='(i.ToString(), Model.Lines[i], Model.Lookups)' /> }
+    </div>
+    <template id="lineTemplate"><partial name="_JournalLine" model='("__i__", new JournalLineForm(), Model.Lookups)' /></template>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <button type="button" class="btn btn-outline-secondary" data-add-row="journalLines">Add line</button>
+        <div>Debit <strong data-total-debit>0.00</strong> &middot; Credit <strong data-total-credit>0.00</strong> <span data-total-diff class="badge text-bg-warning">-</span></div>
+    </div>
+    <div class="alert alert-info small mb-3">Saving keeps the journal as a draft. Submitting sends it to another user for approval; approval posts it to the general ledger, after which it can only be reversed.</div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-outline-primary" name="Submit" value="false">Save draft</button>
+        <button type="submit" class="btn btn-primary" name="Submit" value="true">Save and submit for approval</button>
+        <a class="btn btn-outline-secondary" asp-action="@(Model.Id is null ? "Index" : "Details")" asp-route-id="@Model.Id">Cancel</a>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /><script src="~/js/accounting.js" asp-append-version="true"></script> }

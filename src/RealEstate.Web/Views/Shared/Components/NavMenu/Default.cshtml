@@ -67,6 +67,22 @@
         @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentFeeTypes")" asp-controller="GovernmentFeeTypes" asp-action="Index">Fee configuration</a></li> }
         @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentPayments")" asp-controller="GovernmentPayments" asp-action="Index">Government payments</a></li> }
     }
+    @if (Model.Contains("accounting.view") || Model.Contains("accounting.reports"))
+    {
+        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Accounting</li>
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Accounting")" asp-controller="Accounting" asp-action="Index">Accounting dashboard</a></li> }
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Accounting" asp-action="Accounts">Chart of accounts</a></li> }
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Accounting" asp-action="Groups">Account groups</a></li> }
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Journals")" asp-controller="Journals" asp-action="Index">Journal entries</a></li> }
+        @if (Model.Contains("accounting.journals.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Journals" asp-action="Approvals">Journal approvals</a></li> }
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("PostingRules")" asp-controller="PostingRules" asp-action="Index">Posting rules</a></li> }
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="PostingRules" asp-action="Queue">Automatic postings</a></li> }
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Banking")" asp-controller="Banking" asp-action="Index">Bank reconciliation</a></li> }
+        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("FiscalYears")" asp-controller="FiscalYears" asp-action="Index">Financial years and periods</a></li> }
+        @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link" asp-controller="FinancialReports" asp-action="TrialBalance">Trial balance</a></li> }
+        @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link" asp-controller="FinancialReports" asp-action="GeneralLedger">General ledger</a></li> }
+        @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link @Active("FinancialReports")" asp-controller="FinancialReports" asp-action="Index">Financial statements</a></li> }
+    }
     @if (Model.Contains("company.view"))
     {
         <li class="nav-item"><a class="nav-link @Active("Company")" asp-controller="Company" asp-action="Index">Company</a></li>

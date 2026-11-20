@@ -1,0 +1,22 @@
+@{ ViewData["Title"] = "Financial reports"; }
+<h1 class="h3 mb-3">Financial reports</h1>
+<div class="row g-3">
+    <div class="col-12 col-md-6 col-xl-4"><div class="card h-100"><div class="card-header fw-semibold">Ledgers</div><div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action" asp-action="TrialBalance">Trial balance</a>
+        <a class="list-group-item list-group-item-action" asp-action="GeneralLedger">General ledger</a>
+        <a class="list-group-item list-group-item-action" asp-action="Cashbook">Cashbook</a>
+        <a class="list-group-item list-group-item-action" asp-action="Bankbook">Bankbook</a>
+        <a class="list-group-item list-group-item-action" asp-action="JournalRegister">Journal register</a></div></div></div>
+    <div class="col-12 col-md-6 col-xl-4"><div class="card h-100"><div class="card-header fw-semibold">Financial statements</div><div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action" asp-action="BalanceSheet">Balance sheet</a>
+        <a class="list-group-item list-group-item-action" asp-action="IncomeStatement">Income statement</a>
+        <a class="list-group-item list-group-item-action" asp-action="CashFlow">Cash flow statement</a>
+        <a class="list-group-item list-group-item-action" asp-action="Receivables">Accounts receivable</a>
+        <a class="list-group-item list-group-item-action" asp-action="Payables">Accounts payable</a></div></div></div>
+    <div class="col-12 col-md-6 col-xl-4"><div class="card h-100"><div class="card-header fw-semibold">Projects and reconciliation</div><div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action" asp-action="ProjectProfitability">Project profitability</a>
+        <a class="list-group-item list-group-item-action" asp-action="ProjectExpenses">Project expense statement</a>
+        <a class="list-group-item list-group-item-action" asp-action="CustomerControl">Customer control account reconciliation</a>
+        <a class="list-group-item list-group-item-action" asp-action="ProjectReconciliation">Project accounts reconciliation</a></div></div></div>
+</div>
+<p class="text-muted small mt-3">Every report reads posted journals only. Choose a project for project-wise statements; whole-company figures need access to all projects.</p>

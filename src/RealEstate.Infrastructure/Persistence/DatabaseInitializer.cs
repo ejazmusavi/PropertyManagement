@@ -69,6 +69,63 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
         await SeedPaymentMethodsAsync(ct);
         await SeedExpenseCategoriesAsync(ct);
         await SeedGovernmentFeeTypesAsync(ct);
+        await SeedAccountGroupsAsync(ct);
+    }
+
+    /// <summary>
+    /// Seeds the account group hierarchy of spec 8.2 once (five natures and their main groups, matched by code). Accounts and posting rules are NOT seeded:
+    /// they are the accountant's policy (spec-issues #7).
+    /// </summary>
+    private async Task SeedAccountGroupsAsync(CancellationToken ct)
+    {
+        var existing = await db.AccountGroups.ToDictionaryAsync(g => g.Code, ct);
+        (string Code, string Name, AccountNature Nature)[] roots =
+            [("ASSETS", "Assets", AccountNature.Asset), ("LIABILITIES", "Liabilities", AccountNature.Liability), ("EQUITY", "Equity", AccountNature.Equity),
+             ("REVENUE", "Revenue", AccountNature.Revenue), ("EXPENSES", "Expenses", AccountNature.Expense)];
+        var order = 0;
+        foreach (var r in roots.Where(r => !existing.ContainsKey(r.Code)))
+            db.AccountGroups.Add(new AccountGroup { Code = r.Code, Name = r.Name, Nature = r.Nature, Classification = AccountClassification.None, IsSystem = true, SortOrder = ++order * 100 });
+        await db.SaveChangesAsync(ct);
+        existing = await db.AccountGroups.ToDictionaryAsync(g => g.Code, ct);
+        (string Parent, string Code, string Name, AccountClassification C, CashFlowSection F)[] groups =
+        [
+            ("ASSETS", "CASH", "Cash", AccountClassification.Cash, CashFlowSection.Operating),
+            ("ASSETS", "BANK", "Bank", AccountClassification.Bank, CashFlowSection.Operating),
+            ("ASSETS", "CUSTOMER_RECEIVABLES", "Customer receivables", AccountClassification.CustomerReceivables, CashFlowSection.Operating),
+            ("ASSETS", "LAND_INVENTORY", "Land inventory", AccountClassification.LandInventory, CashFlowSection.Operating),
+            ("ASSETS", "PROPERTY_INVENTORY", "Property inventory", AccountClassification.PropertyInventory, CashFlowSection.Operating),
+            ("ASSETS", "FIXED_ASSETS", "Fixed assets", AccountClassification.FixedAssets, CashFlowSection.Investing),
+            ("ASSETS", "OTHER_ASSETS", "Other assets", AccountClassification.OtherAssets, CashFlowSection.Operating),
+            ("LIABILITIES", "CUSTOMER_ADVANCES", "Customer advances", AccountClassification.CustomerAdvances, CashFlowSection.Operating),
+            ("LIABILITIES", "GOVERNMENT_PAYABLES", "Government payables", AccountClassification.GovernmentPayables, CashFlowSection.Operating),
+            ("LIABILITIES", "VENDOR_PAYABLES", "Vendor payables", AccountClassification.VendorPayables, CashFlowSection.Operating),
+            ("LIABILITIES", "TAX_LIABILITIES", "Tax liabilities", AccountClassification.TaxLiabilities, CashFlowSection.Operating),
+            ("LIABILITIES", "OTHER_LIABILITIES", "Other liabilities", AccountClassification.OtherLiabilities, CashFlowSection.Operating),
+            ("EQUITY", "CAPITAL", "Capital", AccountClassification.Capital, CashFlowSection.Financing),
+            ("EQUITY", "RETAINED_EARNINGS", "Retained earnings", AccountClassification.RetainedEarnings, CashFlowSection.Financing),
+            ("EQUITY", "RESERVES", "Reserves", AccountClassification.Reserves, CashFlowSection.Financing),
+            ("REVENUE", "PROPERTY_SALES_REVENUE", "Property sales revenue", AccountClassification.PropertySalesRevenue, CashFlowSection.Operating),
+            ("REVENUE", "DEVELOPMENT_REVENUE", "Development-related revenue", AccountClassification.DevelopmentRevenue, CashFlowSection.Operating),
+            ("REVENUE", "OTHER_INCOME", "Other income", AccountClassification.OtherIncome, CashFlowSection.Operating),
+            ("EXPENSES", "OPERATING_EXPENSES", "Operating expenses", AccountClassification.OperatingExpenses, CashFlowSection.Operating),
+            ("EXPENSES", "CONSTRUCTION_EXPENSES", "Construction expenses", AccountClassification.ConstructionExpenses, CashFlowSection.Operating),
+            ("EXPENSES", "MARKETING", "Marketing", AccountClassification.Marketing, CashFlowSection.Operating),
+            ("EXPENSES", "SALARIES", "Salaries", AccountClassification.Salaries, CashFlowSection.Operating),
+            ("EXPENSES", "ADMINISTRATIVE_EXPENSES", "Administrative expenses", AccountClassification.AdministrativeExpenses, CashFlowSection.Operating),
+            ("EXPENSES", "OTHER_EXPENSES", "Other expenses", AccountClassification.OtherExpenses, CashFlowSection.Operating),
+        ];
+        var i = 0;
+        foreach (var g in groups)
+        {
+            i++;
+            if (existing.ContainsKey(g.Code)) continue;
+            var parent = existing[g.Parent];
+            db.AccountGroups.Add(new AccountGroup
+            {
+                Code = g.Code, Name = g.Name, Nature = parent.Nature, Classification = g.C, CashFlowSection = g.F, ParentGroupId = parent.Id, IsSystem = true, SortOrder = parent.SortOrder + i,
+            });
+        }
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Seeds the standard property categories and types once (matched by code, so edits and custom entries are kept).</summary>

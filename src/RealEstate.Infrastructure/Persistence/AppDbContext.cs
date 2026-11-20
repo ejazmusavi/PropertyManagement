@@ -95,6 +95,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<GovernmentFeeCollection> GovernmentFeeCollections => Set<GovernmentFeeCollection>();
     public DbSet<GovernmentFeePayment> GovernmentFeePayments => Set<GovernmentFeePayment>();
     public DbSet<GovernmentFeeDocument> GovernmentFeeDocuments => Set<GovernmentFeeDocument>();
+    public DbSet<AccountGroup> AccountGroups => Set<AccountGroup>();
+    public DbSet<ChartOfAccount> ChartOfAccounts => Set<ChartOfAccount>();
+    public DbSet<FiscalYear> FiscalYears => Set<FiscalYear>();
+    public DbSet<AccountingPeriod> AccountingPeriods => Set<AccountingPeriod>();
+    public DbSet<AccountingPeriodLock> AccountingPeriodLocks => Set<AccountingPeriodLock>();
+    public DbSet<CostCenter> CostCenters => Set<CostCenter>();
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+    public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+    public DbSet<GeneralLedgerEntry> GeneralLedgerEntries => Set<GeneralLedgerEntry>();
+    public DbSet<AccountingVoucher> AccountingVouchers => Set<AccountingVoucher>();
+    public DbSet<PostingRule> PostingRules => Set<PostingRule>();
+    public DbSet<PostingRuleLine> PostingRuleLines => Set<PostingRuleLine>();
+    public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+    public DbSet<CashAccount> CashAccounts => Set<CashAccount>();
+    public DbSet<BankTransaction> BankTransactions => Set<BankTransaction>();
+    public DbSet<BankReconciliation> BankReconciliations => Set<BankReconciliation>();
+    public DbSet<ProjectCostAllocation> ProjectCostAllocations => Set<ProjectCostAllocation>();
+    public DbSet<ProjectCostAllocationLine> ProjectCostAllocationLines => Set<ProjectCostAllocationLine>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();

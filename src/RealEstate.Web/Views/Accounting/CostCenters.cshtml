@@ -1,0 +1,31 @@
+@model CostCentersViewModel
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Cost centers"; await Ui.LoadAsync(); var f = Model.Form; var canEdit = Ui.Has(Permissions.AccountingSetup); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h1 class="h3 mb-0">Cost centers</h1><a class="btn btn-outline-secondary" asp-action="Accounts">Chart of accounts</a></div>
+<div class="row g-3">
+    <div class="@(canEdit ? "col-12 col-xl-8" : "col-12")">
+        @if (Model.Items.Count == 0) { <div class="empty-state card card-body text-center text-muted">No cost centers yet.</div> }
+        else {
+        <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack"><thead><tr><th>Code</th><th>Name</th><th>Project</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var c in Model.Items) { <tr><td data-label="Code">@c.Code</td><td data-label="Name">@c.Name<div class="small text-muted">@c.Description</div></td><td data-label="Project">@(c.ProjectCode ?? "Company-wide")</td><td data-label="Status">@(c.IsActive ? "Active" : "Inactive")</td>
+            <td class="text-end">@if (canEdit) { <a class="btn btn-sm btn-outline-secondary" asp-action="CostCenters" asp-route-edit="@c.Id">Edit</a> }</td></tr> }
+        </tbody></table></div></div> }
+    </div>
+    @if (canEdit)
+    {
+        <div class="col-12 col-xl-4"><div class="card"><div class="card-header fw-semibold">@(f.Id is null ? "New cost center" : "Edit " + f.Code)</div><div class="card-body">
+        <form asp-action="SaveCostCenter" method="post" class="row g-2">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <input type="hidden" asp-for="Form.Id" /><input type="hidden" asp-for="Form.RowVersion" />
+            <div class="col-12 col-md-6 col-xl-12"><label asp-for="Form.Code" class="form-label">Code</label><input asp-for="Form.Code" class="form-control" /><span asp-validation-for="Form.Code" class="text-danger small"></span></div>
+            <div class="col-12 col-md-6 col-xl-12"><label asp-for="Form.Name" class="form-label">Name</label><input asp-for="Form.Name" class="form-control" /><span asp-validation-for="Form.Name" class="text-danger small"></span></div>
+            <div class="col-12"><label asp-for="Form.ProjectId" class="form-label">Project</label><select asp-for="Form.ProjectId" class="form-select"><option value="">Company-wide (needs access to all projects)</option>
+                @foreach (var p in Model.Projects) { <option value="@p.Id">@p.ProjectCode - @p.ProjectName</option> }</select></div>
+            <div class="col-12"><label asp-for="Form.Description" class="form-label">Description</label><input asp-for="Form.Description" class="form-control" /></div>
+            <div class="col-12"><div class="form-check"><input asp-for="Form.IsActive" class="form-check-input" /><label asp-for="Form.IsActive" class="form-check-label">Active</label></div></div>
+            <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-primary">Save</button>@if (f.Id is not null) { <a class="btn btn-outline-secondary" asp-action="CostCenters">New instead</a> }</div>
+        </form></div></div></div>
+    }
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

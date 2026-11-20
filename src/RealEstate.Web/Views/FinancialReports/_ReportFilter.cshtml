@@ -1,0 +1,17 @@
+@using RealEstate.Domain.Enums
+@model (ReportFilterViewModel F, string Action, string Fields)
+@{ var f = Model.F; bool Has(string x) => Model.Fields.Split(',').Contains(x); }
+<form method="get" asp-action="@Model.Action" class="row g-2 mb-3 d-print-none" role="search">
+    @if (Has("account")) { <div class="col-12 col-lg-3"><label class="form-label small" for="rfAccount">Account</label><select id="rfAccount" name="accountId" class="form-select"><option value="">Choose...</option>@foreach (var a in f.Accounts) { <option value="@a.Id" selected="@(f.AccountId == a.Id)">@a.Code @a.Name</option> }</select></div> }
+    @if (Has("bank")) { <div class="col-12 col-lg-3"><label class="form-label small" for="rfBank">Bank account</label><select id="rfBank" name="bankAccountId" class="form-select"><option value="">Choose...</option>@foreach (var a in f.BankAccounts) { <option value="@a.Id" selected="@(f.BankAccountId == a.Id)">@a.Name</option> }</select></div> }
+    @if (Has("cash")) { <div class="col-12 col-lg-3"><label class="form-label small" for="rfCash">Cash account</label><select id="rfCash" name="cashAccountId" class="form-select"><option value="">Choose...</option>@foreach (var a in f.CashAccounts) { <option value="@a.Id" selected="@(f.CashAccountId == a.Id)">@a.Name</option> }</select></div> }
+    @if (Has("project")) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfProject">Project</label><select id="rfProject" name="projectId" class="form-select">@if (f.CompanyWideAllowed && !Has("projectRequired")) { <option value="">Whole company</option> }
+        @if (Has("projectRequired") && f.CompanyWideAllowed) { <option value="">Choose...</option> }@foreach (var p in f.Projects) { <option value="@p.Id" selected="@(f.ProjectId == p.Id)">@p.ProjectCode</option> }</select></div> }
+    @if (Has("costcenter")) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfCc">Cost center</label><select id="rfCc" name="costCenterId" class="form-select"><option value="">All</option>@foreach (var c in f.CostCenters) { <option value="@c.Id" selected="@(f.CostCenterId == c.Id)">@c.Code</option> }</select></div> }
+    @if (Has("source")) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfSource">Source</label><select id="rfSource" name="source" class="form-select"><option value="">All</option>@foreach (var s in Enum.GetValues<JournalSource>()) { <option value="@s" selected="@(f.Source == s)">@s.Label()</option> }</select></div> }
+    @if (Has("from")) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfFrom">From</label><input id="rfFrom" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" /></div> }
+    @if (Has("to")) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfTo">To</label><input id="rfTo" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" /></div> }
+    @if (Has("asof")) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfAsOf">As at</label><input id="rfAsOf" type="date" name="asOf" value="@f.AsOf?.ToString("yyyy-MM-dd")" class="form-control" /></div> }
+    <div class="col-6 col-lg-1 d-flex align-items-end"><button class="btn btn-outline-primary w-100" type="submit">Show</button></div>
+    <div class="col-6 col-lg-1 d-flex align-items-end"><button class="btn btn-outline-secondary w-100" type="button" onclick="window.print()">Print</button></div>
+</form>

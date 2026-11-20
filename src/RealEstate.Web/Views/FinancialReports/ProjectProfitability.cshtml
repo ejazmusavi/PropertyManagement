@@ -1,0 +1,16 @@
+@model ReportPageViewModel<ProjectProfitabilityDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "from,to")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">@r.From.ToString("yyyy-MM-dd") to @r.To.ToString("yyyy-MM-dd") &middot; revenue and expense accounts by project &middot; amounts in @r.CurrencySymbol</p>
+    @if (r.Rows.Count == 0) { <div class="empty-state card card-body text-center text-muted">No revenue or expenses posted in this range.</div> }
+    else {
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Project</th><th class="text-end">Revenue</th><th class="text-end">Expenses</th><th class="text-end">Net profit</th><th class="text-end">Margin</th><th></th></tr></thead><tbody>
+        @foreach (var x in r.Rows) { <tr><td data-label="Project">@x.ProjectCode<div class="small text-muted">@x.ProjectName</div></td><td data-label="Revenue" class="text-end">@x.Revenue.ToString("N2")</td><td data-label="Expenses" class="text-end">@x.Expenses.ToString("N2")</td>
+            <td data-label="Net profit" class="text-end fw-semibold @(x.NetProfit < 0 ? "text-danger" : "")">@x.NetProfit.ToString("N2")</td><td data-label="Margin" class="text-end">@(x.MarginPercent is { } m ? m.ToString("N2") + "%" : "-")</td>
+            <td class="text-end text-nowrap">@if (x.ProjectId is { } pid) { <a class="btn btn-sm btn-outline-primary" asp-action="IncomeStatement" asp-route-projectId="@pid" asp-route-from="@r.From.ToString("yyyy-MM-dd")" asp-route-to="@r.To.ToString("yyyy-MM-dd")">Statement</a> }</td></tr> }
+        </tbody><tfoot><tr class="fw-bold"><td>Total</td><td class="text-end">@r.TotalRevenue.ToString("N2")</td><td class="text-end">@r.TotalExpenses.ToString("N2")</td><td class="text-end">@r.TotalNet.ToString("N2")</td><td colspan="2"></td></tr></tfoot></table></div></div> }
+}

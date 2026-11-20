@@ -1,0 +1,44 @@
+@model JournalListViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = Model.Title; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Journals;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["status"] = Model.ApprovalQueue ? null : f.Status?.ToString(), ["source"] = f.Source?.ToString(), ["projectId"] = f.ProjectId?.ToString(),
+       ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.Title</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.AccountingJournalsManage)) { <a class="btn btn-primary" asp-action="Create">New journal</a><a class="btn btn-outline-secondary" asp-action="Transfer">Fund transfer</a><a class="btn btn-outline-secondary" asp-action="Allocations">Cost allocations</a> }
+        @if (!Model.ApprovalQueue && Ui.Has(Permissions.AccountingJournalsApprove)) { <a class="btn btn-outline-secondary" asp-action="Approvals">Approval queue</a> }
+        @if (Model.ApprovalQueue) { <a class="btn btn-outline-secondary" asp-action="Index">All journals</a> }
+    </div>
+</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Number, voucher, narration, reference" aria-label="Search journals" /></div>
+    @if (!Model.ApprovalQueue) { <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<JournalStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div> }
+    <div class="col-6 col-lg-2"><select name="source" class="form-select" aria-label="Source"><option value="">All sources</option>@foreach (var s in Enum.GetValues<JournalSource>()) { <option value="@s" selected="@(f.Source == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-1"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-1"><input type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" aria-label="From date" /></div>
+    <div class="col-6 col-lg-1"><input type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" aria-label="To date" /></div>
+    <div class="col-6 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">@(Model.ApprovalQueue ? "No journals are waiting for approval." : "No journals found.")</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Journal</th><th>Date</th><th>Source</th><th>Narration</th><th class="text-end">Amount</th><th>Status</th><th>Maker</th><th></th></tr></thead><tbody>
+        @foreach (var j in p.Items)
+        {
+            <tr><td data-label="Journal" class="text-nowrap">@(j.VoucherNumber ?? j.EntryNumber)@if (j.VoucherNumber is not null) { <div class="small text-muted">@j.EntryNumber</div> }</td><td data-label="Date">@j.EntryDate.ToString("yyyy-MM-dd")</td>
+                <td data-label="Source">@j.Source.Label()</td><td data-label="Narration">@j.Narration@if (j.Reference is not null) { <div class="small text-muted">Ref @j.Reference</div> }</td>
+                <td data-label="Amount" class="text-end">@j.TotalDebit.ToString("N2")</td>
+                <td data-label="Status">@j.Status.Label()@if (j.IsReversed) { <span class="badge text-bg-warning ms-1">reversed</span> }</td>
+                <td data-label="Maker">@(j.SubmittedBy ?? j.CreatedBy)</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@j.Id">@(Model.ApprovalQueue ? "Review" : "Open")</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "journals", route, "page")' />
+}

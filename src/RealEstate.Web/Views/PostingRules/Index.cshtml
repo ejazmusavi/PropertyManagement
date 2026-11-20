@@ -1,0 +1,45 @@
+@model PostingRulesViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Posting rules"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Rules;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["eventType"] = f.EventType?.ToString(), ["status"] = f.Status?.ToString() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Posting rules</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.AccountingRulesManage)) { <a class="btn btn-primary" asp-action="Create">New rule</a> }
+        <a class="btn btn-outline-secondary" asp-action="Queue">Automatic postings</a>
+    </div>
+</div>
+<div class="alert alert-info small">Posting rules are the company's accounting policy (spec 8.4): which accounts each financial event debits and credits. A rule posts nothing until a second user with policy approval rights approves it. No rules are pre-configured.</div>
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-4"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Rule name" aria-label="Search rules" /></div>
+    <div class="col-6 col-lg-4"><select name="eventType" class="form-select" aria-label="Event"><option value="">All events</option>@foreach (var c in Model.Catalog.Where(c => !c.IsReversal)) { <option value="@c.EventType" selected="@(f.EventType == c.EventType)">@c.Label</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<PostingRuleStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No posting rules found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Rule</th><th>Event</th><th>Scope</th><th>Condition</th><th>Lines</th><th>Effective</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var r in p.Items)
+        {
+            <tr><td data-label="Rule">@r.Name<div class="small text-muted">priority @r.Priority</div></td><td data-label="Event">@r.EventLabel</td><td data-label="Scope">@(r.ProjectCode ?? "Company-wide")</td>
+                <td data-label="Condition">@(r.ConditionField is null ? "-" : $"{r.ConditionField} = {r.ConditionValue}")</td>
+                <td data-label="Lines" class="small">@foreach (var l in r.Lines) { <div>@(l.Side == EntrySide.Debit ? "Dr" : "Cr") @(l.AccountCode ?? l.AccountKey) &larr; @l.AmountKey</div> }</td>
+                <td data-label="Effective">@r.EffectiveFrom.ToString("yyyy-MM-dd")</td><td data-label="Status">@r.Status.Label()</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@r.Id">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "rules", route, "page")' />
+}
+<details class="mt-4"><summary class="fw-semibold">Accounting events and what they offer</summary>
+<div class="table-responsive-md mt-2"><table class="table table-sm align-middle table-stack"><thead><tr><th>Event</th><th>Spec 8.4 items</th><th>Amounts</th><th>Conditions</th></tr></thead><tbody>
+@foreach (var c in Model.Catalog) { <tr><td data-label="Event">@c.Label@if (c.IsReversal) { <span class="badge text-bg-light border ms-1">reverses original</span> }</td><td data-label="Spec items" class="small">@c.SpecItems</td>
+    <td data-label="Amounts" class="small">@string.Join(", ", c.AmountKeys)@if (c.AccountKeys.Count > 0) { <div class="text-muted">accounts: @string.Join(", ", c.AccountKeys)</div> }</td><td data-label="Conditions" class="small">@string.Join(", ", c.ConditionFields)</td></tr> }
+</tbody></table></div>
+<p class="small text-muted">Penalties (late fees) are shown on ledgers but not charged by the system, so they have no automatic event; post them with a manual journal.</p></details>

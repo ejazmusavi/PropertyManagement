@@ -1,0 +1,19 @@
+@using RealEstate.Domain.Enums
+@model (string Index, RuleLineForm Line, PostingRuleFormViewModel F)
+@{ var i = Model.Index; var l = Model.Line; var p = $"Lines[{i}]"; var id = $"Lines_{i}__";
+   var ev = Model.F.Catalog.FirstOrDefault(c => c.EventType == Model.F.EventType); }
+<div class="row g-2 align-items-end border-bottom pb-2 mb-2" data-row>
+    <div class="col-6 col-lg-1"><label class="form-label small" for="@(id)Side">Side</label>
+        <select class="form-select" id="@(id)Side" name="@(p).Side"><option value="Debit" selected="@(l.Side == EntrySide.Debit)">Debit</option><option value="Credit" selected="@(l.Side == EntrySide.Credit)">Credit</option></select></div>
+    <div class="col-6 col-lg-2"><label class="form-label small" for="@(id)AmountKey">Amount</label>
+        <select class="form-select" id="@(id)AmountKey" name="@(p).AmountKey" data-amount-key>@foreach (var k in ev?.AmountKeys ?? []) { <option value="@k" selected="@(l.AmountKey == k)">@k</option> }</select></div>
+    <div class="col-12 col-lg-3"><label class="form-label small" for="@(id)AccountId">Fixed account</label>
+        <select class="form-select" id="@(id)AccountId" name="@(p).AccountId"><option value="">(account named by the event)</option>
+        @foreach (var a in Model.F.Lookups.Accounts) { <option value="@a.Id" selected="@(l.AccountId == a.Id)">@a.Code @a.Name</option> }</select></div>
+    <div class="col-6 col-lg-2"><label class="form-label small" for="@(id)AccountKey">Event account</label>
+        <select class="form-select" id="@(id)AccountKey" name="@(p).AccountKey" data-account-key><option value="">(fixed account)</option>@foreach (var k in ev?.AccountKeys ?? []) { <option value="@k" selected="@(l.AccountKey == k)">@k</option> }</select></div>
+    <div class="col-6 col-lg-1"><label class="form-label small" for="@(id)CostCenterId">Cost center</label>
+        <select class="form-select" id="@(id)CostCenterId" name="@(p).CostCenterId"><option value="">None</option>@foreach (var c in Model.F.Lookups.CostCenters) { <option value="@c.Id" selected="@(l.CostCenterId == c.Id)">@c.Code</option> }</select></div>
+    <div class="col-10 col-lg-2"><label class="form-label small" for="@(id)Description">Line text</label><input class="form-control" id="@(id)Description" name="@(p).Description" value="@l.Description" maxlength="200" /></div>
+    <div class="col-2 col-lg-1 text-end"><button type="button" class="btn btn-outline-danger" data-remove-row aria-label="Remove line">&times;</button></div>
+</div>

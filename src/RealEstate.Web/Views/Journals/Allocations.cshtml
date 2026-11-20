@@ -1,0 +1,16 @@
+@model AllocationsViewModel
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Cost allocations"; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h1 class="h3 mb-0">Project cost allocations</h1>
+    <div class="d-flex gap-2">@if (Ui.Has(Permissions.AccountingJournalsManage)) { <a class="btn btn-primary" asp-action="Allocate">New allocation</a> }<a class="btn btn-outline-secondary" asp-action="Index">Journals</a></div></div>
+@if (Model.Items.Count == 0) { <div class="empty-state card card-body text-center text-muted">No cost allocations yet.</div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack"><thead><tr><th>Allocation</th><th>Date</th><th>Account</th><th>From</th><th>To</th><th class="text-end">Amount</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var a in Model.Items) { <tr><td data-label="Allocation">@a.AllocationNumber<div class="small text-muted">@a.Basis</div></td><td data-label="Date">@a.AllocationDate.ToString("yyyy-MM-dd")</td><td data-label="Account">@a.AccountName</td>
+        <td data-label="From">@(a.SourceProjectCode ?? "Company level")</td><td data-label="To">@string.Join(", ", a.Lines.Select(l => $"{l.ProjectCode} {l.Percentage:0.##}%"))</td>
+        <td data-label="Amount" class="text-end">@a.Amount.ToString("N2")</td><td data-label="Status">@a.Status.Label()</td>
+        <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@a.JournalEntryId">Journal @a.JournalNumber</a></td></tr> }
+    </tbody></table></div></div>
+}

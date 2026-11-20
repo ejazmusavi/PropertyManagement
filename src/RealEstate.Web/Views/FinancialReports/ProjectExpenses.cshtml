@@ -1,0 +1,15 @@
+@model ReportPageViewModel<ProjectExpenseStatementDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project,projectRequired,from,to")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">@r.ProjectCode - @r.ProjectName &middot; @r.From.ToString("yyyy-MM-dd") to @r.To.ToString("yyyy-MM-dd") &middot; amounts in @r.CurrencySymbol &middot; approved expenses in the expense module: @r.ApprovedExpensesInModule.ToString("N2")@(r.ApprovedExpensesInModule == r.Total ? " (agrees with the ledger)" : " (differs: unposted events, other postings or allocations)")</p>
+    <div class="row g-3">
+        <div class="col-12 col-lg-7"><div class="card"><div class="card-body"><partial name="_StatementSection" model='(r.ByAccount, "Total expenses")' /></div></div></div>
+        <div class="col-12 col-lg-5"><div class="card"><div class="card-header fw-semibold">By cost center</div><div class="table-responsive-md"><table class="table table-sm mb-0"><tbody>
+            @if (r.ByCostCenter.Count == 0) { <tr><td class="text-muted">No expenses.</td></tr> }
+            @foreach (var l in r.ByCostCenter) { <tr><td>@l.Code @l.Name</td><td class="text-end">@l.Amount.ToString("N2")</td></tr> }
+        </tbody></table></div></div></div>
+    </div>
+}

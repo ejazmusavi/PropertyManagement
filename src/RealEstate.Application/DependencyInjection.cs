@@ -58,6 +58,14 @@ public static class DependencyInjection
         services.AddScoped<ExpenseService>();
         services.AddScoped<VendorInvoiceService>();
         services.AddScoped<GovernmentFeeService>();
+        services.AddScoped<Accounting.AccountingSupport>();
+        services.AddScoped<Accounting.ChartOfAccountsService>();
+        services.AddScoped<Accounting.FiscalPeriodService>();
+        services.AddScoped<Accounting.JournalService>();
+        services.AddScoped<Accounting.PostingRuleService>();
+        services.AddScoped<Accounting.PostingEngineService>();
+        services.AddScoped<Accounting.AccountingReportService>();
+        services.AddScoped<Banking.BankingService>();
         services.AddScoped<UserAdministrationService>();
         services.AddScoped<RoleService>();
         services.AddScoped<ProjectAccessAdminService>();

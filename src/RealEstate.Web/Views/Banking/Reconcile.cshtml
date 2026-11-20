@@ -1,0 +1,98 @@
+@model ReconcileViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var w = Model.Workspace; var a = w.Account; var s = w.CurrencySymbol; ViewData["Title"] = "Bank reconciliation " + a.Name; var can = Ui.Has(Permissions.AccountingBankReconcile); var cur = w.Current; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Bank reconciliation: @a.Name</h1><div class="text-muted">@a.BankName &middot; @a.AccountNumber &middot; ledger @a.GlAccountCode &middot; book balance @s @a.BookBalance.ToString("N2")</div></div>
+    <div class="d-flex flex-wrap gap-2">@if (can) { <form asp-action="AutoMatch" asp-route-id="@a.Id" method="post" class="d-inline"><button type="submit" class="btn btn-outline-primary">Auto-match</button></form> }<a class="btn btn-outline-secondary" asp-action="Index">Back</a></div>
+</div>
+<div class="row g-3 mb-3">
+    @if (can)
+    {
+        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Import bank statement (CSV)</div><div class="card-body">
+            <form asp-action="Import" asp-route-id="@a.Id" method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+                <div class="col-12 col-md-8"><label class="form-label" for="stmt">Statement file</label><input id="stmt" type="file" name="file" accept=".csv,text/csv" class="form-control" required /></div>
+                <div class="col-12 col-md-4"><button type="submit" class="btn btn-primary w-100">Import</button></div>
+                <div class="col-12 form-text">Header row, then Date (yyyy-MM-dd or dd/MM/yyyy), Description, Reference, Deposit, Withdrawal, optional Balance. Lines already imported are skipped; new lines are matched automatically on amount and date (&plusmn;7 days, reference preferred).</div>
+            </form></div></div></div>
+        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Reconcile as at a statement date</div><div class="card-body">
+            <form asp-action="Start" asp-route-id="@a.Id" method="post" class="row g-2 align-items-end">
+                <div class="col-6 col-md-4"><label class="form-label" for="sd">Statement date</label><input id="sd" type="date" name="statementDate" class="form-control" value="@((cur?.StatementDate ?? Model.Today).ToString("yyyy-MM-dd"))" required /></div>
+                <div class="col-6 col-md-4"><label class="form-label" for="sb">Statement balance</label><input id="sb" type="number" step="0.01" name="statementBalance" class="form-control" value="@(cur?.StatementBalance.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))" required /></div>
+                <div class="col-12 col-md-4"><button type="submit" class="btn btn-outline-primary w-100">@(cur is null ? "Start" : "Recalculate")</button></div>
+                <div class="col-12"><label class="form-label" for="sn">Notes</label><input id="sn" name="notes" class="form-control" maxlength="1000" value="@cur?.Notes" /></div>
+            </form></div></div></div>
+    }
+</div>
+@if (cur is not null)
+{
+    <div class="card mb-3 border-@(cur.Difference == 0m ? "success" : "warning")"><div class="card-header fw-semibold">Reconciliation in progress as at @cur.StatementDate.ToString("yyyy-MM-dd")</div><div class="card-body"><div class="row g-2">
+        <div class="col-6 col-lg-2"><div class="small text-muted">Book balance</div><div class="fw-semibold">@cur.BookBalance.ToString("N2")</div></div>
+        <div class="col-6 col-lg-2"><div class="small text-muted">Less book items not on statement</div><div class="fw-semibold">@cur.UnclearedBookNet.ToString("N2")</div></div>
+        <div class="col-6 col-lg-2"><div class="small text-muted">Plus statement items not in books</div><div class="fw-semibold">@cur.UnmatchedStatementNet.ToString("N2")</div></div>
+        <div class="col-6 col-lg-2"><div class="small text-muted">Statement balance</div><div class="fw-semibold">@cur.StatementBalance.ToString("N2")</div></div>
+        <div class="col-6 col-lg-2"><div class="small text-muted">Difference</div><div class="fw-semibold @(cur.Difference == 0m ? "text-success" : "text-danger")">@cur.Difference.ToString("N2")</div></div>
+        <div class="col-6 col-lg-2 d-flex align-items-end">@if (can && cur.Difference == 0m) { <form asp-action="Complete" asp-route-id="@a.Id" method="post"><input type="hidden" name="reconciliationId" value="@cur.Id" /><input type="hidden" name="rowVersion" value="@cur.RowVersion" /><button type="submit" class="btn btn-success">Complete</button></form> }</div>
+    </div><div class="small text-muted mt-2">Unmatched items explain the difference between the books and the statement. Record missing book entries (bank charges, receipts) with journals, then match them.</div></div></div>
+}
+<div class="row g-3 mb-3">
+    <div class="col-12 col-xl-6"><div class="card h-100"><div class="card-header fw-semibold">Unmatched statement lines (@w.UnmatchedStatement.Count)</div>
+    @if (w.UnmatchedStatement.Count == 0) { <div class="card-body text-muted">Every imported statement line is matched or ignored.</div> }
+    else {
+        <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack"><thead><tr><th>Date</th><th>Description</th><th class="text-end">Deposit</th><th class="text-end">Withdrawal</th><th></th></tr></thead><tbody>
+        @foreach (var t in w.UnmatchedStatement)
+        {
+            var candidates = w.UnmatchedBook.Where(b => t.Deposit > 0 ? b.Debit == t.Deposit : b.Credit == t.Withdrawal).ToList();
+            <tr><td data-label="Date">@t.TransactionDate.ToString("yyyy-MM-dd")</td><td data-label="Description">@t.Description@if (t.Reference is not null) { <div class="small text-muted">Ref @t.Reference</div> }</td>
+                <td data-label="Deposit" class="text-end">@(t.Deposit == 0m ? "" : t.Deposit.ToString("N2"))</td><td data-label="Withdrawal" class="text-end">@(t.Withdrawal == 0m ? "" : t.Withdrawal.ToString("N2"))</td>
+                <td class="text-end">@if (can)
+                {
+                    @if (candidates.Count > 0)
+                    {
+                        <form asp-action="Match" asp-route-id="@a.Id" method="post" class="d-flex gap-1 justify-content-end"><input type="hidden" name="bankTransactionId" value="@t.Id" />
+                            <select name="ledgerEntryId" class="form-select form-select-sm" aria-label="Book entry">@foreach (var c in candidates) { <option value="@c.Id">@c.EntryDate.ToString("dd MMM") @c.VoucherNumber</option> }</select>
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Match</button></form>
+                    }
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-1" data-bs-toggle="modal" data-bs-target="#ignoreModal" data-tx-id="@t.Id">Ignore</button>
+                }</td></tr>
+        }
+        </tbody></table></div> }
+    </div></div>
+    <div class="col-12 col-xl-6"><div class="card h-100"><div class="card-header fw-semibold">Book entries not on the statement (@w.UnmatchedBook.Count)</div>
+    @if (w.UnmatchedBook.Count == 0) { <div class="card-body text-muted">Every book entry on this bank account is matched.</div> }
+    else {
+        <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack"><thead><tr><th>Date</th><th>Voucher</th><th>Narration</th><th class="text-end">Debit</th><th class="text-end">Credit</th></tr></thead><tbody>
+        @foreach (var b in w.UnmatchedBook) { <tr><td data-label="Date">@b.EntryDate.ToString("yyyy-MM-dd")</td><td data-label="Voucher">@b.VoucherNumber</td><td data-label="Narration">@b.Narration</td><td data-label="Debit" class="text-end">@(b.Debit == 0m ? "" : b.Debit.ToString("N2"))</td><td data-label="Credit" class="text-end">@(b.Credit == 0m ? "" : b.Credit.ToString("N2"))</td></tr> }
+        </tbody></table></div> }
+    </div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Recently matched or ignored</div>
+@if (w.RecentlyMatched.Count == 0) { <div class="card-body text-muted">Nothing matched yet.</div> }
+else {
+    <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack"><thead><tr><th>Date</th><th>Description</th><th class="text-end">Amount</th><th>Status</th><th>Book entry</th><th></th></tr></thead><tbody>
+    @foreach (var t in w.RecentlyMatched) { <tr><td data-label="Date">@t.TransactionDate.ToString("yyyy-MM-dd")</td><td data-label="Description">@t.Description</td><td data-label="Amount" class="text-end">@((t.Deposit - t.Withdrawal).ToString("N2"))</td>
+        <td data-label="Status">@t.Status.Label()@(t.ReconciliationId is null ? "" : " (reconciled)")</td><td data-label="Book entry">@(t.MatchedVoucher ?? t.IgnoreReason) <div class="small text-muted">@t.MatchedBy</div></td>
+        <td class="text-end">@if (can && t.ReconciliationId is null) { <form asp-action="Unmatch" asp-route-id="@a.Id" method="post"><input type="hidden" name="transactionId" value="@t.Id" /><button type="submit" class="btn btn-sm btn-outline-secondary">Undo</button></form> }</td></tr> }
+    </tbody></table></div> }
+</div>
+<div class="card"><div class="card-header fw-semibold">Reconciliation history</div>
+@if (w.History.Count == 0) { <div class="card-body text-muted">No reconciliations yet.</div> }
+else {
+    <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack"><thead><tr><th>Statement date</th><th class="text-end">Statement</th><th class="text-end">Books</th><th class="text-end">Difference</th><th>Status</th><th>Completed</th></tr></thead><tbody>
+    @foreach (var h in w.History) { <tr><td data-label="Statement date">@h.StatementDate.ToString("yyyy-MM-dd")</td><td data-label="Statement" class="text-end">@h.StatementBalance.ToString("N2")</td><td data-label="Books" class="text-end">@h.BookBalance.ToString("N2")</td>
+        <td data-label="Difference" class="text-end">@h.Difference.ToString("N2")</td><td data-label="Status">@h.Status.Label()</td><td data-label="Completed">@(h.CompletedBy is null ? "-" : h.CompletedBy + " " + h.CompletedAtUtc?.ToString("yyyy-MM-dd"))</td></tr> }
+    </tbody></table></div> }
+</div>
+@if (can)
+{
+    <div class="modal fade" id="ignoreModal" tabindex="-1" aria-labelledby="ignoreTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Ignore" asp-route-id="@a.Id" method="post"><input type="hidden" name="transactionId" id="igTx" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="ignoreTitle">Ignore statement line</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Ignored lines no longer count as unmatched (for example a line imported twice with different text).</p><label class="form-label" for="igr">Reason (at least 5 characters)</label><textarea id="igr" name="reason" class="form-control" required minlength="5" maxlength="500"></textarea></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Ignore line</button></div></form></div></div>
+}
+@section Scripts {<script>
+    (function () { var m = document.getElementById('ignoreModal'); if (!m) return;
+        m.addEventListener('show.bs.modal', function (e) { document.getElementById('igTx').value = e.relatedTarget.getAttribute('data-tx-id'); }); })();
+</script>}

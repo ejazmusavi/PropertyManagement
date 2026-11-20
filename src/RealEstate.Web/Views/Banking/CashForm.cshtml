@@ -1,0 +1,18 @@
+@model CashAccountFormViewModel
+@{ ViewData["Title"] = Model.Id is null ? "New cash account" : "Edit cash account"; }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form asp-action="CashForm" method="post" class="card card-body">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+    <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="RowVersion" />
+    <div class="row g-3">
+        <div class="col-12 col-md-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-12 col-md-4"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-md-4"><label asp-for="Custodian" class="form-label"></label><input asp-for="Custodian" class="form-control" /></div>
+        <div class="col-12 col-md-6"><label asp-for="GlAccountId" class="form-label"></label><select asp-for="GlAccountId" class="form-select"><option value="0">Choose a Cash ledger account...</option>@foreach (var a in Model.LedgerAccounts) { <option value="@a.Id">@a.Code @a.Name</option> }</select>
+            <span asp-validation-for="GlAccountId" class="text-danger small"></span>@if (Model.LedgerAccounts.Count == 0) { <div class="form-text">Create a ledger account under the Cash group first.</div> }</div>
+        <div class="col-12 col-md-4"><label asp-for="ProjectId" class="form-label"></label><select asp-for="ProjectId" class="form-select"><option value="">Company-wide</option>@foreach (var p in Model.Projects) { <option value="@p.Id">@p.ProjectCode - @p.ProjectName</option> }</select></div>
+        <div class="col-12 col-md-2 d-flex align-items-end"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+    </div>
+    <div class="d-flex gap-2 mt-3"><button type="submit" class="btn btn-primary">Save cash account</button><a class="btn btn-outline-secondary" asp-action="Index">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

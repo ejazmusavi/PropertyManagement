@@ -38,7 +38,7 @@
         <dt class="col-sm-4">Outstanding</dt><dd class="col-sm-8">@s @e.Outstanding.ToString("N2")</dd>
         @if (e.SubmittedBy is not null) { <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">@e.SubmittedBy on @e.SubmittedAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC</dd> }
         @foreach (var a in e.Approvals) { <dt class="col-sm-4">@a.Decision.Label()</dt><dd class="col-sm-8">@a.ApproverName on @a.DecidedAtUtc.ToString("yyyy-MM-dd HH:mm")@(a.Comments is null ? "" : ": " + a.Comments)</dd> }
-        @if (e.Status == ExpenseStatus.Approved) { <dt class="col-sm-4">Accounting</dt><dd class="col-sm-8">Queued for posting (accounting entries are generated in Phase 8).</dd> }
+        @if (e.Status == ExpenseStatus.Approved) { <dt class="col-sm-4">Accounting</dt><dd class="col-sm-8">Queued for posting by the approved posting rules (Accounting &gt; Automatic postings).</dd> }
         @if (e.CancelledBy is not null) { <dt class="col-sm-4">Cancelled</dt><dd class="col-sm-8">@e.CancelledBy on @e.CancelledAtUtc?.ToString("yyyy-MM-dd"): @e.CancelReason</dd> }
     </dl></div></div></div>
 </div>

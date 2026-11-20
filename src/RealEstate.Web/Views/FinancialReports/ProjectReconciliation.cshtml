@@ -1,0 +1,17 @@
+@model ReportPageViewModel<ProjectReconciliationDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "asof")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">As at @r.AsOf.ToString("yyyy-MM-dd") &middot; amounts in @r.CurrencySymbol &middot; sum of projects: Dr @r.SumProjectDebit.ToString("N2") / Cr @r.SumProjectCredit.ToString("N2"); company: Dr @r.CompanyDebit.ToString("N2") / Cr @r.CompanyCredit.ToString("N2")
+        @if (r.TotalsAgree) { <span class="badge text-bg-success">totals agree</span> } else { <span class="badge text-bg-danger">totals differ</span> } &middot; unposted events: @r.UnprocessedEvents</p>
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Project</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Customer ledger / control</th><th class="text-end">Vendor payables / control</th><th class="text-end">Approved expenses / expense accounts</th><th>Status</th></tr></thead><tbody>
+        @foreach (var x in r.Rows) { <tr><td data-label="Project">@x.ProjectCode</td><td data-label="Debit" class="text-end">@x.Debit.ToString("N2")</td><td data-label="Credit" class="text-end">@x.Credit.ToString("N2")</td>
+            <td data-label="Customer" class="text-end">@x.CustomerLedger.ToString("N2") / @x.CustomerControl.ToString("N2")</td><td data-label="Vendor" class="text-end">@x.VendorOutstanding.ToString("N2") / @x.VendorControl.ToString("N2")</td>
+            <td data-label="Expenses" class="text-end">@x.ModuleExpenses.ToString("N2") / @x.LedgerExpenses.ToString("N2")</td>
+            <td data-label="Status">@if (x.Reconciled) { <span class="badge text-bg-success">Reconciled</span> } else { <span class="badge text-bg-warning">Check</span> }</td></tr> }
+        </tbody></table></div></div>
+    <p class="small text-muted mt-2">A project reconciles when its debits equal its credits and its customer and vendor sub-ledgers equal their control accounts. Cost allocations move expenses between projects, so a project's debits and credits can differ by its allocations; expense totals can differ by manual journals.</p>
+}

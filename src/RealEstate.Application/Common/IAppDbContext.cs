@@ -95,6 +95,25 @@ public interface IAppDbContext
     DbSet<GovernmentFeeCollection> GovernmentFeeCollections { get; }
     DbSet<GovernmentFeePayment> GovernmentFeePayments { get; }
     DbSet<GovernmentFeeDocument> GovernmentFeeDocuments { get; }
+    // Phase 8
+    DbSet<AccountGroup> AccountGroups { get; }
+    DbSet<ChartOfAccount> ChartOfAccounts { get; }
+    DbSet<FiscalYear> FiscalYears { get; }
+    DbSet<AccountingPeriod> AccountingPeriods { get; }
+    DbSet<AccountingPeriodLock> AccountingPeriodLocks { get; }
+    DbSet<CostCenter> CostCenters { get; }
+    DbSet<JournalEntry> JournalEntries { get; }
+    DbSet<JournalEntryLine> JournalEntryLines { get; }
+    DbSet<GeneralLedgerEntry> GeneralLedgerEntries { get; }
+    DbSet<AccountingVoucher> AccountingVouchers { get; }
+    DbSet<PostingRule> PostingRules { get; }
+    DbSet<PostingRuleLine> PostingRuleLines { get; }
+    DbSet<BankAccount> BankAccounts { get; }
+    DbSet<CashAccount> CashAccounts { get; }
+    DbSet<BankTransaction> BankTransactions { get; }
+    DbSet<BankReconciliation> BankReconciliations { get; }
+    DbSet<ProjectCostAllocation> ProjectCostAllocations { get; }
+    DbSet<ProjectCostAllocationLine> ProjectCostAllocationLines { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

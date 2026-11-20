@@ -36,7 +36,7 @@
         @if (f.DueDate is { } due) { <dt class="col-sm-3">Due date</dt><dd class="col-sm-9">@due.ToString("yyyy-MM-dd")</dd> }
         @if (!string.IsNullOrEmpty(f.Reference)) { <dt class="col-sm-3">Reference</dt><dd class="col-sm-9">@f.Reference</dd> }
         @if (!string.IsNullOrEmpty(f.Remarks)) { <dt class="col-sm-3">Remarks</dt><dd class="col-sm-9">@f.Remarks</dd> }
-        <dt class="col-sm-3">Assessed</dt><dd class="col-sm-9">@f.CreatedBy on @f.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC. Accounting entries are generated in Phase 8 from the queued events.</dd>
+        <dt class="col-sm-3">Assessed</dt><dd class="col-sm-9">@f.CreatedBy on @f.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC. Accounting entries are posted from the queued events by the approved posting rules.</dd>
         @if (f.CancelledBy is not null) { <dt class="col-sm-3">Cancelled</dt><dd class="col-sm-9">@f.CancelledBy on @f.CancelledAtUtc?.ToString("yyyy-MM-dd"): @f.CancelReason</dd> }
     </dl></div></div></div>
 </div>

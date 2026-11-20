@@ -235,6 +235,12 @@ public class AccountingPostingRequestConfiguration : IEntityTypeConfiguration<Ac
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         b.Property(x => x.CreatedAtUtc).HasPrecision(6);
         b.Property(x => x.ProcessedAtUtc).HasPrecision(6);
+        // Phase 8 processing state
+        b.Property(x => x.LastError).HasMaxLength(1000);
+        b.Property(x => x.ProcessedBy).HasMaxLength(256);
+        b.Property(x => x.SkipReason).HasMaxLength(500);
+        b.HasIndex(x => x.JournalEntryId);
+        b.HasIndex(x => new { x.SourceType, x.SourceId });
         b.HasOne<Project>().WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Restrict);
         b.HasIndex(x => new { x.EventType, x.SourceType, x.SourceId }).IsUnique();
         b.HasIndex(x => x.Status);

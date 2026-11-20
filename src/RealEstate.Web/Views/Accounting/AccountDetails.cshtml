@@ -1,0 +1,26 @@
+@model RealEstate.Application.Accounting.AccountDetailDto
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var a = Model.Account; ViewData["Title"] = "Account " + a.Code; var s = Model.CurrencySymbol; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@a.Code @a.Name @if (!a.IsActive) { <span class="badge text-bg-secondary">Inactive</span> }</h1><div class="text-muted">@a.GroupName &middot; @a.Nature.Label()@(a.ParentCode is null ? "" : " · sub-account of " + a.ParentCode)</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.AccountingSetup)) { <a class="btn btn-outline-primary" asp-action="EditAccount" asp-route-id="@a.Id">Edit</a><a class="btn btn-outline-secondary" asp-action="CreateAccount" asp-route-groupId="@a.AccountGroupId" asp-route-parentId="@a.Id">Add sub-account</a> }
+        @if (Ui.Has(Permissions.AccountingReports) && a.IsPostable) { <a class="btn btn-outline-secondary" asp-controller="FinancialReports" asp-action="GeneralLedger" asp-route-accountId="@a.Id">General ledger</a> }
+        <a class="btn btn-outline-secondary" asp-action="Accounts">Back to chart</a>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Account</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-5">Classification</dt><dd class="col-sm-7">@a.Classification.Label()</dd>
+        <dt class="col-sm-5">Postings</dt><dd class="col-sm-7">@(a.IsPostable ? "Takes postings" : "Parent account: post to its sub-accounts")</dd>
+        <dt class="col-sm-5">Manual journals</dt><dd class="col-sm-7">@(a.AllowManualEntries ? "Allowed" : "Control account: automatic postings only (manual journals need the control-account permission)")</dd>
+        @if (!string.IsNullOrEmpty(a.Description)) { <dt class="col-sm-5">Description</dt><dd class="col-sm-7">@a.Description</dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Balance (projects you can access)</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-5">Total debit</dt><dd class="col-sm-7">@s @Model.Debit.ToString("N2")</dd>
+        <dt class="col-sm-5">Total credit</dt><dd class="col-sm-7">@s @Model.Credit.ToString("N2")</dd>
+        <dt class="col-sm-5">Balance</dt><dd class="col-sm-7 fs-5 fw-semibold">@s @Model.Balance.ToString("N2")</dd>
+        <dt class="col-sm-5">Ledger postings</dt><dd class="col-sm-7">@Model.PostingCount</dd>
+    </dl></div></div></div>
+</div>

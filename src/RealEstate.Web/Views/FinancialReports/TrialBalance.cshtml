@@ -1,0 +1,16 @@
+@model ReportPageViewModel<TrialBalanceDto>
+@{ ViewData["Title"] = Model.Title; var r = Model.Report; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project,costcenter,from,to")' />
+@if (r is not null)
+{
+    <p class="text-muted small">@(r.From is null ? "All postings" : "From " + r.From.Value.ToString("yyyy-MM-dd")) up to @r.To.ToString("yyyy-MM-dd") &middot; @(r.IsBalanced ? "Debits equal credits." : "NOT BALANCED") &middot; amounts in @r.CurrencySymbol</p>
+    @if (r.Rows.Count == 0) { <div class="empty-state card card-body text-center text-muted">No postings.</div> }
+    else {
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Account</th><th>Group</th><th class="text-end">Opening Dr</th><th class="text-end">Opening Cr</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Closing Dr</th><th class="text-end">Closing Cr</th></tr></thead><tbody>
+        @foreach (var x in r.Rows) { <tr><td data-label="Account"><a asp-action="GeneralLedger" asp-route-accountId="@x.AccountId" asp-route-projectId="@r.ProjectId">@x.Code @x.Name</a></td><td data-label="Group">@x.GroupName</td>
+            <td data-label="Opening Dr" class="text-end">@x.OpeningDebit.ToString("N2")</td><td data-label="Opening Cr" class="text-end">@x.OpeningCredit.ToString("N2")</td><td data-label="Debit" class="text-end">@x.PeriodDebit.ToString("N2")</td><td data-label="Credit" class="text-end">@x.PeriodCredit.ToString("N2")</td>
+            <td data-label="Closing Dr" class="text-end">@x.ClosingDebit.ToString("N2")</td><td data-label="Closing Cr" class="text-end">@x.ClosingCredit.ToString("N2")</td></tr> }
+        </tbody><tfoot><tr class="fw-bold"><td colspan="2">Total</td><td class="text-end">@r.TotalOpeningDebit.ToString("N2")</td><td class="text-end">@r.TotalOpeningCredit.ToString("N2")</td><td class="text-end">@r.TotalPeriodDebit.ToString("N2")</td><td class="text-end">@r.TotalPeriodCredit.ToString("N2")</td><td class="text-end">@r.TotalClosingDebit.ToString("N2")</td><td class="text-end">@r.TotalClosingCredit.ToString("N2")</td></tr></tfoot></table></div></div> }
+}

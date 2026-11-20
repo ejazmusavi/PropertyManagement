@@ -1,0 +1,18 @@
+@model ReportPageViewModel<ControlReconciliationDto>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "project,asof")' />
+@if (Model.Report is { } r)
+{
+    <p class="text-muted small">As at @r.AsOf.ToString("yyyy-MM-dd"): the customer (agreement) ledger against the ledger balance of the customer receivable and customer advance accounts &middot; amounts in @r.CurrencySymbol &middot;
+        @if (r.AllReconciled) { <span class="badge text-bg-success">All projects reconcile</span> } else { <span class="badge text-bg-warning">Differences found</span> }</p>
+    @if (r.Rows.Count == 0) { <div class="empty-state card card-body text-center text-muted">No customer balances.</div> }
+    else {
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Project</th><th class="text-end">Customer ledger</th><th class="text-end">Control accounts</th><th class="text-end">Difference</th><th class="text-end">Unposted events</th><th>Status</th></tr></thead><tbody>
+        @foreach (var x in r.Rows) { <tr><td data-label="Project">@x.ProjectCode</td><td data-label="Customer ledger" class="text-end">@x.LedgerBalance.ToString("N2")</td><td data-label="Control accounts" class="text-end">@x.ControlBalance.ToString("N2")</td>
+            <td data-label="Difference" class="text-end @(x.Difference == 0m ? "" : "text-danger")">@x.Difference.ToString("N2")</td><td data-label="Unposted events" class="text-end">@x.UnprocessedEvents</td>
+            <td data-label="Status">@if (x.Reconciled) { <span class="badge text-bg-success">Reconciled</span> } else { <span class="badge text-bg-warning">Check</span> }</td></tr> }
+        </tbody><tfoot><tr class="fw-bold"><td>Total</td><td class="text-end">@r.TotalLedger.ToString("N2")</td><td class="text-end">@r.TotalControl.ToString("N2")</td><td class="text-end">@r.TotalDifference.ToString("N2")</td><td colspan="2"></td></tr></tfoot></table></div></div>
+    <p class="small text-muted mt-2">Differences come from customer events not yet posted (see Automatic postings) or from posting rules that do not use the customer receivable/advance accounts.</p> }
+}

@@ -1,0 +1,6 @@
+@model ReportPageViewModel<GeneralLedgerDto>
+@{ ViewData["Title"] = Model.Title; var f = Model.Filter;
+   var route = new Dictionary<string, string?> { ["bankAccountId"] = f.BankAccountId?.ToString(), ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") }; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Message)' />
+<partial name="_ReportFilter" model='(Model.Filter, Model.Action, "bank,from,to")' />
+@if (Model.Report is { } r) { <partial name="_LedgerTable" model='(r, route)' /> }
