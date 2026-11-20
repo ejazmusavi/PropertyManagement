@@ -1,0 +1,49 @@
+@model OverdueViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Overdue installments"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Result.Lines; var s = Model.CurrencySymbol; var a = Model.Result.Aging;
+   string M(decimal v) => s + " " + v.ToString("N2");
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["days"] = f.Days?.ToString(), ["officerUserId"] = f.OfficerUserId?.ToString(), ["sortBy"] = f.SortBy, ["descending"] = f.Descending ? "true" : null }; }
+<h1 class="h3 mb-3">Overdue installments</h1>
+<partial name="_RecoveryNav" model='"Overdue"' />
+<form method="get" asp-action="Overdue" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Agreement number or installment" aria-label="Search" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><input type="number" name="days" min="1" value="@f.Days" class="form-control" placeholder="Min days overdue" aria-label="Minimum days overdue" /></div>
+    <div class="col-6 col-lg-2"><select name="officerUserId" class="form-select" aria-label="Officer"><option value="">All officers</option>@foreach (var o in Model.Officers) { <option value="@o.UserId" selected="@(f.OfficerUserId == o.UserId)">@o.FullName</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="sortBy" class="form-select" aria-label="Sort by"><option value="date" selected="@(f.SortBy != "amount")">Oldest due date</option><option value="amount" selected="@(f.SortBy == "amount")">Largest amount</option></select></div>
+    <div class="col-12 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (a is not null)
+{
+    <div class="row g-2 mb-3">
+        <div class="col-6 col-md"><div class="card card-body py-2"><div class="small text-muted">1 - 30 days</div><div class="fw-semibold">@M(a.Days1To30)</div></div></div>
+        <div class="col-6 col-md"><div class="card card-body py-2"><div class="small text-muted">31 - 60 days</div><div class="fw-semibold">@M(a.Days31To60)</div></div></div>
+        <div class="col-6 col-md"><div class="card card-body py-2"><div class="small text-muted">61 - 90 days</div><div class="fw-semibold">@M(a.Days61To90)</div></div></div>
+        <div class="col-6 col-md"><div class="card card-body py-2"><div class="small text-muted">Over 90 days</div><div class="fw-semibold">@M(a.Over90)</div></div></div>
+        <div class="col-12 col-md"><div class="card card-body py-2 border-danger"><div class="small text-muted">Total overdue</div><div class="fw-semibold text-danger">@M(a.Total)</div></div></div>
+    </div>
+}
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No overdue installments match the filters.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Agreement</th><th>Customer</th><th>Installment</th><th>Due date</th><th class="text-end">Days overdue</th><th class="text-end">Outstanding</th><th class="text-end">Late fee</th><th>Officer</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Agreement"><a href="/Ledgers/Agreement/@x.AgreementId">@x.AgreementNumber</a><div class="small text-muted">@x.ProjectCode</div></td>
+                <td data-label="Customer">@x.CustomerName@if (!string.IsNullOrEmpty(x.CustomerPhone)) { <div class="small text-muted">@x.CustomerPhone</div> }</td>
+                <td data-label="Installment">#@x.LineNo @x.Description</td><td data-label="Due date">@x.DueDate.ToString("yyyy-MM-dd")</td>
+                <td data-label="Days overdue" class="text-end">@x.DaysOverdue</td><td data-label="Outstanding" class="text-end">@M(x.Outstanding)</td><td data-label="Late fee" class="text-end">@M(x.LateFee)</td>
+                <td data-label="Officer">@(x.OfficerName ?? "Unassigned")</td>
+                <td class="text-end text-nowrap">
+                    @if (Ui.Has("recovery.followup")) { <a class="btn btn-sm btn-outline-primary" asp-action="RecordFollowUp" asp-route-agreementId="@x.AgreementId">Record follow-up</a> }
+                    @if (x.OfficerName is null && Ui.Has("recovery.assign")) { <a class="btn btn-sm btn-outline-secondary" asp-action="Assign" asp-route-agreementId="@x.AgreementId">Assign</a> }
+                </td></tr>
+        }
+        </tbody></table></div></div>
+    <p class="text-muted small mt-2 mb-0">Total outstanding for the selection: @M(Model.Result.TotalOutstanding)</p>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "overdue installments", route, "page")' />
+}

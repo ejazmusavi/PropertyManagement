@@ -139,3 +139,41 @@ public enum ScheduleChangeOperation { Added = 1, Removed = 2, AmountChanged = 3,
 
 /// <summary>Where the amount removed from an installment goes (the total must still reconcile).</summary>
 public enum ReductionRedistribution { SpreadOverRemaining = 1, AddToLast = 2, NewInstallment = 3 }
+
+// ---------- Phase 6: payments, allocation and customer ledgers ----------
+/// <summary>The payment methods of spec 6.2.</summary>
+public enum PaymentMethodKind { Cash = 1, BankTransfer = 2, Cheque = 3, OnlineTransfer = 4, Card = 5, PaymentGateway = 6 }
+
+/// <summary>Office = recorded by staff from money received; CustomerSubmitted = proof submitted by (or for) the customer, always verified first.</summary>
+public enum PaymentSource { Office = 1, CustomerSubmitted = 2 }
+
+/// <summary>PendingVerification -> PendingApproval -> Posted -> Reversed; PendingVerification/PendingApproval -> Rejected.</summary>
+public enum PaymentStatus { PendingVerification = 1, PendingApproval = 2, Posted = 3, Rejected = 4, Reversed = 5 }
+
+/// <summary>How a payment is applied to the agreement (spec 6.4).</summary>
+public enum AllocationMode { OldestDueFirst = 1, Manual = 2, SpecificInstallment = 3, ChargeSpecific = 4, Advance = 5, Unallocated = 6 }
+
+/// <summary>Installment = applied to a schedule line; Advance = held as advance against the agreement; Refund = paid back to the customer.</summary>
+public enum AllocationKind { Installment = 1, Advance = 2, Refund = 3 }
+
+public enum AllocationStatus { Active = 1, Reversed = 2, Released = 3 }
+
+public enum VerificationResult { Verified = 1, Rejected = 2 }
+
+public enum PaymentRefundStatus { Requested = 1, Approved = 2, Rejected = 3, Paid = 4, Cancelled = 5 }
+
+/// <summary>Agreement/customer ledger entry types. Debit increases what the customer owes; credit decreases it.</summary>
+public enum LedgerEntryType
+{
+    InstallmentDue = 1, DueAdjustment = 2, PaymentReceived = 3, PaymentReversed = 4, Waiver = 5, WaiverAdjustment = 6, RefundPaid = 7, BalanceTransferIn = 8, BalanceTransferOut = 9
+}
+
+public enum AccountingEventType { PaymentPosted = 1, PaymentReversed = 2, RefundPaid = 3 }
+
+public enum AccountingPostingStatus { Pending = 1, Posted = 2, Failed = 3 }
+
+public enum RecoveryAssignmentStatus { Active = 1, Closed = 2 }
+
+public enum FollowUpMethod { Call = 1, Visit = 2, Sms = 3, Email = 4, Letter = 5, Meeting = 6, Other = 7 }
+
+public enum FollowUpOutcome { Contacted = 1, NoAnswer = 2, PromiseToPay = 3, Disputed = 4, PaymentReceived = 5, WrongContact = 6, Other = 7 }

@@ -157,6 +157,9 @@ public class CustomerAgreement : AuditableEntity<long>
     public long? InstallmentPlanId { get; set; }
     /// <summary>Phase 5: start date used to resolve plan offsets.</summary>
     public DateOnly? ScheduleStartDate { get; set; }
+    /// <summary>Phase 6: incremented by every payment posting, allocation, reversal, refund payout and receivable posting. Serializes money movements on
+    /// the agreement and makes a concurrent schedule amendment (which also updates this row) fail with a concurrency conflict instead of losing a payment.</summary>
+    public int PaymentRevision { get; set; }
     public byte[] RowVersion { get; set; } = [];
     public List<AgreementVersion> Versions { get; set; } = [];
 }

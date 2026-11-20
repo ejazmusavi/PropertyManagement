@@ -1,0 +1,27 @@
+@model CustomerLedgerViewModel
+@{ var l = Model.Ledger; var s = l.CurrencySymbol; ViewData["Title"] = "Customer ledger " + l.CustomerCode; string N(decimal v) => s + " " + v.ToString("N2"); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Customer ledger</h1><div class="text-muted">@l.CustomerName (@l.CustomerCode) &middot; consolidated across all agreements in your projects</div></div>
+    <a class="btn btn-outline-secondary" asp-controller="Customers" asp-action="Details" asp-route-id="@l.CustomerId">Customer</a>
+</div>
+@if (!l.Reconciled) { <div class="alert alert-danger" role="alert">The consolidated ledger does not reconcile with the agreement ledgers. Report this to the accounts team.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Balance</div><div class="fs-5 fw-semibold">@N(l.Balance)</div>@if (l.Reconciled) { <span class="badge text-bg-success">Reconciled</span> }</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Outstanding</div><div class="fs-5 fw-semibold">@N(l.Outstanding)</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Overdue</div><div class="fs-5 fw-semibold @(l.Overdue > 0 ? "text-danger" : "")">@N(l.Overdue)</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Advance / unallocated</div><div class="fs-5 fw-semibold">@N(l.AdvanceBalance)</div></div></div></div>
+</div>
+@if (l.Agreements.Count > 0)
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Agreements</div><div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack">
+        <thead><tr><th>Agreement</th><th>Project</th><th>Status</th><th>Role</th><th class="text-end">Balance</th><th class="text-end">Outstanding</th><th class="text-end">Overdue</th><th class="text-end">Advance</th></tr></thead><tbody>
+        @foreach (var a in l.Agreements)
+        {
+            <tr><td data-label="Agreement"><a asp-action="Agreement" asp-route-id="@a.AgreementId">@a.AgreementNumber</a></td><td data-label="Project">@a.ProjectCode</td><td data-label="Status">@a.Status.Label()</td>
+                <td data-label="Role">@(a.IsHolder ? "Account holder" : "Co-owner / former holder")</td><td data-label="Balance" class="text-end">@a.Balance.ToString("N2")</td>
+                <td data-label="Outstanding" class="text-end">@a.Outstanding.ToString("N2")</td><td data-label="Overdue" class="text-end">@a.Overdue.ToString("N2")</td><td data-label="Advance" class="text-end">@a.AdvanceBalance.ToString("N2")</td></tr>
+        }
+        </tbody></table></div></div>
+}
+<h2 class="h5">Entries <span class="small text-muted fw-normal">debits @N(l.TotalDebit) &middot; credits @N(l.TotalCredit)</span></h2>
+<partial name="_LedgerEntries" model="(l.Entries, true, new Dictionary<string, string?>())" />

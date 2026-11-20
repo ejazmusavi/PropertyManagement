@@ -1,0 +1,41 @@
+@model RecoveryDashboardViewModel
+@{ ViewData["Title"] = "Recovery dashboard"; var d = Model.Dashboard; var s = d.CurrencySymbol; string M(decimal v) => s + " " + v.ToString("N2"); }
+<h1 class="h3 mb-3">Recovery dashboard</h1>
+<partial name="_RecoveryNav" model='"Index"' />
+<form method="get" asp-action="Index" class="row g-2 mb-3">
+    <div class="col-12 col-md-6 col-lg-4"><select name="projectId" class="form-select" aria-label="Project" onchange="this.form.submit()"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(Model.ProjectId == x.Id)">@x.ProjectCode - @x.ProjectName</option> }</select></div>
+    <noscript><div class="col-12 col-md-3"><button class="btn btn-outline-primary" type="submit">Filter</button></div></noscript>
+</form>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><a class="card h-100 text-decoration-none" asp-action="Overdue" asp-route-projectId="@Model.ProjectId"><div class="card-body"><div class="text-muted small">Overdue amount</div><div class="fs-4 fw-semibold text-danger">@M(d.OverdueAmount)</div><div class="small text-muted">@d.OverdueAgreements agreements &middot; @d.OverdueInstallments installments</div></div></a></div>
+    <div class="col-6 col-lg-3"><a class="card h-100 text-decoration-none" asp-action="Upcoming" asp-route-projectId="@Model.ProjectId"><div class="card-body"><div class="text-muted small">Due in the next 30 days</div><div class="fs-4 fw-semibold">@M(d.UpcomingAmount30)</div><div class="small text-muted">@d.UpcomingInstallments30 installments</div></div></a></div>
+    <div class="col-6 col-lg-3"><a class="card h-100 text-decoration-none" asp-action="Defaulters" asp-route-projectId="@Model.ProjectId" asp-route-minDaysOverdue="90"><div class="card-body"><div class="text-muted small">Defaulters (90+ days)</div><div class="fs-4 fw-semibold text-danger">@d.Defaulters90</div><div class="small text-muted">agreements</div></div></a></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Collected this month</div><div class="fs-4 fw-semibold text-success">@M(d.CollectedThisMonth)</div><div class="small text-muted">posted payments</div></div></div></div>
+    <div class="col-6 col-lg-3"><a class="card h-100 text-decoration-none" href="/Payments?status=PendingVerification"><div class="card-body"><div class="text-muted small">Pending verification</div><div class="fs-4 fw-semibold">@d.PendingVerification</div><div class="small text-muted">payments</div></div></a></div>
+    <div class="col-6 col-lg-3"><a class="card h-100 text-decoration-none" href="/Payments?status=PendingApproval"><div class="card-body"><div class="text-muted small">Pending approval</div><div class="fs-4 fw-semibold">@d.PendingApproval</div><div class="small text-muted">payments</div></div></a></div>
+    <div class="col-6 col-lg-3"><a class="card h-100 text-decoration-none" asp-action="Overdue" asp-route-projectId="@Model.ProjectId"><div class="card-body"><div class="text-muted small">Unassigned overdue agreements</div><div class="fs-4 fw-semibold @(d.UnassignedOverdueAgreements > 0 ? "text-warning" : "")">@d.UnassignedOverdueAgreements</div><div class="small text-muted">no recovery officer</div></div></a></div>
+    <div class="col-6 col-lg-3"><a class="card h-100 text-decoration-none" asp-action="FollowUps" asp-route-projectId="@Model.ProjectId"><div class="card-body"><div class="text-muted small">Follow-ups due</div><div class="fs-4 fw-semibold">@d.FollowUpsDue</div><div class="small text-muted">next follow-up date reached</div></div></a></div>
+</div>
+<div class="row g-3">
+    <div class="col-12 col-lg-5"><div class="card h-100"><div class="card-header fw-semibold">Overdue aging</div><div class="table-responsive-md"><table class="table align-middle mb-0">
+        <thead><tr><th>Bucket</th><th class="text-end">Amount</th></tr></thead><tbody>
+            <tr><td>1 - 30 days</td><td class="text-end">@M(d.Aging.Days1To30)</td></tr>
+            <tr><td>31 - 60 days</td><td class="text-end">@M(d.Aging.Days31To60)</td></tr>
+            <tr><td>61 - 90 days</td><td class="text-end">@M(d.Aging.Days61To90)</td></tr>
+            <tr><td>Over 90 days</td><td class="text-end">@M(d.Aging.Over90)</td></tr>
+            <tr class="fw-semibold"><td>Total</td><td class="text-end">@M(d.Aging.Total)</td></tr>
+        </tbody></table></div></div></div>
+    <div class="col-12 col-lg-7"><div class="card h-100"><div class="card-header d-flex justify-content-between align-items-center"><span class="fw-semibold">Top defaulters</span><a class="small" asp-action="Defaulters" asp-route-projectId="@Model.ProjectId">View all</a></div>
+    @if (d.TopDefaulters.Count == 0) { <div class="card-body text-muted">No overdue agreements.</div> }
+    else
+    {
+        <div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+            <thead><tr><th>Agreement</th><th>Customer</th><th class="text-end">Overdue</th><th class="text-end">Days</th><th>Officer</th></tr></thead><tbody>
+            @foreach (var x in d.TopDefaulters)
+            {
+                <tr><td data-label="Agreement"><a href="/Ledgers/Agreement/@x.AgreementId">@x.AgreementNumber</a><div class="small text-muted">@x.ProjectCode</div></td><td data-label="Customer">@x.CustomerName</td>
+                    <td data-label="Overdue" class="text-end">@M(x.OverdueAmount)</td><td data-label="Days" class="text-end">@x.DaysOverdue</td><td data-label="Officer">@(x.OfficerName ?? "Unassigned")</td></tr>
+            }
+            </tbody></table></div>
+    }</div></div>
+</div>

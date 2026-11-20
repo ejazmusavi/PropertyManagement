@@ -1,0 +1,53 @@
+@model AssignmentsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Recovery assignments"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Assignments; var s = Model.CurrencySymbol; string M(decimal v) => s + " " + v.ToString("N2");
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["status"] = f.Status?.ToString(), ["officerUserId"] = f.OfficerUserId?.ToString() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Recovery assignments</h1>
+    @if (Ui.Has("recovery.assign")) { <a class="btn btn-primary" asp-action="Assign">Assign officer</a> }
+</div>
+<partial name="_RecoveryNav" model='"Assignments"' />
+<form method="get" asp-action="Assignments" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Agreement, customer or officer" aria-label="Search assignments" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var x in Enum.GetValues<RecoveryAssignmentStatus>()) { <option value="@x" selected="@(f.Status == x)">@x.Label()</option> }</select></div>
+    <div class="col-6 col-lg-3"><select name="officerUserId" class="form-select" aria-label="Officer"><option value="">All officers</option>@foreach (var o in Model.Officers) { <option value="@o.UserId" selected="@(f.OfficerUserId == o.UserId)">@o.FullName</option> }</select></div>
+    <div class="col-6 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No recovery assignments found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Agreement</th><th>Customer</th><th>Officer</th><th>Assigned</th><th class="text-end">Overdue at assignment</th><th class="text-end">Current overdue</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Agreement"><a href="/Ledgers/Agreement/@x.AgreementId">@x.AgreementNumber</a><div class="small text-muted">@x.ProjectCode</div></td><td data-label="Customer">@x.CustomerName</td><td data-label="Officer">@x.OfficerName</td>
+                <td data-label="Assigned">@x.AssignedOn.ToString("yyyy-MM-dd")<div class="small text-muted">by @x.AssignedBy</div></td>
+                <td data-label="Overdue at assignment" class="text-end">@M(x.OverdueAtAssignment)</td><td data-label="Current overdue" class="text-end">@M(x.CurrentOverdue)</td>
+                <td data-label="Status"><span class="badge @(x.Status == RecoveryAssignmentStatus.Active ? "text-bg-success" : "text-bg-secondary")">@x.Status.Label()</span>
+                    @if (x.Status == RecoveryAssignmentStatus.Closed) { <div class="small text-muted">@x.ClosedOn?.ToString("yyyy-MM-dd"): @x.CloseReason</div> }</td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" asp-action="FollowUps" asp-route-agreementId="@x.AgreementId">Follow-ups</a>
+                    @if (x.Status == RecoveryAssignmentStatus.Active && Ui.Has("recovery.followup")) { <a class="btn btn-sm btn-outline-primary" asp-action="RecordFollowUp" asp-route-agreementId="@x.AgreementId">Record follow-up</a> }
+                    @if (x.Status == RecoveryAssignmentStatus.Active && Ui.Has("recovery.assign")) { <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#close@(x.Id)">Close</button> }
+                </td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "assignments", route, "page")' />
+    @if (Ui.Has("recovery.assign"))
+    {
+        @foreach (var x in p.Items.Where(i => i.Status == RecoveryAssignmentStatus.Active))
+        {
+            <div class="modal fade" id="close@(x.Id)" tabindex="-1" aria-labelledby="closeTitle@(x.Id)" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+                <form class="modal-content" asp-action="Close" asp-route-id="@x.Id" method="post" data-loading-form><input type="hidden" name="rowVersion" value="@x.RowVersion" />
+                    <div class="modal-header"><h2 class="modal-title fs-5" id="closeTitle@(x.Id)">Close assignment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                    <div class="modal-body"><p>Close the recovery assignment of agreement @x.AgreementNumber to @x.OfficerName? The agreement can be assigned again afterwards.</p>
+                        <label class="form-label" for="closeReason@(x.Id)">Reason</label><input id="closeReason@(x.Id)" name="reason" class="form-control" maxlength="1000" required minlength="3" /></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Close assignment</button></div></form></div></div>
+        }
+    }
+}

@@ -1,0 +1,51 @@
+@model AllocationEditorModel
+@using RealEstate.Domain.Enums
+@{ var s = Model.CurrencySymbol; var modes = Enum.GetValues<AllocationMode>().Where(x => Model.AllowUnallocated || x != AllocationMode.Unallocated); }
+<div class="card mb-3" data-allocation-editor>
+    <div class="card-header fw-semibold">Allocation</div>
+    <div class="card-body">
+        <div class="row g-3 mb-2">
+            <div class="col-12 col-lg-4"><label class="form-label" for="allocMode">How to apply the money</label>
+                <select id="allocMode" name="@Model.ModeField" class="form-select" data-allocation-mode>
+                    @foreach (var x in modes) { <option value="@x" selected="@(Model.Mode == x)">@x.Label()</option> }
+                </select>
+                <div class="form-text">Oldest due first settles the earliest open installments (including future ones, recorded as paid in advance).</div></div>
+            <div class="col-12 col-lg-4" data-show-when-mode="ChargeSpecific"><label class="form-label" for="allocCharge">Charge</label>
+                <select id="allocCharge" name="ChargeId" class="form-select"><option value="">- Select -</option>
+                    @foreach (var c in Model.Charges) { <option value="@c.ChargeId" selected="@(Model.ChargeId == c.ChargeId)">@c.Description (@c.Category.Label(), open @s @c.Outstanding.ToString("N2"))</option> }
+                </select></div>
+            <div class="col-12 col-lg-4 d-flex align-items-end" data-show-when-mode="OldestDueFirst,ChargeSpecific,Manual,SpecificInstallment">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="allocAdvance" name="RemainderToAdvance" value="true" checked="@Model.RemainderToAdvance" /><input type="hidden" name="RemainderToAdvance" value="false" />
+                    <label class="form-check-label" for="allocAdvance">Hold any remainder as advance (otherwise it stays unallocated)</label></div></div>
+        </div>
+        @if (Model.Open.Count == 0)
+        {
+            <p class="text-muted mb-0">There are no open installments on the active schedule. The money can be held as advance or left unallocated.</p>
+        }
+        else
+        {
+            <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack">
+                <thead><tr><th>Line</th><th>Installment</th><th>Due</th><th class="text-end">Amount</th><th class="text-end">Paid / waived</th><th class="text-end">Outstanding</th><th data-show-when-mode="Manual,SpecificInstallment" class="text-end">Allocate</th></tr></thead>
+                <tbody>
+                @for (var i = 0; i < Model.Open.Count; i++)
+                {
+                    var l = Model.Open[i]; var amount = Model.Lines.FirstOrDefault(x => x.ItemId == l.ItemId)?.Amount ?? 0m;
+                    <tr class="@(l.IsOverdue ? "table-warning" : "")">
+                        <td data-label="Line">@l.LineNo</td><td data-label="Installment">@l.Description @if (l.IsOverdue) { <span class="badge text-bg-warning">Overdue</span> }</td>
+                        <td data-label="Due">@l.DueDate.ToString("yyyy-MM-dd")</td><td data-label="Amount" class="text-end">@l.Amount.ToString("N2")</td>
+                        <td data-label="Paid / waived" class="text-end">@((l.Paid + l.Waived).ToString("N2"))</td><td data-label="Outstanding" class="text-end">@l.Outstanding.ToString("N2")</td>
+                        <td data-label="Allocate" class="text-end" data-show-when-mode="Manual,SpecificInstallment">
+                            <input type="hidden" name="Lines[@i].ItemId" value="@l.ItemId" />
+                            <div class="input-group input-group-sm justify-content-end"><input type="number" step="0.01" min="0" max="@l.Outstanding.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                name="Lines[@i].Amount" value="@(amount == 0m ? "" : amount.ToString(System.Globalization.CultureInfo.InvariantCulture))" class="form-control text-end" style="max-width:9rem"
+                                data-line-amount data-item="@l.ItemId" aria-label="Amount for line @l.LineNo" />
+                                <button type="button" class="btn btn-outline-secondary" data-fill-line="@l.ItemId" data-outstanding="@l.Outstanding.ToString(System.Globalization.CultureInfo.InvariantCulture)">Full</button></div></td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot data-show-when-mode="Manual,SpecificInstallment"><tr><th colspan="6" class="text-end">Total to allocate</th><th class="text-end">@s <span data-lines-total>0.00</span></th></tr></tfoot>
+            </table></div>
+            <p class="form-text mb-0" data-show-when-mode="SpecificInstallment">Specific installment: enter an amount on exactly one line.</p>
+        }
+    </div>
+</div>

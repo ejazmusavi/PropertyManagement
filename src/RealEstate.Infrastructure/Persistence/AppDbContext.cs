@@ -70,6 +70,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<PaymentScheduleItem> PaymentScheduleItems => Set<PaymentScheduleItem>();
     public DbSet<ScheduleAmendment> ScheduleAmendments => Set<ScheduleAmendment>();
     public DbSet<Waiver> Waivers => Set<Waiver>();
+    public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<PaymentReceipt> PaymentReceipts => Set<PaymentReceipt>();
+    public DbSet<PaymentAllocation> PaymentAllocations => Set<PaymentAllocation>();
+    public DbSet<PaymentVerification> PaymentVerifications => Set<PaymentVerification>();
+    public DbSet<PaymentReversal> PaymentReversals => Set<PaymentReversal>();
+    public DbSet<Refund> Refunds => Set<Refund>();
+    public DbSet<RefundApproval> RefundApprovals => Set<RefundApproval>();
+    public DbSet<AgreementLedgerEntry> AgreementLedgerEntries => Set<AgreementLedgerEntry>();
+    public DbSet<CustomerLedgerEntry> CustomerLedgerEntries => Set<CustomerLedgerEntry>();
+    public DbSet<AccountingPostingRequest> AccountingPostingRequests => Set<AccountingPostingRequest>();
+    public DbSet<RecoveryAssignment> RecoveryAssignments => Set<RecoveryAssignment>();
+    public DbSet<CustomerFollowUp> CustomerFollowUps => Set<CustomerFollowUp>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();
@@ -89,6 +102,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     {
         ApplyAuditFields();
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    public async Task LockForUpdateAsync<T>(long id, CancellationToken ct = default) where T : class
+    {
+        if (Database.CurrentTransaction is null) throw new InvalidOperationException("Row locks require an open transaction.");
+        var table = Model.FindEntityType(typeof(T))?.GetTableName() ?? throw new InvalidOperationException($"{typeof(T).Name} is not mapped.");
+        // The table name comes from the EF model (never from input); the id is a parameter.
+        var sql = "SELECT `Id` FROM `" + table + "` WHERE `Id` = {0} FOR UPDATE";
+        await Database.ExecuteSqlRawAsync(sql, [id], ct);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

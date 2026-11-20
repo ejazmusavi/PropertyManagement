@@ -1,0 +1,5 @@
+@model RealEstate.Domain.Enums.PaymentStatus
+@using RealEstate.Domain.Enums
+@{ var css = Model switch { PaymentStatus.Posted => "text-bg-success", PaymentStatus.PendingVerification => "text-bg-info", PaymentStatus.PendingApproval => "text-bg-warning",
+    PaymentStatus.Rejected => "text-bg-secondary", PaymentStatus.Reversed => "text-bg-danger", _ => "text-bg-light" }; }
+<span class="badge @css">@Model.Label()</span>

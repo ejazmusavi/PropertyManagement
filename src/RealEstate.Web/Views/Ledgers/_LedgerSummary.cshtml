@@ -1,0 +1,33 @@
+@model (RealEstate.Application.Payments.AgreementLedgerSummaryDto Summary, string Currency)
+@{ var m = Model.Summary; var s = Model.Currency;
+   string N(decimal v) => s + " " + v.ToString("N2"); }
+@if (!m.Reconciled) { <div class="alert alert-danger" role="alert">The ledger does not reconcile with the schedule and payments. Report this to the accounts team before posting more transactions.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Outstanding (due, unpaid)</div><div class="fs-5 fw-semibold">@N(m.Outstanding)</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Overdue</div><div class="fs-5 fw-semibold @(m.Overdue > 0 ? "text-danger" : "")">@N(m.Overdue)</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Advance balance</div><div class="fs-5 fw-semibold">@N(m.AdvanceBalance)</div>@if (m.UnallocatedBalance > 0) { <div class="small text-muted">+ @N(m.UnallocatedBalance) unallocated</div> }</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Ledger balance</div><div class="fs-5 fw-semibold">@N(m.LedgerBalance)</div>
+        <div class="small">@(m.LedgerBalance > 0 ? "owed by the customer" : m.LedgerBalance < 0 ? "customer credit" : "settled") @if (m.Reconciled) { <span class="badge text-bg-success">Reconciled</span> }</div></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header fw-semibold">Account summary</div><div class="card-body"><div class="row">
+    <div class="col-12 col-lg-4"><dl class="row mb-0">
+        <dt class="col-7 fw-normal">Agreement value</dt><dd class="col-5 text-end">@N(m.AgreementValue)</dd>
+        <dt class="col-7 fw-normal">Discounts</dt><dd class="col-5 text-end">@N(m.Discounts)</dd>
+        <dt class="col-7 fw-normal">Charges</dt><dd class="col-5 text-end">@N(m.Charges)</dd>
+        <dt class="col-7">Contract total</dt><dd class="col-5 text-end fw-semibold">@N(m.ContractTotal)</dd>
+        <dt class="col-7 fw-normal">Scheduled total</dt><dd class="col-5 text-end">@N(m.ScheduledTotal)</dd>
+    </dl></div>
+    <div class="col-12 col-lg-4"><dl class="row mb-0">
+        <dt class="col-7 fw-normal">Fallen due (posted receivable)</dt><dd class="col-5 text-end">@N(m.DueToDate)</dd>
+        <dt class="col-7 fw-normal">Scheduled, not yet due</dt><dd class="col-5 text-end">@N(m.NotYetDue)</dd>
+        <dt class="col-7 fw-normal">Penalties accrued</dt><dd class="col-5 text-end">@N(m.PenaltiesAccrued)</dd>
+        <dt class="col-7 fw-normal">Waivers</dt><dd class="col-5 text-end">@N(m.Waivers)</dd>
+    </dl></div>
+    <div class="col-12 col-lg-4"><dl class="row mb-0">
+        <dt class="col-7 fw-normal">Payments received</dt><dd class="col-5 text-end">@N(m.PaymentsReceived)</dd>
+        <dt class="col-7 fw-normal">Payments reversed</dt><dd class="col-5 text-end">@N(m.PaymentsReversed)</dd>
+        <dt class="col-7 fw-normal">Refunds paid</dt><dd class="col-5 text-end">@N(m.Refunds)</dd>
+    </dl></div>
+</div>
+<p class="small text-muted mb-0 mt-2">Installments become receivables only when they fall due; future installments are scheduled, not owed yet. Penalties are late fees calculated as of today (not posted).</p>
+</div></div>

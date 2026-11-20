@@ -1,0 +1,29 @@
+@model UpcomingViewModel
+@{ ViewData["Title"] = "Upcoming dues"; var f = Model.Filter; var p = Model.Result.Lines; var s = Model.CurrencySymbol; string M(decimal v) => s + " " + v.ToString("N2");
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["days"] = f.Days?.ToString() }; }
+<h1 class="h3 mb-3">Upcoming dues</h1>
+<partial name="_RecoveryNav" model='"Upcoming"' />
+<form method="get" asp-action="Upcoming" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-4"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Agreement number or installment" aria-label="Search" /></div>
+    <div class="col-6 col-lg-3"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-3"><div class="input-group"><input type="number" name="days" min="1" max="366" value="@(f.Days ?? 30)" class="form-control" aria-label="Days ahead" /><span class="input-group-text">days ahead</span></div></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No installments fall due in the selected period.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Due date</th><th>Agreement</th><th>Customer</th><th>Installment</th><th class="text-end">Outstanding</th><th>Officer</th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Due date">@x.DueDate.ToString("yyyy-MM-dd")</td><td data-label="Agreement"><a href="/Ledgers/Agreement/@x.AgreementId">@x.AgreementNumber</a><div class="small text-muted">@x.ProjectCode</div></td>
+                <td data-label="Customer">@x.CustomerName@if (!string.IsNullOrEmpty(x.CustomerPhone)) { <div class="small text-muted">@x.CustomerPhone</div> }</td>
+                <td data-label="Installment">#@x.LineNo @x.Description</td><td data-label="Outstanding" class="text-end">@M(x.Outstanding)</td><td data-label="Officer">@(x.OfficerName ?? "-")</td></tr>
+        }
+        </tbody></table></div></div>
+    <p class="text-muted small mt-2 mb-0">Total due in the period: @M(Model.Result.TotalOutstanding)</p>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "upcoming installments", route, "page")' />
+}

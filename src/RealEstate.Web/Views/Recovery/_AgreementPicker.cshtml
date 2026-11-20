@@ -1,0 +1,20 @@
+@* Model: (string Action, string? Term, bool Searched, IReadOnlyList<AgreementLookupDto> Matches) -- search an agreement by number or customer and pick it *@
+@model (string Action, string? Term, bool Searched, IReadOnlyList<RealEstate.Application.Payments.AgreementLookupDto> Matches)
+<div class="card mb-3"><div class="card-header fw-semibold">Select the agreement</div><div class="card-body">
+    <form method="get" asp-action="@Model.Action" class="row g-2" role="search">
+        <div class="col-12 col-md-8"><input type="search" name="term" value="@Model.Term" class="form-control" placeholder="Agreement or booking number, customer name or code" aria-label="Find agreement" /></div>
+        <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100" type="submit">Find agreement</button></div>
+    </form>
+    @if (Model.Matches.Count > 0)
+    {
+        <div class="table-responsive-md mt-3"><table class="table table-hover align-middle mb-0 table-stack">
+            <thead><tr><th>Agreement</th><th>Booking</th><th>Project</th><th>Customer</th><th></th></tr></thead><tbody>
+            @foreach (var x in Model.Matches)
+            {
+                <tr><td data-label="Agreement">@x.AgreementNumber</td><td data-label="Booking">@x.BookingNumber</td><td data-label="Project">@x.ProjectCode</td><td data-label="Customer">@x.CustomerName (@x.CustomerCode)</td>
+                    <td class="text-end"><a class="btn btn-sm btn-primary" asp-action="@Model.Action" asp-route-agreementId="@x.AgreementId">Select</a></td></tr>
+            }
+            </tbody></table></div>
+    }
+    else if (Model.Searched) { <p class="text-muted mt-3 mb-0">No active agreements match your search.</p> }
+</div></div>

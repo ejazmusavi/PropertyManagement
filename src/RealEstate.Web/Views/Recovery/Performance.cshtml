@@ -1,0 +1,26 @@
+@model PerformanceViewModel
+@{ ViewData["Title"] = "Recovery officer performance"; var s = Model.CurrencySymbol; string M(decimal v) => s + " " + v.ToString("N2"); }
+<h1 class="h3 mb-3">Recovery officer performance</h1>
+<partial name="_RecoveryNav" model='"Performance"' />
+<form method="get" asp-action="Performance" class="row g-2 mb-3">
+    <div class="col-6 col-lg-3"><label class="form-label small mb-0" for="perfFrom">From</label><input id="perfFrom" type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-6 col-lg-3"><label class="form-label small mb-0" for="perfTo">To</label><input id="perfTo" type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-12 col-lg-3"><label class="form-label small mb-0" for="perfProject">Project</label><select id="perfProject" name="projectId" class="form-select"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(Model.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-12 col-lg-2 d-flex align-items-end"><button class="btn btn-outline-primary w-100" type="submit">Apply</button></div>
+</form>
+@if (Model.Officers.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No recovery assignments or follow-ups in this period.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Officer</th><th class="text-end">Active</th><th class="text-end">Closed</th><th class="text-end">Follow-ups</th><th class="text-end">Promises</th><th class="text-end">Promised</th><th class="text-end">Collected</th><th class="text-end">Overdue at assignment</th><th class="text-end">Current overdue</th><th class="text-end">Recovery rate</th></tr></thead><tbody>
+        @foreach (var x in Model.Officers)
+        {
+            <tr><td data-label="Officer">@x.OfficerName</td><td data-label="Active" class="text-end">@x.ActiveAssignments</td><td data-label="Closed" class="text-end">@x.ClosedAssignments</td><td data-label="Follow-ups" class="text-end">@x.FollowUps</td>
+                <td data-label="Promises" class="text-end">@x.Promises</td><td data-label="Promised" class="text-end">@M(x.PromisedAmount)</td><td data-label="Collected" class="text-end">@M(x.Collected)</td>
+                <td data-label="Overdue at assignment" class="text-end">@M(x.OverdueAtAssignment)</td><td data-label="Current overdue" class="text-end">@M(x.CurrentOverdue)</td><td data-label="Recovery rate" class="text-end">@x.RecoveryRatePercent.ToString("N1")%</td></tr>
+        }
+        </tbody></table></div></div>
+}

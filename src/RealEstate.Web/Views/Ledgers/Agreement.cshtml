@@ -1,0 +1,19 @@
+@model AgreementLedgerViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var l = Model.Ledger; ViewData["Title"] = "Agreement ledger " + l.AgreementNumber; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Agreement ledger @l.AgreementNumber @if (l.Status == AgreementStatus.Cancelled) { <span class="badge text-bg-danger">Cancelled</span> }</h1>
+        <div class="text-muted">Booking @l.BookingNumber &middot; @l.ProjectCode &middot; properties @string.Join(", ", l.Properties) &middot; account holder
+            <a asp-action="Customer" asp-route-id="@l.HolderCustomerId">@l.HolderCustomerName (@l.HolderCustomerCode)</a></div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (l.Status == AgreementStatus.Active && Ui.Has(Permissions.PaymentsCollect)) { <a class="btn btn-primary" asp-controller="Payments" asp-action="Create" asp-route-agreementId="@l.AgreementId">Collect payment</a> }
+        @if (Ui.Has(Permissions.RefundsRequest)) { <a class="btn btn-outline-secondary" asp-controller="Refunds" asp-action="Create" asp-route-agreementId="@l.AgreementId">Request refund</a> }
+        <a class="btn btn-outline-secondary" asp-controller="Payments" asp-action="Index" asp-route-agreementId="@l.AgreementId">Payments</a>
+        @if (Ui.Has(Permissions.InstallmentsView)) { <a class="btn btn-outline-secondary" asp-controller="InstallmentAgreements" asp-action="Details" asp-route-id="@l.AgreementId">Schedule</a> }
+    </div>
+</div>
+<partial name="_LedgerSummary" model="(l.Summary, l.CurrencySymbol)" />
+<h2 class="h5">Entries</h2>
+<partial name="_LedgerEntries" model="(l.Entries, false, new Dictionary<string, string?>())" />

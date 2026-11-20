@@ -1,0 +1,40 @@
+@model FollowUpsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Follow-up history"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.FollowUps; var s = Model.CurrencySymbol; string M(decimal v) => s + " " + v.ToString("N2");
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["agreementId"] = f.AgreementId?.ToString(), ["officerUserId"] = f.OfficerUserId?.ToString(),
+       ["outcome"] = f.Outcome?.ToString(), ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Follow-up history</h1>
+    @if (Ui.Has("recovery.followup")) { <a class="btn btn-primary" asp-action="RecordFollowUp" asp-route-agreementId="@f.AgreementId">Record follow-up</a> }
+</div>
+<partial name="_RecoveryNav" model='"FollowUps"' />
+<form method="get" asp-action="FollowUps" class="row g-2 mb-3" role="search">
+    @if (f.AgreementId is { } aid) { <input type="hidden" name="agreementId" value="@aid" /> }
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Agreement, customer or notes" aria-label="Search follow-ups" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="officerUserId" class="form-select" aria-label="Officer"><option value="">All officers</option>@foreach (var o in Model.Officers) { <option value="@o.UserId" selected="@(f.OfficerUserId == o.UserId)">@o.FullName</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="outcome" class="form-select" aria-label="Outcome"><option value="">All outcomes</option>@foreach (var x in Enum.GetValues<FollowUpOutcome>()) { <option value="@x" selected="@(f.Outcome == x)">@x.Label()</option> }</select></div>
+    <div class="col-6 col-lg-1"><input type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" aria-label="From date" /></div>
+    <div class="col-6 col-lg-1"><input type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" aria-label="To date" /></div>
+    <div class="col-6 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (f.AgreementId is not null) { <p class="text-muted small">Showing one agreement. <a asp-action="FollowUps">Show all follow-ups</a></p> }
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No follow-ups found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Date</th><th>Agreement</th><th>Customer</th><th>Officer</th><th>Method</th><th>Outcome</th><th>Promise</th><th>Next follow-up</th><th class="text-end">Overdue then</th><th>Notes</th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Date">@x.FollowUpDate.ToString("yyyy-MM-dd")</td><td data-label="Agreement"><a href="/Ledgers/Agreement/@x.AgreementId">@x.AgreementNumber</a><div class="small text-muted">@x.ProjectCode</div></td>
+                <td data-label="Customer">@x.CustomerName</td><td data-label="Officer">@x.OfficerName</td><td data-label="Method">@x.Method.Label()</td><td data-label="Outcome">@x.Outcome.Label()</td>
+                <td data-label="Promise">@if (x.PromisedAmount is { } pa) { @M(pa) <span class="small text-muted">by @x.PromisedDate?.ToString("yyyy-MM-dd")</span> } else { <span>-</span> }</td>
+                <td data-label="Next follow-up">@(x.NextFollowUpDate?.ToString("yyyy-MM-dd") ?? "-")</td><td data-label="Overdue then" class="text-end">@M(x.OverdueAtFollowUp)</td><td data-label="Notes">@x.Notes</td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "follow-ups", route, "page")' />
+}

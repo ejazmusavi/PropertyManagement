@@ -36,6 +36,22 @@
         <li class="nav-item"><a class="nav-link @Active("LateFeeRules")" asp-controller="LateFeeRules" asp-action="Index">Late fee rules</a></li>
         <li class="nav-item"><a class="nav-link @Active("AgreementAmendments")" asp-controller="AgreementAmendments" asp-action="Pending">Amendments and waivers</a></li>
     }
+    @if (Model.Contains("payments.view") || Model.Contains("ledgers.view") || Model.Contains("recovery.view") || Model.Contains("recovery.followup"))
+    {
+        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Payments</li>
+        @if (Model.Contains("payments.collect")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Create">Collect payment</a></li> }
+        @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Payments")" asp-controller="Payments" asp-action="Index">Payments</a></li> }
+        @if (Model.Contains("payments.verify")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index" asp-route-status="PendingVerification">Payment verification</a></li> }
+        @if (Model.Contains("payments.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index" asp-route-status="PendingApproval">Payment approval</a></li> }
+        @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Receipts")" asp-controller="Receipts" asp-action="Index">Receipts</a></li> }
+        @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Refunds")" asp-controller="Refunds" asp-action="Index">Refunds</a></li> }
+        @if (Model.Contains("recovery.view")) { <li class="nav-item"><a class="nav-link @Active("Recovery")" asp-controller="Recovery" asp-action="Index">Recovery dashboard</a></li> }
+        @if (Model.Contains("recovery.view") || Model.Contains("recovery.followup"))
+        {
+            <li class="nav-item"><a class="nav-link" asp-controller="Recovery" asp-action="Overdue">Overdue installments</a></li>
+            <li class="nav-item"><a class="nav-link" asp-controller="Recovery" asp-action="FollowUps">Follow-up history</a></li>
+        }
+    }
     @if (Model.Contains("company.view"))
     {
         <li class="nav-item"><a class="nav-link @Active("Company")" asp-controller="Company" asp-action="Index">Company</a></li>

@@ -10,6 +10,7 @@
         @if (a.ScheduleGenerated || Ui.Has("installments.schedule")) { <a class="btn btn-outline-primary" asp-action="Preview" asp-route-id="@a.AgreementId">Schedule preview</a> }
         @if (a.ScheduleGenerated && Ui.Has("agreements.amend") && a.PendingAmendmentId is null) { <a class="btn btn-outline-primary" asp-controller="AgreementAmendments" asp-action="Create" asp-route-id="@a.AgreementId">Request amendment</a> }
         <a class="btn btn-outline-secondary" asp-action="History" asp-route-id="@a.AgreementId">Schedule history</a>
+        @if (Ui.Has("ledgers.view")) { <a class="btn btn-outline-secondary" asp-controller="Ledgers" asp-action="Agreement" asp-route-id="@a.AgreementId">Ledger</a> }
         <a class="btn btn-outline-secondary" asp-controller="Bookings" asp-action="Details" asp-route-id="@a.BookingId">Booking</a>
         <a class="btn btn-outline-secondary" asp-controller="Bookings" asp-action="Agreement" asp-route-id="@a.BookingId">Agreement document</a>
     </div>

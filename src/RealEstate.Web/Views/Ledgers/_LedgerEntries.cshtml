@@ -1,0 +1,25 @@
+@model (RealEstate.Application.Common.PagedResult<RealEstate.Application.Payments.LedgerEntryDto> Entries, bool ShowAgreement, Dictionary<string, string?>? Route)
+@{ var e = Model.Entries; }
+@if (e.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No ledger entries yet. Entries appear when installments fall due and payments are posted.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-sm table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Date</th>@if (Model.ShowAgreement) { <th>Agreement</th> }<th>Type</th><th>Description</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Balance</th></tr></thead><tbody>
+        @foreach (var x in e.Items)
+        {
+            <tr><td data-label="Date">@x.EntryDate.ToString("yyyy-MM-dd")</td>
+                @if (Model.ShowAgreement) { <td data-label="Agreement"><a asp-controller="Ledgers" asp-action="Agreement" asp-route-id="@x.AgreementId">@x.AgreementNumber</a></td> }
+                <td data-label="Type">@x.EntryType.Label()</td>
+                <td data-label="Description">@x.Description
+                    @if (x.PaymentId is { } pid) { <a class="small ms-1" asp-controller="Payments" asp-action="Details" asp-route-id="@pid">@x.PaymentNumber</a> }
+                    @if (x.RefundId is { } rid) { <a class="small ms-1" asp-controller="Refunds" asp-action="Details" asp-route-id="@rid">@x.RefundNumber</a> }</td>
+                <td data-label="Debit" class="text-end">@(x.Debit > 0 ? x.Debit.ToString("N2") : "")</td><td data-label="Credit" class="text-end">@(x.Credit > 0 ? x.Credit.ToString("N2") : "")</td>
+                <td data-label="Balance" class="text-end fw-semibold">@x.Balance.ToString("N2")</td></tr>
+        }
+        </tbody></table></div></div>
+    if (Model.Route is { } route) { <partial name="_Pager" model='(e.Page, e.TotalPages, e.TotalCount, "entries", route, "page")' /> }
+    else if (e.TotalCount > e.Items.Count) { <p class="small text-muted mt-2">Showing the first @e.Items.Count of @e.TotalCount entries; open the agreement ledger for all of them.</p> }
+}

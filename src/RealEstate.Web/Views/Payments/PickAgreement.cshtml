@@ -1,0 +1,23 @@
+@model AgreementPickerViewModel
+@{ ViewData["Title"] = Model.Title; }
+<h1 class="h3 mb-3">@Model.Title</h1>
+<form method="get" asp-controller="@Model.Controller" asp-action="@Model.Action" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-6"><input type="search" name="term" value="@Model.Term" class="form-control" placeholder="Agreement, booking, customer name or code" aria-label="Find agreement" autofocus /></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Search</button></div>
+</form>
+@if (Model.Results.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No active agreements found in your projects@(string.IsNullOrWhiteSpace(Model.Term) ? "" : " for \"" + Model.Term + "\"").</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Agreement</th><th>Booking</th><th>Project</th><th>Account holder</th><th></th></tr></thead><tbody>
+        @foreach (var x in Model.Results)
+        {
+            <tr><td data-label="Agreement">@x.AgreementNumber</td><td data-label="Booking">@x.BookingNumber</td><td data-label="Project">@x.ProjectCode</td><td data-label="Account holder">@x.CustomerName (@x.CustomerCode)</td>
+                <td class="text-end"><a class="btn btn-sm btn-primary" asp-controller="@Model.Controller" asp-action="@Model.Action" asp-route-agreementId="@x.AgreementId">Select</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <p class="text-muted small mt-2">Showing up to 20 matches; refine the search to narrow them down.</p>
+}

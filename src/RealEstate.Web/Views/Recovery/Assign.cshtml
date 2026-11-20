@@ -1,0 +1,30 @@
+@model AssignFormViewModel
+@{ ViewData["Title"] = "Assign recovery officer"; var s = Model.CurrencySymbol; }
+<h1 class="h3 mb-3">Assign recovery officer</h1>
+<partial name="_RecoveryNav" model='"Assignments"' />
+@if (Model.Agreement is null)
+{
+    <partial name="_AgreementPicker" model='("Assign", Model.Term, Model.Searched, Model.Matches)' />
+}
+else
+{
+    var a = Model.Agreement;
+    <div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-3">Agreement</dt><dd class="col-sm-9"><a href="/Ledgers/Agreement/@a.AgreementId">@a.AgreementNumber</a> &middot; booking @a.BookingNumber &middot; project @a.ProjectCode</dd>
+        <dt class="col-sm-3">Customer</dt><dd class="col-sm-9">@a.CustomerName (@a.CustomerCode)</dd>
+        <dt class="col-sm-3">Currently overdue</dt><dd class="col-sm-9">@s @Model.Overdue.ToString("N2")</dd>
+    </dl></div></div>
+    <form asp-action="Assign" method="post" data-loading-form>
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="AgreementId" />
+        <div class="card mb-3"><div class="card-body"><div class="row g-3">
+            <div class="col-12 col-lg-4"><label asp-for="OfficerUserId" class="form-label"></label>
+                <select asp-for="OfficerUserId" class="form-select"><option value="@Guid.Empty">- Select -</option>@foreach (var o in Model.Officers) { <option value="@o.UserId" selected="@(Model.OfficerUserId == o.UserId)">@o.FullName</option> }</select>
+                <span asp-validation-for="OfficerUserId" class="text-danger small"></span>
+                @if (Model.Officers.Count == 0) { <div class="form-text text-warning">No eligible officers: a user needs the follow-up permission and access to this project.</div> }</div>
+            <div class="col-12 col-lg-8"><label asp-for="Notes" class="form-label"></label><input asp-for="Notes" class="form-control" maxlength="1000" /><span asp-validation-for="Notes" class="text-danger small"></span></div>
+        </div></div></div>
+        <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Assign officer</button><a class="btn btn-outline-secondary" asp-action="Assignments">Cancel</a></div>
+    </form>
+}
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

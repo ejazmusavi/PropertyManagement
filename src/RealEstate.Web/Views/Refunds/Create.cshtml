@@ -1,0 +1,40 @@
+@model RefundFormViewModel
+@using RealEstate.Domain.Enums
+@{ var r = Model.Refundable!; var s = r.CurrencySymbol; ViewData["Title"] = "Request refund"; }
+<h1 class="h3 mb-1">Request refund</h1>
+<p class="text-muted">Agreement @r.AgreementNumber (@r.Status.Label())</p>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Refundable money</div><div class="fs-5 fw-semibold">@s @r.Refundable.ToString("N2")</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Reserved by open requests</div><div class="fs-5 fw-semibold">@s @r.Reserved.ToString("N2")</div></div></div></div>
+    <div class="col-12 col-lg-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">Available now</div><div class="fs-5 fw-semibold">@s @r.Available.ToString("N2")</div></div></div></div>
+</div>
+<p class="small text-muted">@(r.Status == AgreementStatus.Cancelled
+    ? "The agreement is cancelled: every posted payment can be refunded."
+    : "Only money held as advance or unallocated can be refunded while the agreement is active.")</p>
+@if (r.Available <= 0)
+{
+    <div class="alert alert-info">There is no money available for refund on this agreement.</div>
+    <a class="btn btn-outline-secondary" asp-controller="Ledgers" asp-action="Agreement" asp-route-id="@Model.AgreementId">Agreement ledger</a>
+}
+else
+{
+    <form asp-action="Create" method="post" data-loading-form>
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="AgreementId" /><input type="hidden" asp-for="IdempotencyKey" />
+        <div class="card mb-3"><div class="card-body"><div class="row g-3">
+            <div class="col-12 col-lg-4"><label asp-for="Amount" class="form-label">Amount (@s)</label><input asp-for="Amount" type="number" step="0.01" min="0.01" max="@r.Available.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control" /><span asp-validation-for="Amount" class="text-danger small"></span></div>
+            @if (r.BookingRefunds.Any(b => b.Status == RefundStatus.Approved))
+            {
+                <div class="col-12 col-lg-8"><label asp-for="BookingRefundId" class="form-label"></label>
+                    <select asp-for="BookingRefundId" class="form-select"><option value="">- None -</option>
+                        @foreach (var b in r.BookingRefunds.Where(b => b.Status == RefundStatus.Approved)) { <option value="@b.Id">@s @b.Amount.ToString("N2") approved at cancellation (@s @b.AlreadyRefunded.ToString("N2") already refunded): @b.Reason</option> }
+                    </select></div>
+            }
+            <div class="col-12"><label asp-for="Reason" class="form-label"></label><textarea asp-for="Reason" class="form-control" rows="2" maxlength="1000"></textarea><span asp-validation-for="Reason" class="text-danger small"></span></div>
+        </div></div></div>
+        <p class="text-muted small">Another user must approve the refund before the payout can be recorded.</p>
+        <div class="d-flex flex-wrap gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Submit request</button>
+            <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a></div>
+    </form>
+}
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

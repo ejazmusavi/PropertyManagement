@@ -64,6 +64,22 @@ public static class Permissions
     public const string AgreementsAmend = "agreements.amend";
     public const string AgreementsAmendApprove = "agreements.amend.approve";
 
+    // Phase 6
+    public const string PaymentsView = "payments.view";
+    public const string PaymentsCollect = "payments.collect";
+    public const string PaymentsVerify = "payments.verify";
+    public const string PaymentsApprove = "payments.approve";
+    public const string PaymentsAllocate = "payments.allocate";
+    public const string PaymentsReverse = "payments.reverse";
+    public const string PaymentsReceipts = "payments.receipts";
+    public const string RefundsRequest = "refunds.request";
+    public const string RefundsApprove = "refunds.approve";
+    public const string RefundsPay = "refunds.pay";
+    public const string LedgersView = "ledgers.view";
+    public const string RecoveryView = "recovery.view";
+    public const string RecoveryAssign = "recovery.assign";
+    public const string RecoveryFollowUp = "recovery.followup";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -114,6 +130,20 @@ public static class Permissions
         new(InstallmentsSchedule, "Build agreement charges from plans and generate payment schedules", "Installments"),
         new(AgreementsAmend, "Request agreement amendments and waivers", "Installments"),
         new(AgreementsAmendApprove, "Approve or reject agreement amendments and waivers", "Installments"),
+        new(PaymentsView, "View payments, allocations and receipts", "Payments"),
+        new(PaymentsCollect, "Record payments (office collection and customer-submitted proof)", "Payments"),
+        new(PaymentsVerify, "Verify or reject submitted payments", "Payments"),
+        new(PaymentsApprove, "Approve and post payments (maker-checker)", "Payments"),
+        new(PaymentsAllocate, "Allocate posted payments to installments, advance or unallocated balance", "Payments"),
+        new(PaymentsReverse, "Reverse posted payments", "Payments"),
+        new(PaymentsReceipts, "Print receipts and duplicate copies", "Payments"),
+        new(RefundsRequest, "Request customer refunds", "Payments"),
+        new(RefundsApprove, "Approve or reject refunds (maker-checker)", "Payments"),
+        new(RefundsPay, "Record refund payouts", "Payments"),
+        new(LedgersView, "View customer and agreement ledgers and property statements", "Payments"),
+        new(RecoveryView, "View upcoming and overdue dues, defaulters and recovery reports", "Recovery"),
+        new(RecoveryAssign, "Assign and close recovery assignments", "Recovery"),
+        new(RecoveryFollowUp, "Record customer follow-ups", "Recovery"),
     ];
 }
 
@@ -146,23 +176,32 @@ public static class DefaultRoles
              Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.PricingApprove,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsApprove,
              Permissions.BookingsCancel, Permissions.BookingsTransfer, Permissions.BookingsDiscount, Permissions.BookingsAuthorizeBalance, Permissions.BookingsRefund, Permissions.AgreementsDocuments,
-             Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.InstallmentsApprove, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend, Permissions.AgreementsAmendApprove]),
+             Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.InstallmentsApprove, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend, Permissions.AgreementsAmendApprove,
+             Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsVerify, Permissions.PaymentsApprove, Permissions.PaymentsAllocate, Permissions.PaymentsReverse,
+             Permissions.PaymentsReceipts, Permissions.RefundsRequest, Permissions.RefundsApprove, Permissions.RefundsPay, Permissions.LedgersView,
+             Permissions.RecoveryView, Permissions.RecoveryAssign, Permissions.RecoveryFollowUp]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
              Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.CustomersView, Permissions.BookingsView,
-             Permissions.InstallmentsView, Permissions.InstallmentsManage]),
+             Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.PaymentsView, Permissions.LedgersView, Permissions.RecoveryView]),
         new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsCancel, Permissions.AgreementsDocuments,
-             Permissions.InstallmentsView, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend]),
+             Permissions.InstallmentsView, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend,
+             Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsReceipts, Permissions.RefundsRequest, Permissions.LedgersView, Permissions.RecoveryView, Permissions.RecoveryAssign]),
         new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.PricingView,
-             Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmendApprove]),
-        new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView]),
-        new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmend]),
+             Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmendApprove,
+             Permissions.PaymentsView, Permissions.PaymentsVerify, Permissions.PaymentsApprove, Permissions.PaymentsAllocate, Permissions.PaymentsReverse, Permissions.PaymentsReceipts,
+             Permissions.RefundsApprove, Permissions.RefundsPay, Permissions.LedgersView, Permissions.RecoveryView]),
+        new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView,
+             Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsAllocate, Permissions.PaymentsReceipts, Permissions.LedgersView]),
+        new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmend,
+             Permissions.PaymentsView, Permissions.LedgersView, Permissions.RecoveryFollowUp]),
         new(RoleNames.InventoryManager, "Maintains property inventory.",
             [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
              Permissions.InventoryReserve, Permissions.InventoryStatus, Permissions.PricingView]),
         new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView, Permissions.PricingView,
-             Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.InstallmentsView]),
+             Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.InstallmentsView,
+             Permissions.PaymentsView, Permissions.LedgersView]),
     ];
 }

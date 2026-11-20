@@ -1,0 +1,21 @@
+@model AllocationFormViewModel
+@using RealEstate.Domain.Enums
+@{ var p = Model.Payment!; var o = Model.Options!; var s = o.CurrencySymbol; ViewData["Title"] = "Approve payment " + p.PaymentNumber; }
+<h1 class="h3 mb-1">Approve payment @p.PaymentNumber</h1>
+<p class="text-muted">@s @p.Amount.ToString("N2") by @p.MethodName from @p.CustomerName &middot; agreement @p.AgreementNumber &middot; submitted by @p.SubmittedBy</p>
+@if (p.Status != PaymentStatus.PendingApproval) { <div class="alert alert-warning">This payment is @p.Status.Label() and cannot be approved.</div> }
+<form asp-action="Approve" asp-route-id="@p.Id" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-body">
+        <p class="mb-2">Approving posts the payment in one step: allocation, receipt number, customer and agreement ledgers, and an accounting event for the posting rules.</p>
+        <p class="mb-2">Allocation asked at submission: <strong>@p.RequestedAllocationMode.Label()</strong>@(p.RequestedLines.Count > 0 ? $" ({p.RequestedLines.Count} line(s), {s} {p.RequestedLines.Sum(l => l.Amount):N2})" : "")@(p.RequestedRemainderToAdvance ? ", remainder as advance" : "").</p>
+        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="override" name="OverrideAllocation" value="true" checked="@Model.OverrideAllocation" data-allocation-override /><input type="hidden" name="OverrideAllocation" value="false" />
+            <label class="form-check-label" for="override">Change the allocation</label></div>
+        <label class="form-label" asp-for="Comments">Comments (optional)</label><input asp-for="Comments" class="form-control" maxlength="1000" />
+    </div></div>
+    <partial name="_AllocationEditor" model='new AllocationEditorModel("Mode", Model.Mode, Model.ChargeId, Model.RemainderToAdvance, o.Lines, o.Charges, Model.Lines, s, true)' />
+    <div class="d-flex flex-wrap gap-2">@if (p.Status == PaymentStatus.PendingApproval) { <button type="submit" class="btn btn-success"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Approve and post</button> }
+        <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@p.Id">Back</a></div>
+</form>
+@section Scripts { <script src="~/js/payments.js" asp-append-version="true"></script> }

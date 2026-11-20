@@ -70,9 +70,24 @@ public interface IAppDbContext
     DbSet<PaymentScheduleItem> PaymentScheduleItems { get; }
     DbSet<ScheduleAmendment> ScheduleAmendments { get; }
     DbSet<Waiver> Waivers { get; }
+    DbSet<PaymentMethod> PaymentMethods { get; }
+    DbSet<Payment> Payments { get; }
+    DbSet<PaymentReceipt> PaymentReceipts { get; }
+    DbSet<PaymentAllocation> PaymentAllocations { get; }
+    DbSet<PaymentVerification> PaymentVerifications { get; }
+    DbSet<PaymentReversal> PaymentReversals { get; }
+    DbSet<Refund> Refunds { get; }
+    DbSet<RefundApproval> RefundApprovals { get; }
+    DbSet<AgreementLedgerEntry> AgreementLedgerEntries { get; }
+    DbSet<CustomerLedgerEntry> CustomerLedgerEntries { get; }
+    DbSet<AccountingPostingRequest> AccountingPostingRequests { get; }
+    DbSet<RecoveryAssignment> RecoveryAssignments { get; }
+    DbSet<CustomerFollowUp> CustomerFollowUps { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    /// <summary>Phase 6: SELECT ... FOR UPDATE on one row of the entity's table (requires an open transaction); waits for other writers of that row.</summary>
+    Task LockForUpdateAsync<T>(long id, CancellationToken ct = default) where T : class;
 }
 
 /// <summary>Optimistic concurrency conflict (another user changed the record first).</summary>

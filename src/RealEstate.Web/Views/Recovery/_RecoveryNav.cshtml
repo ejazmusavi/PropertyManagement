@@ -1,0 +1,11 @@
+@model string
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync();
+   var items = new List<(string Action, string Text, bool Show)>
+   {
+       ("Index", "Dashboard", Ui.Has("recovery.view")), ("Overdue", "Overdue", true), ("Upcoming", "Upcoming", true), ("Defaulters", "Defaulters", true),
+       ("Performance", "Officer performance", Ui.Has("recovery.view")), ("Assignments", "Assignments", true), ("FollowUps", "Follow-ups", true),
+   }; }
+<ul class="nav nav-pills flex-wrap gap-1 mb-3" aria-label="Recovery sections">
+    @foreach (var i in items.Where(x => x.Show)) { <li class="nav-item"><a class="nav-link py-1 @(Model == i.Action ? "active" : "")" asp-controller="Recovery" asp-action="@i.Action">@i.Text</a></li> }
+</ul>

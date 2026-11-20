@@ -1,0 +1,71 @@
+@model RefundDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var r = Model.Refund; var s = r.CurrencySymbol; ViewData["Title"] = "Refund " + r.RefundNumber;
+   var canDecide = r.Status == PaymentRefundStatus.Requested && Ui.Has(Permissions.RefundsApprove) && !Model.IsRequester;
+   var canPay = r.Status == PaymentRefundStatus.Approved && Ui.Has(Permissions.RefundsPay);
+   var canCancel = r.Status is PaymentRefundStatus.Requested or PaymentRefundStatus.Approved && Ui.Has(Permissions.RefundsRequest); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Refund @r.RefundNumber <span class="badge text-bg-secondary">@r.Status.Label()</span></h1>
+        <div class="text-muted">Agreement @r.AgreementNumber (@r.AgreementStatus.Label()) &middot; @r.CustomerName &middot; requested @r.RequestedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC by @r.RequestedBy</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canDecide) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">Approve</button><button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button> }
+        @if (canPay) { <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#payModal">Record payout</button> }
+        @if (canCancel) { <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancel refund</button> }
+        <a class="btn btn-outline-secondary" asp-controller="Ledgers" asp-action="Agreement" asp-route-id="@r.AgreementId">Agreement ledger</a>
+    </div>
+</div>
+@if (r.Status == PaymentRefundStatus.Requested && Model.IsRequester) { <div class="alert alert-info">You requested this refund, so another user must approve it.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Request</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Amount</dt><dd class="col-sm-8 fs-5 fw-semibold">@s @r.Amount.ToString("N2")</dd>
+        <dt class="col-sm-4">Reason</dt><dd class="col-sm-8">@r.Reason</dd>
+        @if (r.BookingRefundAmount is { } ba) { <dt class="col-sm-4">Booking refund</dt><dd class="col-sm-8">Approved at cancellation: @s @ba.ToString("N2")</dd> }
+        @if (r.Status is PaymentRefundStatus.Requested or PaymentRefundStatus.Approved) { <dt class="col-sm-4">Available now</dt><dd class="col-sm-8">@s @r.RefundableNow.ToString("N2")</dd> }
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Decision and payout</div><div class="card-body"><dl class="row mb-0">
+        @foreach (var a in r.Approvals) { <dt class="col-sm-4">@a.Decision.Label()</dt><dd class="col-sm-8">@a.ApproverName on @a.DecidedAtUtc.ToString("yyyy-MM-dd HH:mm")@(a.Comments is null ? "" : ": " + a.Comments)</dd> }
+        @if (r.PaidOn is { } po) { <dt class="col-sm-4">Paid</dt><dd class="col-sm-8">@po.ToString("yyyy-MM-dd") by @r.MethodName@(r.PaymentReference is null ? "" : ", ref " + r.PaymentReference) (recorded by @r.PaidBy)</dd> }
+        @if (r.CancelledBy is not null) { <dt class="col-sm-4">Cancelled</dt><dd class="col-sm-8">@r.CancelledBy on @r.CancelledAtUtc?.ToString("yyyy-MM-dd"): @r.CancelReason</dd> }
+        @if (r.Approvals.Count == 0 && r.PaidOn is null && r.CancelledBy is null) { <dt class="col-sm-4">Status</dt><dd class="col-sm-8">Waiting for approval</dd> }
+    </dl></div></div></div>
+</div>
+@if (r.Sources.Count > 0)
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Paid from</div><ul class="list-group list-group-flush">
+        @foreach (var a in r.Sources) { <li class="list-group-item d-flex justify-content-between"><span>Payment allocation #@a.Id (@a.Status.Label())</span><span>@s @a.Amount.ToString("N2")</span></li> }
+    </ul></div>
+}
+@if (canDecide)
+{
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Approve" asp-route-id="@r.Id" method="post"><input type="hidden" name="rowVersion" value="@r.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="approveTitle">Approve refund</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Approve paying @s @r.Amount.ToString("N2") back to @r.CustomerName.</p><label class="form-label" for="ac">Comments (optional)</label><input id="ac" name="comments" class="form-control" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success">Approve</button></div></form></div></div>
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Reject" asp-route-id="@r.Id" method="post"><input type="hidden" name="rowVersion" value="@r.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="rejectTitle">Reject refund</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="rc">Comments</label><input id="rc" name="comments" class="form-control" required minlength="3" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Reject</button></div></form></div></div>
+}
+@if (canPay)
+{
+    <div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Pay" asp-route-id="@r.Id" method="post" data-loading-form><input type="hidden" name="rowVersion" value="@r.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="payTitle">Record refund payout</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Record that @s @r.Amount.ToString("N2") was paid to the customer. It is posted to the ledgers and cannot be undone.</p>
+                <div class="row g-2"><div class="col-12 col-sm-6"><label class="form-label" for="pm">Method</label><select id="pm" name="paymentMethodId" class="form-select">@foreach (var m in Model.Methods) { <option value="@m.Id">@m.Name</option> }</select></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="pd">Paid on</label><input id="pd" name="paidOn" type="date" class="form-control" required value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-12"><label class="form-label" for="pr">Reference</label><input id="pr" name="reference" class="form-control" maxlength="100" placeholder="Cheque / transfer number (required except for cash)" /></div></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Record payout</button></div></form></div></div>
+}
+@if (canCancel)
+{
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Cancel" asp-route-id="@r.Id" method="post"><input type="hidden" name="rowVersion" value="@r.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="cancelTitle">Cancel refund</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><label class="form-label" for="cr">Reason</label><input id="cr" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back</button><button type="submit" class="btn btn-danger">Cancel refund</button></div></form></div></div>
+}

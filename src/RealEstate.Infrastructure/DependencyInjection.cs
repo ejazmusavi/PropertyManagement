@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<IAdministrationStore, AdministrationStore>();
         services.AddOptions<FileStorageOptions>().Bind(config.GetSection(FileStorageOptions.Section));
         services.AddSingleton<IFileStorage, LocalFileStorage>();
+        services.AddSingleton<RealEstate.Application.Payments.IReceiptPdfRenderer, RealEstate.Infrastructure.Documents.ReceiptPdfRenderer>();
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<AdminBootstrapper>();
 

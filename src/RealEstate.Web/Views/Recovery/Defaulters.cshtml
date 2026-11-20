@@ -1,0 +1,36 @@
+@model DefaultersViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Defaulter report"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Defaulters; var s = Model.CurrencySymbol; string M(decimal v) => s + " " + v.ToString("N2");
+   var route = new Dictionary<string, string?> { ["projectId"] = f.ProjectId?.ToString(), ["minDaysOverdue"] = f.MinDaysOverdue.ToString(), ["minInstallments"] = f.MinInstallments.ToString() }; }
+<h1 class="h3 mb-3">Defaulter report</h1>
+<partial name="_RecoveryNav" model='"Defaulters"' />
+<form method="get" asp-action="Defaulters" class="row g-2 mb-3">
+    <div class="col-12 col-lg-3"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-3"><div class="input-group"><span class="input-group-text">Min days overdue</span><input type="number" name="minDaysOverdue" min="1" value="@f.MinDaysOverdue" class="form-control" /></div></div>
+    <div class="col-6 col-lg-3"><div class="input-group"><span class="input-group-text">Min installments</span><input type="number" name="minInstallments" min="1" value="@f.MinInstallments" class="form-control" /></div></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No agreements match the defaulter criteria.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Agreement</th><th>Customer</th><th class="text-end">Overdue installments</th><th class="text-end">Overdue amount</th><th>Oldest due</th><th class="text-end">Days overdue</th><th>Last payment</th><th>Officer</th><th>Last follow-up</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Agreement"><a href="/Ledgers/Agreement/@x.AgreementId">@x.AgreementNumber</a><div class="small text-muted">@x.ProjectCode</div></td>
+                <td data-label="Customer">@x.CustomerName@if (!string.IsNullOrEmpty(x.CustomerPhone)) { <div class="small text-muted">@x.CustomerPhone</div> }</td>
+                <td data-label="Overdue installments" class="text-end">@x.OverdueInstallments</td><td data-label="Overdue amount" class="text-end">@M(x.OverdueAmount)</td>
+                <td data-label="Oldest due">@x.OldestDueDate.ToString("yyyy-MM-dd")</td><td data-label="Days overdue" class="text-end">@x.DaysOverdue</td>
+                <td data-label="Last payment">@(x.LastPaymentDate?.ToString("yyyy-MM-dd") ?? "-")</td><td data-label="Officer">@(x.OfficerName ?? "Unassigned")</td>
+                <td data-label="Last follow-up">@if (x.LastFollowUpDate is { } lf) { @lf.ToString("yyyy-MM-dd") <span class="small text-muted">(@x.LastOutcome?.Label())</span> } else { <span>-</span> }</td>
+                <td class="text-end text-nowrap">
+                    @if (Ui.Has("recovery.followup")) { <a class="btn btn-sm btn-outline-primary" asp-action="RecordFollowUp" asp-route-agreementId="@x.AgreementId">Record follow-up</a> }
+                    @if (x.OfficerName is null && Ui.Has("recovery.assign")) { <a class="btn btn-sm btn-outline-secondary" asp-action="Assign" asp-route-agreementId="@x.AgreementId">Assign</a> }
+                </td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "defaulters", route, "page")' />
+}

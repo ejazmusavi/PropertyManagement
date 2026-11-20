@@ -1,0 +1,101 @@
+@model PaymentDetailsViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ await Ui.LoadAsync(); var p = Model.Payment; var s = p.CurrencySymbol; ViewData["Title"] = "Payment " + p.PaymentNumber;
+   var canVerify = p.Status == PaymentStatus.PendingVerification && Ui.Has(Permissions.PaymentsVerify) && !Model.IsSubmitter;
+   var canApprove = p.Status == PaymentStatus.PendingApproval && Ui.Has(Permissions.PaymentsApprove) && !Model.IsSubmitter;
+   var canReject = canVerify || canApprove;
+   var canAllocate = p.Status == PaymentStatus.Posted && (p.Unallocated > 0 || p.Advance > 0) && Ui.Has(Permissions.PaymentsAllocate);
+   var canReverse = p.Status == PaymentStatus.Posted && p.Refunded == 0 && Ui.Has(Permissions.PaymentsReverse); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Payment @p.PaymentNumber <partial name="_PaymentStatusBadge" model="p.Status" /></h1>
+        <div class="text-muted">Agreement @p.AgreementNumber &middot; booking @p.BookingNumber &middot; @p.ProjectCode &middot; submitted @p.SubmittedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC by @p.SubmittedBy</div></div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canVerify) { <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#verifyModal">Verify</button> }
+        @if (canApprove) { <a class="btn btn-success" asp-action="Approve" asp-route-id="@p.Id">Approve and post</a> }
+        @if (canReject) { <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button> }
+        @if (canAllocate) { <a class="btn btn-primary" asp-action="Allocate" asp-route-id="@p.Id">Allocate balance</a> }
+        @if (p.Receipt is { } rc) { <a class="btn btn-outline-secondary" asp-controller="Receipts" asp-action="Details" asp-route-id="@rc.Id">Receipt @rc.ReceiptNumber</a> }
+        @if (canReverse) { <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reverseModal">Reverse</button> }
+        <a class="btn btn-outline-secondary" asp-controller="Ledgers" asp-action="Agreement" asp-route-id="@p.AgreementId">Agreement ledger</a>
+    </div>
+</div>
+@if (Model.IsSubmitter && p.Status is PaymentStatus.PendingVerification or PaymentStatus.PendingApproval) { <div class="alert alert-info">You submitted this payment, so another user must @(p.Status == PaymentStatus.PendingVerification ? "verify" : "approve") it.</div> }
+@if (p.Status == PaymentStatus.PendingVerification) { <div class="alert alert-warning">Not yet verified. Nothing has been posted; the money is not on the customer's account.</div> }
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Payment</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Amount</dt><dd class="col-sm-8 fs-5 fw-semibold">@s @p.Amount.ToString("N2") <span class="small text-muted">@p.CurrencyCode</span></dd>
+        <dt class="col-sm-4">Paid by</dt><dd class="col-sm-8"><a asp-controller="Ledgers" asp-action="Customer" asp-route-id="@p.CustomerId">@p.CustomerName</a> (@p.CustomerCode)@(p.PayerName is null ? "" : " - " + p.PayerName)</dd>
+        <dt class="col-sm-4">Method</dt><dd class="col-sm-8">@p.MethodName (@p.Source.Label())</dd>
+        <dt class="col-sm-4">Payment date</dt><dd class="col-sm-8">@p.PaymentDate.ToString("yyyy-MM-dd")</dd>
+        <dt class="col-sm-4">Reference</dt><dd class="col-sm-8">@(p.Reference ?? "-")@(p.BankName is null ? "" : ", " + p.BankName)@(p.InstrumentDate is { } idt ? ", dated " + idt.ToString("yyyy-MM-dd") : "")</dd>
+        <dt class="col-sm-4">Remarks</dt><dd class="col-sm-8">@(p.Remarks ?? "-")</dd>
+        <dt class="col-sm-4">Allocation asked</dt><dd class="col-sm-8">@p.RequestedAllocationMode.Label()@(p.RequestedRemainderToAdvance ? ", remainder as advance" : "")</dd>
+    </dl></div></div></div>
+    <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Workflow</div><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-4">Verification</dt><dd class="col-sm-8">@(p.VerificationRequired ? (p.Verifications.Count == 0 ? "Required, pending" : string.Join("; ", p.Verifications.Select(v => $"{v.Result.Label()} by {v.VerifiedBy} on {v.VerifiedAtUtc:yyyy-MM-dd HH:mm}"))) : "Not required (cash at office)")</dd>
+        <dt class="col-sm-4">Approved</dt><dd class="col-sm-8">@(p.ApprovedBy is null ? "-" : $"{p.ApprovedBy} on {p.ApprovedAtUtc:yyyy-MM-dd HH:mm} UTC")</dd>
+        <dt class="col-sm-4">Posted</dt><dd class="col-sm-8">@(p.PostedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</dd>
+        @if (p.RejectedBy is not null) { <dt class="col-sm-4">Rejected</dt><dd class="col-sm-8">@p.RejectedBy on @p.RejectedAtUtc?.ToString("yyyy-MM-dd HH:mm"): @p.RejectReason</dd> }
+        @if (p.Reversal is { } rv) { <dt class="col-sm-4 text-danger">Reversed</dt><dd class="col-sm-8">@rv.ReversedBy on @rv.ReversedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC: @rv.Reason (@rv.AllocationsReversed allocations reversed)</dd> }
+        <dt class="col-sm-4">Accounting</dt><dd class="col-sm-8">@p.AccountingStatus</dd>
+    </dl></div></div></div>
+</div>
+@if (p.Status is PaymentStatus.Posted or PaymentStatus.Reversed)
+{
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Applied to installments</div><div class="fw-semibold">@s @p.Allocated.ToString("N2")</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Held as advance</div><div class="fw-semibold">@s @p.Advance.ToString("N2")</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Unallocated</div><div class="fw-semibold">@s @p.Unallocated.ToString("N2")</div></div></div></div>
+        <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Refunded</div><div class="fw-semibold">@s @p.Refunded.ToString("N2")</div></div></div></div>
+    </div>
+}
+@if (p.Allocations.Count > 0)
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Allocations (kept for history; reversed or released rows are never deleted)</div>
+    <div class="table-responsive-md"><table class="table table-sm align-middle mb-0 table-stack"><thead><tr><th>Kind</th><th>Installment</th><th>Due</th><th>Mode</th><th class="text-end">Amount</th><th>Status</th><th>By</th></tr></thead><tbody>
+    @foreach (var a in p.Allocations)
+    {
+        <tr class="@(a.Status == AllocationStatus.Active ? "" : "text-muted")"><td data-label="Kind">@a.Kind.Label()@(a.RefundNumber is null ? "" : " " + a.RefundNumber)</td>
+            <td data-label="Installment">@(a.LineNo is null ? "-" : $"{a.LineNo}. {a.Description}")</td><td data-label="Due">@(a.DueDate?.ToString("yyyy-MM-dd") ?? "-")</td><td data-label="Mode">@a.Mode.Label()</td>
+            <td data-label="Amount" class="text-end">@a.Amount.ToString("N2")</td><td data-label="Status">@a.Status.Label()@(a.CloseReason is null ? "" : ": " + a.CloseReason)</td>
+            <td data-label="By">@a.AllocatedBy, @a.AllocatedAtUtc.ToString("yyyy-MM-dd HH:mm")</td></tr>
+    }</tbody></table></div></div>
+}
+@if (p.Verifications.Count > 0)
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Verification history</div><ul class="list-group list-group-flush">
+    @foreach (var v in p.Verifications) { <li class="list-group-item"><strong>@v.Result.Label()</strong> by @v.VerifiedBy on @v.VerifiedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC@(v.BankReference is null ? "" : $", bank ref {v.BankReference}")@(v.ClearedOn is { } cl ? $", cleared {cl:yyyy-MM-dd}" : ""): @v.Notes</li> }
+    </ul></div>
+}
+@if (canVerify)
+{
+    <div class="modal fade" id="verifyModal" tabindex="-1" aria-labelledby="verifyTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Verify" asp-route-id="@p.Id" method="post" data-loading-form><input type="hidden" name="rowVersion" value="@p.RowVersion" /><input type="hidden" name="verified" value="true" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="verifyTitle">Verify payment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Confirm that @s @p.Amount.ToString("N2") was actually received (bank statement, cleared cheque, gateway report). It then waits for approval.</p>
+                <label class="form-label" for="verifyNotes">How it was checked</label><input id="verifyNotes" name="notes" class="form-control mb-2" required minlength="3" maxlength="1000" />
+                <div class="row g-2"><div class="col-12 col-sm-6"><label class="form-label" for="bankRef">Bank reference</label><input id="bankRef" name="bankReference" class="form-control" maxlength="100" /></div>
+                <div class="col-12 col-sm-6"><label class="form-label" for="clearedOn">Cleared on</label><input id="clearedOn" name="clearedOn" type="date" class="form-control" /></div></div></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-success"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Verify</button></div></form></div></div>
+}
+@if (canReject)
+{
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="@(canVerify ? "Verify" : "Reject")" asp-route-id="@p.Id" method="post"><input type="hidden" name="rowVersion" value="@p.RowVersion" />
+            @if (canVerify) { <input type="hidden" name="verified" value="false" /> }
+            <div class="modal-header"><h2 class="modal-title fs-5" id="rejectTitle">Reject payment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>The payment will not be posted. Its reference can be used again by a corrected submission.</p><label class="form-label" for="rejectReason">Reason</label>
+                <input id="rejectReason" name="@(canVerify ? "notes" : "reason")" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Reject</button></div></form></div></div>
+}
+@if (canReverse)
+{
+    <div class="modal fade" id="reverseModal" tabindex="-1" aria-labelledby="reverseTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" asp-action="Reverse" asp-route-id="@p.Id" method="post" data-loading-form><input type="hidden" name="rowVersion" value="@p.RowVersion" />
+            <div class="modal-header"><h2 class="modal-title fs-5" id="reverseTitle">Reverse payment</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+            <div class="modal-body"><p>Use this for a bounced cheque or a payment recorded in error. All allocations are undone, the installments become open again and offsetting ledger and accounting entries are posted. This cannot be undone.</p>
+                <label class="form-label" for="reverseReason">Reason</label><input id="reverseReason" name="reason" class="form-control" required minlength="5" maxlength="1000" /></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Reverse</button></div></form></div></div>
+}

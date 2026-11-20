@@ -1,0 +1,26 @@
+@model PropertyStatementViewModel
+@{ var st = Model.Statement; ViewData["Title"] = "Property statement " + st.PropertyCode; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Property statement @st.PropertyCode</h1><div class="text-muted">@st.ProjectCode &middot; status @st.Status.Label()</div></div>
+    <a class="btn btn-outline-secondary" asp-controller="Properties" asp-action="Details" asp-route-id="@st.PropertyId">Property</a>
+</div>
+@if (st.Bookings.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">This property has never been booked, so it has no financial history.</p></div>
+}
+@foreach (var b in st.Bookings)
+{
+    <div class="card mb-4"><div class="card-header d-flex flex-wrap justify-content-between gap-2">
+        <span class="fw-semibold">Booking @b.BookingNumber (@b.BookingStatus.Label(), @b.BookingDate.ToString("yyyy-MM-dd"))</span>
+        <span>Line price @st.CurrencySymbol @b.LinePrice.ToString("N2")</span></div>
+    <div class="card-body">
+        @if (b.OtherProperties.Count > 0) { <div class="alert alert-info">This agreement also covers @string.Join(", ", b.OtherProperties); the amounts below are for the whole agreement.</div> }
+        @if (b.Ledger is { } l)
+        {
+            <p class="mb-2">Agreement <a asp-action="Agreement" asp-route-id="@l.AgreementId">@l.AgreementNumber</a> &middot; account holder @l.HolderCustomerName</p>
+            <partial name="_LedgerSummary" model="(l.Summary, l.CurrencySymbol)" />
+            <partial name="_LedgerEntries" model="(l.Entries, false, (Dictionary<string, string?>?)null)" />
+        }
+        else { <p class="text-muted mb-0">No agreement was created for this booking (it was not confirmed).</p> }
+    </div></div>
+}

@@ -66,6 +66,7 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
 
         await SeedPropertyCatalogAsync(ct);
         await SeedChargeTypesAsync(ct);
+        await SeedPaymentMethodsAsync(ct);
     }
 
     /// <summary>Seeds the standard property categories and types once (matched by code, so edits and custom entries are kept).</summary>
@@ -116,6 +117,24 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
         ];
         foreach (var d in defaults.Where(d => !codes.Contains(d.Code)))
             db.ChargeTypes.Add(new ChargeType { Code = d.Code, Name = d.Name, Kind = d.Kind, DefaultCategory = d.Category, DefaultFrequency = d.Frequency, IsSystem = true });
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Seeds the six payment methods of spec 6.2 once (matched by code, so later edits are kept). Only cash skips verification.</summary>
+    private async Task SeedPaymentMethodsAsync(CancellationToken ct)
+    {
+        var codes = await db.PaymentMethods.Select(t => t.Code).ToListAsync(ct);
+        (string Code, string Name, PaymentMethodKind Kind, bool Verify, bool Reference)[] defaults =
+        [
+            ("CASH", "Cash", PaymentMethodKind.Cash, false, false),
+            ("BANK_TRANSFER", "Bank transfer", PaymentMethodKind.BankTransfer, true, true),
+            ("CHEQUE", "Cheque", PaymentMethodKind.Cheque, true, true),
+            ("ONLINE_TRANSFER", "Online transfer", PaymentMethodKind.OnlineTransfer, true, true),
+            ("CARD", "Card", PaymentMethodKind.Card, true, true),
+            ("GATEWAY", "Payment gateway", PaymentMethodKind.PaymentGateway, true, true),
+        ];
+        foreach (var d in defaults.Where(d => !codes.Contains(d.Code)))
+            db.PaymentMethods.Add(new PaymentMethod { Code = d.Code, Name = d.Name, Kind = d.Kind, RequiresVerification = d.Verify, RequiresReference = d.Reference, IsSystem = true });
         await db.SaveChangesAsync(ct);
     }
 }

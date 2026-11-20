@@ -13,6 +13,8 @@ using RealEstate.Application.Projects;
 using RealEstate.Application.Customers;
 using RealEstate.Application.Sales;
 using RealEstate.Application.Installments;
+using RealEstate.Application.Payments;
+using RealEstate.Application.Recovery;
 
 namespace RealEstate.Application;
 
@@ -43,6 +45,12 @@ public static class DependencyInjection
         services.AddScoped<InstallmentPlanService>();
         services.AddScoped<AgreementScheduleService>();
         services.AddScoped<AgreementAmendmentService>();
+        services.AddScoped<PaymentSupport>();
+        services.AddScoped<PaymentService>();
+        services.AddScoped<ReceiptService>();
+        services.AddScoped<LedgerService>();
+        services.AddScoped<RefundService>();
+        services.AddScoped<RecoveryService>();
         services.AddScoped<UserAdministrationService>();
         services.AddScoped<RoleService>();
         services.AddScoped<ProjectAccessAdminService>();

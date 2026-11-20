@@ -1,0 +1,49 @@
+@model PaymentListViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Domain.Common
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = Model.Title; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Payments;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["projectId"] = f.ProjectId?.ToString(), ["status"] = f.Status?.ToString(), ["method"] = f.Method?.ToString(),
+       ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd"), ["sortBy"] = f.SortBy, ["descending"] = f.Descending ? "true" : null }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.Title</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has(Permissions.PaymentsCollect)) { <a class="btn btn-primary" asp-action="Create">Collect payment</a> }
+        @if (Ui.Has(Permissions.PaymentsVerify)) { <a class="btn btn-outline-secondary" asp-action="Index" asp-route-status="PendingVerification">Verification queue</a> }
+        @if (Ui.Has(Permissions.PaymentsApprove)) { <a class="btn btn-outline-secondary" asp-action="Index" asp-route-status="PendingApproval">Approval queue</a> }
+        <a class="btn btn-outline-secondary" asp-controller="Receipts" asp-action="Index">Receipts</a>
+        <a class="btn btn-outline-secondary" asp-controller="Refunds" asp-action="Index">Refunds</a>
+    </div>
+</div>
+@if (f.Status == PaymentStatus.PendingVerification) { <div class="alert alert-info">Customer-submitted proof and non-cash payments are checked here (bank statement, cheque clearing) before approval. Unverified proof is never posted.</div> }
+@if (f.Status == PaymentStatus.PendingApproval) { <div class="alert alert-info">Approving posts the payment: it is allocated, a receipt number is issued and the ledgers are updated. You cannot approve payments you submitted.</div> }
+<form method="get" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Payment, agreement, customer or reference" aria-label="Search payments" /></div>
+    <div class="col-6 col-lg-2"><select name="projectId" class="form-select" aria-label="Project"><option value="">All projects</option>@foreach (var x in Model.Projects) { <option value="@x.Id" selected="@(f.ProjectId == x.Id)">@x.ProjectCode</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<PaymentStatus>()) { <option value="@s" selected="@(f.Status == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="method" class="form-select" aria-label="Method"><option value="">All methods</option>@foreach (var s in Enum.GetValues<PaymentMethodKind>()) { <option value="@s" selected="@(f.Method == s)">@s.Label()</option> }</select></div>
+    <div class="col-6 col-lg-1"><input type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" aria-label="From date" /></div>
+    <div class="col-6 col-lg-1"><input type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" aria-label="To date" /></div>
+    <div class="col-6 col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No payments found.</p></div>
+}
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Payment</th><th><a class="link-body-emphasis" href="?@(string.Join("&", route.Where(x => x.Key is not "sortBy" and not "descending" && !string.IsNullOrEmpty(x.Value)).Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value!)}")))&sortBy=date&descending=@((f.SortBy != "date" || !f.Descending).ToString().ToLowerInvariant())">Date</a></th>
+            <th>Agreement</th><th>Customer</th><th>Method</th><th class="text-end">Amount</th><th class="text-end">Unallocated</th><th>Receipt</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Payment">@x.PaymentNumber<div class="small text-muted">@x.ProjectCode</div></td><td data-label="Date">@x.PaymentDate.ToString("yyyy-MM-dd")</td>
+                <td data-label="Agreement">@x.AgreementNumber</td><td data-label="Customer">@x.CustomerName</td>
+                <td data-label="Method">@x.MethodName@if (x.Reference is not null) { <div class="small text-muted">@x.Reference</div> }@if (x.Source == PaymentSource.CustomerSubmitted) { <span class="badge text-bg-info">Customer proof</span> }</td>
+                <td data-label="Amount" class="text-end">@x.Amount.ToString("N2")</td><td data-label="Unallocated" class="text-end">@(x.Unallocated > 0 ? x.Unallocated.ToString("N2") : "-")</td>
+                <td data-label="Receipt">@(x.ReceiptNumber ?? "-")</td><td data-label="Status"><partial name="_PaymentStatusBadge" model="x.Status" /></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "payments", route, "page")' />
+}
