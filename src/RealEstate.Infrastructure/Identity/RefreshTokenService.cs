@@ -60,6 +60,9 @@ public class RefreshTokenService(AppDbContext db, IOptions<JwtOptions> options, 
         await RevokeFamilyAsync(existing.FamilyId, now, ct);
     }
 
+    public Task RevokeAllAsync(Guid userId, CancellationToken ct = default) =>
+        db.RefreshTokens.Where(t => t.UserId == userId && t.RevokedAtUtc == null).ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, clock.GetUtcNow().UtcDateTime), ct);
+
     private Task<int> RevokeFamilyAsync(Guid familyId, DateTime now, CancellationToken ct) =>
         db.RefreshTokens.Where(t => t.FamilyId == familyId && t.RevokedAtUtc == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, now), ct);

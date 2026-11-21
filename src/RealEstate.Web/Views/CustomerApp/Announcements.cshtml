@@ -1,0 +1,20 @@
+@model IReadOnlyList<RealEstate.Application.Portal.AnnouncementDto>
+@{ ViewData["Title"] = "Customer announcements"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Customer announcements</h1>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-action="Instructions">Payment instructions</a><a class="btn btn-primary" asp-action="AnnouncementForm">New announcement</a></div>
+</div>
+@if (Model.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No announcements yet. Announcements appear in the customer application.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Title</th><th>Audience</th><th>Published</th><th>Expires</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var a in Model)
+        {
+            <tr><td data-label="Title">@a.Title</td><td data-label="Audience">@(a.ProjectCode ?? "All customers")</td><td data-label="Published">@a.PublishFromUtc.ToString("yyyy-MM-dd HH:mm")</td>
+                <td data-label="Expires">@(a.ExpiresAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                <td data-label="Status"><span class="badge @(a.IsActive ? "text-bg-success" : "text-bg-secondary")">@(a.IsActive ? "Active" : "Inactive")</span></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="AnnouncementForm" asp-route-id="@a.Id">Edit</a></td></tr>
+        }
+        </tbody></table></div></div>
+}

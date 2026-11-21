@@ -62,6 +62,9 @@ public static class DependencyInjection
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddSingleton<RealEstate.Application.Payments.IReceiptPdfRenderer, RealEstate.Infrastructure.Documents.ReceiptPdfRenderer>();
         services.AddSingleton<RealEstate.Application.Reporting.IReportExporter, RealEstate.Infrastructure.Documents.ReportExporter>();
+        services.AddScoped<IPasswordResetNotifier, LoggingPasswordResetNotifier>();
+        services.AddSingleton<RealEstate.Application.Gateway.IPaymentGateway, RealEstate.Infrastructure.Gateway.SandboxPaymentGateway>();
+        services.AddSingleton<RealEstate.Application.Gateway.IPaymentGatewayRegistry, RealEstate.Infrastructure.Gateway.PaymentGatewayRegistry>();
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<AdminBootstrapper>();
 

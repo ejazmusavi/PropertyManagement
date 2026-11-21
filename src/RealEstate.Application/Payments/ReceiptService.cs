@@ -55,6 +55,14 @@ public class ReceiptService(IAppDbContext db, IPermissionService permissions, IC
         await permissions.EnsureAsync(user, Permissions.PaymentsReceipts, ct);
         var paymentId = await PaymentIdAsync(receiptId, ct);
         var detail = await payments.GetAsync(paymentId, ct); // project/data access
+        return await RenderAsync(receiptId, detail, ct);
+    }
+
+    /// <summary>Renders the receipt for the customer application; the caller has already proved that the customer owns the payment.</summary>
+    internal Task<DownloadedFile> RenderForCustomerAsync(long receiptId, PaymentDetailDto detail, CancellationToken ct) => RenderAsync(receiptId, detail, ct);
+
+    private async Task<DownloadedFile> RenderAsync(long receiptId, PaymentDetailDto detail, CancellationToken ct)
+    {
         var now = support.Now;
         int copy;
         await using (var tx = await db.Database.BeginTransactionAsync(ct))

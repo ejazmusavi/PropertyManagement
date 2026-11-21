@@ -45,6 +45,7 @@ public sealed class Phase1Fixture : IAsyncLifetime
         services.AddApplication();
         services.AddInfrastructure(config);
         services.AddSingleton<ICurrentUser>(Actor);
+        services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(config);
         Root = services.BuildServiceProvider();
         using var scope = Root.CreateScope();
         await scope.ServiceProvider.GetRequiredService<DatabaseInitializer>().MigrateAsync();

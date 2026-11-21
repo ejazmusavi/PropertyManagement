@@ -74,6 +74,19 @@ public static class DependencyInjection
         services.AddScoped<UserAdministrationService>();
         services.AddScoped<RoleService>();
         services.AddScoped<ProjectAccessAdminService>();
+        services.AddScoped<Auth.PasswordResetService>();
+        services.AddScoped<Portal.PortalContext>();
+        services.AddScoped<Portal.CustomerPortalService>();
+        services.AddScoped<Portal.CustomerAccountService>();
+        services.AddScoped<Portal.SupportDeskService>();
+        services.AddScoped<Portal.PortalContentService>();
+        services.AddScoped<Portal.PaymentProofAdminService>();
+        services.AddScoped<Gateway.PaymentInitiationService>();
+        services.AddScoped<Gateway.PaymentVerificationService>();
+        services.AddScoped<Gateway.PaymentCallbackHandler>();
+        services.AddScoped<Gateway.GatewayReconciliationService>();
+        services.AddScoped<Gateway.GatewayRefundService>();
+        services.AddScoped<Gateway.GatewayQueryService>();
         return services;
     }
 }

@@ -1,0 +1,32 @@
+@model RealEstate.Application.Gateway.GatewayTransactionDto
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var x = Model; ViewData["Title"] = x.TransactionNumber; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@x.TransactionNumber <span class="badge text-bg-secondary fs-6">@x.Status</span></h1>
+    <div class="d-flex gap-2">
+        @if (Ui.Has("gateway.manage") && x.Status is GatewayTransactionStatus.Initiated or GatewayTransactionStatus.Pending) { <form asp-action="ReconcileOne" asp-route-id="@x.Id" method="post"><button class="btn btn-primary" type="submit">Check with provider</button></form> }
+        <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
+    </div>
+</div>
+<div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Customer</dt><dd class="col-sm-9">@x.CustomerName</dd>
+    <dt class="col-sm-3">Agreement</dt><dd class="col-sm-9"><a href="/Ledgers/Agreement/@x.AgreementId">@x.AgreementNumber</a></dd>
+    <dt class="col-sm-3">Amount</dt><dd class="col-sm-9">@x.Amount.ToString("N2") @x.CurrencyCode</dd>
+    <dt class="col-sm-3">Provider</dt><dd class="col-sm-9">@x.Provider @(x.ProviderReference is null ? "" : "· reference " + x.ProviderReference)</dd>
+    <dt class="col-sm-3">Started / completed</dt><dd class="col-sm-9">@x.InitiatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC / @(x.CompletedAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</dd>
+    <dt class="col-sm-3">Payment</dt><dd class="col-sm-9">@if (x.PaymentId is { } pid) { <a href="/Payments/Details/@pid">@x.PaymentNumber</a> <span>(@x.PaymentStatus)</span> } else { <span>Not created</span> }</dd>
+    @if (x.FailureReason is not null) { <dt class="col-sm-3 text-danger">Failure</dt><dd class="col-sm-9">@x.FailureCode @x.FailureReason</dd> }
+    <dt class="col-sm-3">Reconciliation</dt><dd class="col-sm-9">@(x.LastReconciledAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "never") @(x.ReconciliationNote is null ? "" : "· " + x.ReconciliationNote)</dd>
+    @if (x.RefundedAmount > 0) { <dt class="col-sm-3">Refunded</dt><dd class="col-sm-9">@x.RefundedAmount.ToString("N2") @x.CurrencyCode @(x.RefundReference is null ? "" : "(" + x.RefundReference + ")")</dd> }
+</dl></div></div>
+@if (Ui.Has("gateway.manage") && x.Status == GatewayTransactionStatus.Succeeded && x.RefundedAmount < x.Amount)
+{
+    <div class="card"><div class="card-header fw-semibold">Refund at the provider</div><div class="card-body">
+        <p class="text-muted small">Allowed only after the ERP payment was reversed or rejected, and only where the provider supports refunds through its API.</p>
+        <form asp-action="Refund" asp-route-id="@x.Id" method="post"><input type="hidden" name="rowVersion" value="@x.RowVersion" /><div class="row g-2">
+            <div class="col-12 col-md-3"><label class="form-label" for="amount">Amount</label><input class="form-control" id="amount" name="amount" type="number" step="0.01" min="0.01" max="@((x.Amount - x.RefundedAmount).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))" required /></div>
+            <div class="col-12 col-md-6"><label class="form-label" for="reason">Reason</label><input class="form-control" id="reason" name="reason" required minlength="5" maxlength="500" /></div>
+            <div class="col-12 col-md-3 d-flex align-items-end"><button class="btn btn-outline-danger w-100" type="submit">Refund</button></div></div></form>
+    </div></div>
+}

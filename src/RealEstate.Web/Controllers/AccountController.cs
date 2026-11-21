@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using RealEstate.Application.Audit;
 using RealEstate.Application.Auth;
 using RealEstate.Application.Common;
+using RealEstate.Domain.Common;
 using RealEstate.Web.Filters;
 using RealEstate.Web.ViewModels;
 
@@ -37,6 +38,13 @@ public class AccountController(AuthService auth, IIdentityService identity, IAud
 
         var user = result.Value!;
         var roles = await identity.GetRolesAsync(user.Id, ct);
+        if (roles.Contains(RoleNames.Customer))
+        {
+            // Customer logins belong to the mobile app; they have no permission for any office screen.
+            ModelState.AddModelError(string.Empty, "This login is for the customer app. Please sign in there.");
+            model.Password = "";
+            return View(model);
+        }
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),

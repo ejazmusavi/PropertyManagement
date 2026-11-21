@@ -67,6 +67,13 @@
         @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentFeeTypes")" asp-controller="GovernmentFeeTypes" asp-action="Index">Fee configuration</a></li> }
         @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentPayments")" asp-controller="GovernmentPayments" asp-action="Index">Government payments</a></li> }
     }
+    @if (Model.Contains("support.view") || Model.Contains("portal.content.manage") || Model.Contains("gateway.view"))
+    {
+        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Customer app</li>
+        @if (Model.Contains("support.view")) { <li class="nav-item"><a class="nav-link @Active("Support")" asp-controller="Support" asp-action="Index">Support requests</a></li> }
+        @if (Model.Contains("portal.content.manage")) { <li class="nav-item"><a class="nav-link @Active("CustomerApp")" asp-controller="CustomerApp" asp-action="Announcements">Announcements</a></li> }
+        @if (Model.Contains("gateway.view")) { <li class="nav-item"><a class="nav-link @Active("Gateway")" asp-controller="Gateway" asp-action="Index">Online payments</a></li> }
+    }
     @if (Model.Contains("reports.view") || Model.Contains("accounting.reports"))
     {
         <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Reports</li>

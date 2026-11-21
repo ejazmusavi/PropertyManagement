@@ -33,3 +33,23 @@ Copy `.env.example` to `.env`, fill values, then `docker compose up --build` (My
 
 ## Document storage (Phase 1)
 Uploaded files (company logo, project and land documents) are stored on disk **outside the web root** under `FileStorage:RootPath` (default `App_Data/storage` beside the application; Docker uses the `document-storage` volume mounted at `/var/realestate/storage`). Files are served only through authorized controller actions, never as static files. The API and the Web app must point `FileStorage:RootPath` at the same directory when both are run, and the directory must be included in backups together with the database.
+
+## Customer app (Phase 10)
+The Flutter customer app is in `mobile/customer_app` (Flutter 3.47 / Dart 3.13; verified with `flutter analyze`, `flutter test`, `flutter build apk --debug`).
+```bash
+cd mobile/customer_app
+flutter pub get
+flutter test
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:5008    # Android emulator -> API on this machine (default)
+flutter build apk --release --dart-define=API_BASE_URL=https://<your-api-host>   # release builds must use HTTPS
+```
+Customers sign in with a login that the office creates on the customer record (Customers > customer > App login; needs `portal.accounts.manage`). The login has the **Customer** role (only `portal.access`). `flutter run` on a device needs the API reachable from the phone (`API_BASE_URL`).
+
+Forgot password: `POST /api/v1/auth/forgot-password`. Until the Phase 11 e-mail/SMS channels exist the reset code is only written to the API log when `PasswordReset:LogToken` is true (set in `appsettings.Development.json`; never enable it in production).
+
+Online payments are **off** by default (`PaymentGateway:Enabled=false`). For development only, the `sandbox` provider adapter can be switched on:
+```bash
+dotnet user-secrets set "PaymentGateway:Enabled" "true" --project src/RealEstate.Api
+dotnet user-secrets set "PaymentGateway:Sandbox:SigningSecret" "<random secret>" --project src/RealEstate.Api
+```
+Callbacks are posted to `POST /api/v1/payment-webhooks/sandbox` with header `X-Signature` = hex HMAC-SHA256 of the raw body (JSON `eventId, reference, order, status[succeeded|failed|cancelled|pending], amount, currency`). Real providers (JazzCash, Easypaisa, banks) are added as `IPaymentGateway` adapters in Infrastructure once credentials, APIs and terms are available; nothing else changes.

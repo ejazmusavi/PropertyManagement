@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using RealEstate.Application.Audit;
 using RealEstate.Application.Common;
+using RealEstate.Application.Portal;
 using RealEstate.Domain.Common;
 using RealEstate.Domain.Entities;
 using RealEstate.Domain.Enums;
@@ -150,15 +151,22 @@ public class PaymentService(
     public async Task<PaymentDetailDto> CreateAsync(CreatePaymentRequest r, CancellationToken ct = default)
     {
         await permissions.EnsureAsync(user, Permissions.PaymentsCollect, ct);
-        var userId = RequireUser();
+        return await CreateCoreAsync(r, RequireUser(), portal: false, ct);
+    }
+
+    /// <summary>Customer-application submission: the caller (portal service) has already proved that the customer is a party to the agreement, so staff project access and permissions are not applied.</summary>
+    internal Task<PaymentDetailDto> CreatePortalAsync(CreatePaymentRequest r, Guid userId, CancellationToken ct) => CreateCoreAsync(r, userId, portal: true, ct);
+
+    private async Task<PaymentDetailDto> CreateCoreAsync(CreatePaymentRequest r, Guid userId, bool portal, CancellationToken ct)
+    {
         await createValidator.ValidateOrThrowAsync(r, ct);
         var key = r.IdempotencyKey.Trim();
         var hash = PaymentSupport.Sha256(string.Join('|', r.AgreementId, r.CustomerId, r.PaymentMethodId, r.Source, r.Amount.ToString("F2", CultureInfo.InvariantCulture),
             r.PaymentDate.ToString("O", CultureInfo.InvariantCulture), N(r.Reference)?.ToUpperInvariant(), N(r.BankName), r.InstrumentDate?.ToString("O", CultureInfo.InvariantCulture),
             r.AllocationMode, r.ChargeId, r.RemainderToAdvance, string.Join(';', (r.Lines ?? []).Select(l => $"{l.ItemId}:{l.Amount.ToString("F2", CultureInfo.InvariantCulture)}"))));
-        if (await ReplayAsync(key, hash, userId, ct) is { } replay) return replay;
+        if (await ReplayAsync(key, hash, userId, portal, ct) is { } replay) return replay;
 
-        await support.EnsureAgreementAccessAsync(r.AgreementId, ct);
+        if (!portal) await support.EnsureAgreementAccessAsync(r.AgreementId, ct);
         var ag = await support.InfoAsync(r.AgreementId, ct);
         if (ag.Status != AgreementStatus.Active) throw new DomainException("Payments can be recorded only against active agreements.");
         var method = await db.PaymentMethods.AsNoTracking().FirstOrDefaultAsync(m => m.Id == r.PaymentMethodId && m.IsActive, ct)
@@ -209,7 +217,7 @@ public class PaymentService(
             await tx.RollbackAsync(ct);
             db.Entry(payment).State = EntityState.Detached;
             // A racing identical submission (same key) won: return it. MySQL may report the race as a deadlock instead of a duplicate.
-            if (await ReplayAsync(key, hash, userId, ct) is { } raced) return raced;
+            if (await ReplayAsync(key, hash, userId, portal, ct) is { } raced) return raced;
             if (PaymentSupport.IsDeadlock(ex)) throw new ConcurrencyException();
             var existing = await db.Payments.AsNoTracking().Where(p => p.ActiveReferenceKey == payment.ActiveReferenceKey).Select(p => p.PaymentNumber).FirstOrDefaultAsync(ct);
             throw Invalid(nameof(r.Reference), existing is null ? "This payment was already submitted." : $"A payment with this reference is already recorded ({existing}).");
@@ -224,13 +232,13 @@ public class PaymentService(
         return await BuildAsync(payment.Id, ct);
     }
 
-    private async Task<PaymentDetailDto?> ReplayAsync(string key, string hash, Guid userId, CancellationToken ct)
+    private async Task<PaymentDetailDto?> ReplayAsync(string key, string hash, Guid userId, bool portal, CancellationToken ct)
     {
         var existing = await db.Payments.AsNoTracking().Where(p => p.IdempotencyKey == key).Select(p => new { p.Id, p.RequestHash, p.SubmittedByUserId }).FirstOrDefaultAsync(ct);
         if (existing is null) return null;
         if (existing.SubmittedByUserId != userId || existing.RequestHash != hash)
             throw Invalid("IdempotencyKey", "This idempotency key was already used for a different payment.");
-        await EnsureAccessAsync(existing.Id, ct);
+        if (!portal) await EnsureAccessAsync(existing.Id, ct);
         return await BuildAsync(existing.Id, ct);
     }
 
@@ -254,7 +262,12 @@ public class PaymentService(
             Notes = r.Notes.Trim(), BankReference = N(r.BankReference), ClearedOn = r.ClearedOn,
         });
         if (r.Verified) p.Move(PaymentStatus.PendingApproval);
-        else { p.Move(PaymentStatus.Rejected); p.RejectedBy = support.Actor; p.RejectedAtUtc = now; p.RejectReason = r.Notes.Trim(); }
+        else
+        {
+            p.Move(PaymentStatus.Rejected); p.RejectedBy = support.Actor; p.RejectedAtUtc = now; p.RejectReason = r.Notes.Trim();
+            PortalNotifications.Add(db, p.CustomerId, NotificationKind.Payment, "Payment could not be verified",
+                $"Your payment {p.PaymentNumber} of {p.Amount:N2} {p.CurrencyCode} could not be verified: {p.RejectReason}", "Payment", p.Id, now);
+        }
         await db.SaveWithConcurrencyAsync(ct);
         await audit.RecordAsync(new AuditEntry(r.Verified ? "Payment.Verified" : "Payment.VerificationRejected", "Payment", id.ToString(), new { Status = "PendingVerification" },
             new { p.Status, r.BankReference, r.ClearedOn }, r.Notes.Trim(), UserId: userId), ct);
@@ -312,6 +325,8 @@ public class PaymentService(
             p.PaymentNumber, ReceiptNumber = receipt.ReceiptNumber, ag.AgreementNumber, p.CustomerId, Method = p.MethodKind.ToString(), p.Reference, p.Amount,
             Allocated = plan.Allocated, plan.Advance, plan.Unallocated,
         });
+        PortalNotifications.Add(db, p.CustomerId, NotificationKind.Payment, "Payment received",
+            $"Your payment {p.PaymentNumber} of {p.Amount:N2} {p.CurrencyCode} was approved. Receipt {receipt.ReceiptNumber} is available.", "Payment", p.Id, now);
         try { await db.SaveChangesAsync(ct); }
         catch (DbUpdateException ex) when (PaymentSupport.IsDuplicate(ex)) { throw new ConcurrencyException(); }
         await audit.RecordAsync(new AuditEntry("Payment.Posted", "Payment", id.ToString(), new { Status = "PendingApproval" }, new
@@ -341,6 +356,8 @@ public class PaymentService(
         var from = p.Status;
         p.Move(PaymentStatus.Rejected);
         p.RejectedBy = support.Actor; p.RejectedAtUtc = support.Now; p.RejectReason = r.Reason.Trim();
+        PortalNotifications.Add(db, p.CustomerId, NotificationKind.Payment, "Payment rejected",
+            $"Your payment {p.PaymentNumber} of {p.Amount:N2} {p.CurrencyCode} was rejected: {p.RejectReason}", "Payment", p.Id, support.Now);
         await db.SaveWithConcurrencyAsync(ct);
         await audit.RecordAsync(new AuditEntry("Payment.Rejected", "Payment", id.ToString(), new { Status = from.ToString() }, new { Status = "Rejected" }, r.Reason.Trim(), UserId: userId), ct);
         return await BuildAsync(id, ct);

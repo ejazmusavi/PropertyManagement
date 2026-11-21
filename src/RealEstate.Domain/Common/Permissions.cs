@@ -113,6 +113,16 @@ public static class Permissions
     public const string ReportsView = "reports.view";
     public const string ReportsExport = "reports.export";
 
+    // Phase 10 - customer application
+    /// <summary>Held only by the Customer role: the holder may use the customer API for the customer linked to their account.</summary>
+    public const string PortalAccess = "portal.access";
+    public const string PortalAccountsManage = "portal.accounts.manage";
+    public const string PortalContentManage = "portal.content.manage";
+    public const string SupportView = "support.view";
+    public const string SupportManage = "support.manage";
+    public const string GatewayView = "gateway.view";
+    public const string GatewayManage = "gateway.manage";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -204,6 +214,13 @@ public static class Permissions
         new(AccountingBankReconcile, "Import bank statements, match transactions and reconcile bank accounts", "Accounting"),
         new(ReportsView, "View management dashboards and customer, sales and collection reports", "Reports"),
         new(ReportsExport, "Export reports (including financial statements) to PDF and Excel", "Reports"),
+        new(PortalAccess, "Use the customer application (customer accounts only)", "Customer app"),
+        new(PortalAccountsManage, "Create, disable and reset customer application accounts", "Customer app"),
+        new(PortalContentManage, "Manage announcements, notifications and payment instructions shown to customers", "Customer app"),
+        new(SupportView, "View customer support requests", "Customer app"),
+        new(SupportManage, "Reply to and update customer support requests", "Customer app"),
+        new(GatewayView, "View online payment (gateway) transactions and webhook logs", "Customer app"),
+        new(GatewayManage, "Reconcile gateway transactions and request gateway refunds", "Customer app"),
     ];
 }
 
@@ -219,6 +236,8 @@ public static class RoleNames
     public const string RecoveryOfficer = "Recovery Officer";
     public const string InventoryManager = "Inventory Manager";
     public const string CustomerSupport = "Customer Support";
+    /// <summary>System role of customer application accounts. Holds only portal.access; never assigned through user administration.</summary>
+    public const string Customer = "Customer";
 }
 
 public sealed record DefaultRoleDefinition(string Name, string Description, IReadOnlyList<string> Permissions);
@@ -245,7 +264,8 @@ public static class DefaultRoles
              Permissions.AccountingView, Permissions.AccountingSetup, Permissions.AccountingJournalsManage, Permissions.AccountingJournalsApprove, Permissions.AccountingJournalsReverse,
              Permissions.AccountingJournalsControl, Permissions.AccountingRulesManage, Permissions.AccountingRulesApprove, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage,
              Permissions.AccountingPeriodsOverride, Permissions.AccountingReports, Permissions.AccountingBankReconcile,
-             Permissions.ReportsView, Permissions.ReportsExport]),
+             Permissions.ReportsView, Permissions.ReportsExport,
+             Permissions.PortalAccountsManage, Permissions.PortalContentManage, Permissions.SupportView, Permissions.SupportManage, Permissions.GatewayView, Permissions.GatewayManage]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
@@ -266,7 +286,7 @@ public static class DefaultRoles
              Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay,
              Permissions.AccountingView, Permissions.AccountingSetup, Permissions.AccountingJournalsManage, Permissions.AccountingJournalsApprove, Permissions.AccountingJournalsReverse,
              Permissions.AccountingRulesManage, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage, Permissions.AccountingReports, Permissions.AccountingBankReconcile,
-             Permissions.ReportsView, Permissions.ReportsExport]),
+             Permissions.ReportsView, Permissions.ReportsExport, Permissions.GatewayView, Permissions.GatewayManage]),
         new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView,
              Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsAllocate, Permissions.PaymentsReceipts, Permissions.LedgersView]),
         new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmend,
@@ -276,6 +296,7 @@ public static class DefaultRoles
              Permissions.InventoryReserve, Permissions.InventoryStatus, Permissions.PricingView]),
         new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView, Permissions.PricingView,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.InstallmentsView,
-             Permissions.PaymentsView, Permissions.LedgersView]),
+             Permissions.PaymentsView, Permissions.LedgersView, Permissions.PortalAccountsManage, Permissions.PortalContentManage, Permissions.SupportView, Permissions.SupportManage]),
+        new(RoleNames.Customer, "Customer application account: sees only the records of the linked customer.", [Permissions.PortalAccess]),
     ];
 }
