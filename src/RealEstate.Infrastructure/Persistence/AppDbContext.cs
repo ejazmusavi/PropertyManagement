@@ -113,6 +113,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<BankReconciliation> BankReconciliations => Set<BankReconciliation>();
     public DbSet<ProjectCostAllocation> ProjectCostAllocations => Set<ProjectCostAllocation>();
     public DbSet<ProjectCostAllocationLine> ProjectCostAllocationLines => Set<ProjectCostAllocationLine>();
+    // Phase 10
+    public DbSet<CustomerAccount> CustomerAccounts => Set<CustomerAccount>();
+    public DbSet<PaymentProofDocument> PaymentProofDocuments => Set<PaymentProofDocument>();
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<CustomerNotification> CustomerNotifications => Set<CustomerNotification>();
+    public DbSet<SupportRequest> SupportRequests => Set<SupportRequest>();
+    public DbSet<SupportRequestMessage> SupportRequestMessages => Set<SupportRequestMessage>();
+    public DbSet<GatewayTransaction> GatewayTransactions => Set<GatewayTransaction>();
+    public DbSet<PaymentWebhookLog> PaymentWebhookLogs => Set<PaymentWebhookLog>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();

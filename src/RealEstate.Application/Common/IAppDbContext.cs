@@ -114,6 +114,16 @@ public interface IAppDbContext
     DbSet<BankReconciliation> BankReconciliations { get; }
     DbSet<ProjectCostAllocation> ProjectCostAllocations { get; }
     DbSet<ProjectCostAllocationLine> ProjectCostAllocationLines { get; }
+    // Phase 10
+    DbSet<ApplicationSetting> ApplicationSettings { get; }
+    DbSet<CustomerAccount> CustomerAccounts { get; }
+    DbSet<PaymentProofDocument> PaymentProofDocuments { get; }
+    DbSet<Announcement> Announcements { get; }
+    DbSet<CustomerNotification> CustomerNotifications { get; }
+    DbSet<SupportRequest> SupportRequests { get; }
+    DbSet<SupportRequestMessage> SupportRequestMessages { get; }
+    DbSet<GatewayTransaction> GatewayTransactions { get; }
+    DbSet<PaymentWebhookLog> PaymentWebhookLogs { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

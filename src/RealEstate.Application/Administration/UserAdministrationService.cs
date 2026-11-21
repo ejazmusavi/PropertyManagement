@@ -19,7 +19,7 @@ public class UserAdministrationService(IAdministrationStore store, IIdentityServ
     public async Task<IReadOnlyList<RoleDto>> ListAssignableRolesAsync(CancellationToken ct = default)
     {
         await permissions.EnsureAsync(user, Permissions.UsersManage, ct);
-        return await store.ListRolesAsync(ct);
+        return (await store.ListRolesAsync(ct)).Where(r => r.Name != RoleNames.Customer).ToList();
     }
 
     public async Task<UserDetailDto> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
@@ -40,6 +40,7 @@ public class UserAdministrationService(IAdministrationStore store, IIdentityServ
         await permissions.EnsureAsync(user, Permissions.UsersManage, ct);
         await updateValidator.ValidateOrThrowAsync(request, ct);
         var before = await store.GetUserAsync(id, ct) ?? throw new NotFoundException("User not found.");
+        if (before.Roles.Contains(RoleNames.Customer)) throw new ForbiddenException("Customer application logins are managed from the customer record.");
         var roles = await ResolveRolesAsync(request.Roles, ct);
 
         var callerIsAdmin = await CallerIsAdministratorAsync(ct);
@@ -66,6 +67,8 @@ public class UserAdministrationService(IAdministrationStore store, IIdentityServ
         var resolved = new List<string>();
         foreach (var name in requested.Select(r => r.Trim()).Where(r => r.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
         {
+            if (string.Equals(name, RoleNames.Customer, StringComparison.OrdinalIgnoreCase))
+                throw new RequestValidationException(new Dictionary<string, string[]> { ["Roles"] = ["The Customer role is assigned only by creating a customer application login on the customer record."] });
             var match = known.FirstOrDefault(k => string.Equals(k, name, StringComparison.OrdinalIgnoreCase))
                         ?? throw new RequestValidationException(new Dictionary<string, string[]> { ["Roles"] = [$"Role '{name}' does not exist."] });
             resolved.Add(match);

@@ -256,3 +256,19 @@ public enum BankTransactionStatus { Unmatched = 1, Matched = 2, Ignored = 3 }
 public enum BankReconciliationStatus { InProgress = 1, Completed = 2 }
 
 public enum CostAllocationStatus { PendingApproval = 1, Posted = 2, Rejected = 3, Cancelled = 4 }
+
+// ---------------------------------------------------------------------------------------------------------
+// Phase 10 - customer application
+// ---------------------------------------------------------------------------------------------------------
+public enum SupportRequestStatus { Open = 1, InProgress = 2, Resolved = 3, Closed = 4 }
+
+public enum SupportCategory { General = 1, Payment = 2, Agreement = 3, Documents = 4, Complaint = 5 }
+
+public enum SupportAuthorType { Customer = 1, Staff = 2 }
+
+public enum NotificationKind { General = 1, Payment = 2, Support = 3, Account = 4 }
+
+/// <summary>Initiated (created, provider not yet answered) -> Pending (sent to the provider) -> Succeeded | Failed | Cancelled; Succeeded -> Refunded.</summary>
+public enum GatewayTransactionStatus { Initiated = 1, Pending = 2, Succeeded = 3, Failed = 4, Cancelled = 5, Refunded = 6 }
+
+public enum WebhookProcessingStatus { Received = 1, Processed = 2, Ignored = 3, Rejected = 4, Failed = 5, Duplicate = 6 }

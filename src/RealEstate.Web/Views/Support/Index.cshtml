@@ -1,0 +1,24 @@
+@model SupportListViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = "Support requests"; var f = Model.Filter; var p = Model.Result;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["status"] = f.Status?.ToString() }; }
+<h1 class="h3 mb-3">Customer support requests</h1>
+<form method="get" asp-action="Index" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-5"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Number, subject, customer" aria-label="Search requests" /></div>
+    <div class="col-12 col-md-6 col-lg-3"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<SupportRequestStatus>()) { <option value="@s" selected="@(f.Status == s)">@s</option> }</select></div>
+    <div class="col-12 col-md-6 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No support requests found.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Request</th><th>Customer</th><th>Category</th><th>Subject</th><th>Status</th><th>Last activity</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Request">@x.RequestNumber</td><td data-label="Customer">@x.CustomerName (@x.CustomerCode)</td><td data-label="Category">@x.Category</td><td data-label="Subject">@x.Subject</td>
+                <td data-label="Status"><span class="badge @(x.Status switch { SupportRequestStatus.Open => "text-bg-warning", SupportRequestStatus.InProgress => "text-bg-info", SupportRequestStatus.Resolved => "text-bg-success", _ => "text-bg-secondary" })">@x.Status</span></td>
+                <td data-label="Last activity">@x.LastActivityAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "requests", route, "page")' />
+}

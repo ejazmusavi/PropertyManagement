@@ -1,0 +1,30 @@
+@model SupportDetailsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var d = Model.Detail; var r = d.Request; ViewData["Title"] = r.RequestNumber; await Ui.LoadAsync(); var canManage = Ui.Has("support.manage"); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@r.RequestNumber <small class="text-muted fs-6">@r.Subject</small></h1>
+    <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
+</div>
+<div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Customer</dt><dd class="col-sm-9"><a asp-controller="Customers" asp-action="Details" asp-route-id="@r.CustomerId">@r.CustomerName (@r.CustomerCode)</a></dd>
+    <dt class="col-sm-3">Category</dt><dd class="col-sm-9">@r.Category</dd>
+    <dt class="col-sm-3">Agreement</dt><dd class="col-sm-9">@(d.AgreementNumber ?? "-")</dd>
+    <dt class="col-sm-3">Status</dt><dd class="col-sm-9">@r.Status @(r.AssignedTo is null ? "" : "· handled by " + r.AssignedTo)</dd>
+</dl></div></div>
+<div class="card mb-3"><div class="card-header fw-semibold">Conversation</div><ul class="list-group list-group-flush">
+@foreach (var m in d.Messages)
+{
+    <li class="list-group-item @(m.AuthorType == SupportAuthorType.Staff ? "bg-body-tertiary" : "")"><div class="small text-muted">@m.AuthorName (@m.AuthorType) &middot; @m.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div><div style="white-space: pre-wrap">@m.Body</div></li>
+}
+</ul></div>
+@if (canManage && r.Status != SupportRequestStatus.Closed)
+{
+    <div class="card"><div class="card-header fw-semibold">Reply</div><div class="card-body">
+        <form asp-action="Reply" asp-route-id="@r.Id" method="post"><input type="hidden" name="rowVersion" value="@d.RowVersion" />
+            <textarea class="form-control mb-2" name="message" rows="4" required maxlength="4000" aria-label="Reply"></textarea>
+            <div class="row g-2"><div class="col-12 col-md-4"><select name="status" class="form-select" aria-label="Set status after reply"><option value="">Keep / set In progress</option><option value="@((int)SupportRequestStatus.Resolved)">Reply and mark Resolved</option><option value="@((int)SupportRequestStatus.Closed)">Reply and Close</option></select></div>
+            <div class="col-12 col-md-3"><button class="btn btn-primary w-100" type="submit">Send reply</button></div></div>
+        </form>
+    </div></div>
+}

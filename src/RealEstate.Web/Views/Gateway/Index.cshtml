@@ -1,0 +1,31 @@
+@model GatewayListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Online payments"; var f = Model.Filter; var p = Model.Result; await Ui.LoadAsync();
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["status"] = f.Status?.ToString() }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Online payments (gateway)</h1>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-action="Webhooks">Callback log</a>
+    @if (Ui.Has("gateway.manage")) { <form asp-action="Reconcile" method="post"><button class="btn btn-primary" type="submit">Reconcile open transactions</button></form> }</div>
+</div>
+<form method="get" asp-action="Index" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-5"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Transaction or provider reference" aria-label="Search transactions" /></div>
+    <div class="col-12 col-md-6 col-lg-3"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var s in Enum.GetValues<GatewayTransactionStatus>()) { <option value="@s" selected="@(f.Status == s)">@s</option> }</select></div>
+    <div class="col-12 col-md-6 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No online payment transactions. They appear once the company enables a payment provider and customers pay online.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Transaction</th><th>Customer</th><th>Agreement</th><th class="text-end">Amount</th><th>Provider</th><th>Status</th><th>Payment</th><th>Started</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Transaction">@x.TransactionNumber</td><td data-label="Customer">@x.CustomerName</td><td data-label="Agreement">@x.AgreementNumber</td><td data-label="Amount" class="text-end">@x.Amount.ToString("N2") @x.CurrencyCode</td>
+                <td data-label="Provider">@x.Provider</td>
+                <td data-label="Status"><span class="badge @(x.Status switch { GatewayTransactionStatus.Succeeded => "text-bg-success", GatewayTransactionStatus.Failed => "text-bg-danger", GatewayTransactionStatus.Refunded => "text-bg-info", GatewayTransactionStatus.Cancelled => "text-bg-secondary", _ => "text-bg-warning" })">@x.Status</span></td>
+                <td data-label="Payment">@if (x.PaymentId is { } pid) { <a href="/Payments/Details/@pid">@x.PaymentNumber</a> } else { <span>-</span> }</td>
+                <td data-label="Started">@x.InitiatedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Details</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "transactions", route, "page")' />
+}

@@ -101,7 +101,6 @@ public class LedgerService(IAppDbContext db, IPermissionService permissions, ICu
     {
         await permissions.EnsureAsync(user, Permissions.LedgersView, ct);
         await customers.EnsureAccessAsync(customerId, ct);
-        var customer = await db.Customers.AsNoTracking().Where(c => c.Id == customerId).Select(c => new { c.CustomerCode, c.FullName }).FirstAsync(ct);
         var projects = await support.ProjectsAsync(ct);
         var agreementIds = await (from a in db.CustomerAgreements.AsNoTracking()
                                   join b in db.Bookings.AsNoTracking() on a.BookingId equals b.Id
@@ -110,6 +109,13 @@ public class LedgerService(IAppDbContext db, IPermissionService permissions, ICu
                                         || db.CustomerLedgerEntries.Any(e => e.AgreementId == a.Id && e.CustomerId == customerId)
                                   orderby a.Id
                                   select a.Id).ToListAsync(ct);
+        return await BuildCustomerLedgerAsync(customerId, agreementIds, page, ct);
+    }
+
+    /// <summary>Consolidated ledger of a customer over the given agreements (caller has already authorized the customer and the agreements).</summary>
+    internal async Task<CustomerLedgerDto> BuildCustomerLedgerAsync(long customerId, List<long> agreementIds, LedgerPageRequest? page, CancellationToken ct)
+    {
+        var customer = await db.Customers.AsNoTracking().Where(c => c.Id == customerId).Select(c => new { c.CustomerCode, c.FullName }).FirstAsync(ct);
         foreach (var id in agreementIds) await support.EnsureLedgerCurrentAsync(id, ct);
 
         var balances = await db.CustomerLedgerEntries.AsNoTracking().Where(e => e.CustomerId == customerId && agreementIds.Contains(e.AgreementId))

@@ -1,0 +1,59 @@
+@model PortalAccountPageViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var c = Model.Customer; var a = Model.Account; ViewData["Title"] = "Customer app login"; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Customer app login <small class="text-muted fs-6">@c.FullName (@c.CustomerCode)</small></h1>
+    <a class="btn btn-outline-secondary" asp-controller="Customers" asp-action="Details" asp-route-id="@c.Id">Back to customer</a>
+</div>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+@if (a is null)
+{
+    <div class="card"><div class="card-header fw-semibold">Create a login for the customer application</div><div class="card-body">
+        <p class="text-muted">The login lets this customer see only their own properties, installments, payments and statements in the mobile app. Give the customer the e-mail and the initial password; they can change the password in the app.</p>
+        <form asp-action="CreateAccount" asp-route-id="@c.Id" method="post" data-loading-form>
+            <div class="row g-3">
+                <div class="col-12 col-lg-5"><label asp-for="Form.Email" class="form-label"></label><input asp-for="Form.Email" type="email" class="form-control" required autocomplete="off" /><span asp-validation-for="Form.Email" class="text-danger small"></span></div>
+                <div class="col-12 col-lg-5"><label asp-for="Form.Password" class="form-label"></label><input asp-for="Form.Password" type="password" class="form-control" required minlength="12" autocomplete="new-password" /><span asp-validation-for="Form.Password" class="text-danger small"></span><div class="form-text">At least 12 characters with upper and lower case letters, a digit and a symbol.</div></div>
+                <div class="col-12 col-lg-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Create login</button></div>
+            </div>
+        </form>
+    </div></div>
+}
+else
+{
+    <div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+        <dt class="col-sm-3">Login e-mail</dt><dd class="col-sm-9">@a.LoginEmail</dd>
+        <dt class="col-sm-3">Status</dt><dd class="col-sm-9"><span class="badge @(a.IsActive ? "text-bg-success" : "text-bg-danger")">@(a.IsActive ? "Enabled" : "Disabled")</span>@if (!a.IsActive) { <span class="ms-2">@a.DisabledReason (@a.DisabledAtUtc?.ToString("yyyy-MM-dd HH:mm") UTC)</span> }</dd>
+        <dt class="col-sm-3">Last sign-in</dt><dd class="col-sm-9">@(a.LastLoginAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "never") @(a.LastLoginAtUtc is null ? "" : "UTC")</dd>
+    </dl></div></div>
+    <div class="row g-3">
+        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">@(a.IsActive ? "Disable login" : "Enable login")</div><div class="card-body">
+            @if (a.IsActive)
+            {
+                <form asp-action="DisableAccount" asp-route-id="@c.Id" method="post"><input type="hidden" name="rowVersion" value="@a.RowVersion" />
+                    <label class="form-label" for="reason">Reason</label><input class="form-control mb-2" id="reason" name="reason" required minlength="3" maxlength="500" />
+                    <button class="btn btn-outline-danger" type="submit">Disable login</button></form>
+            }
+            else
+            {
+                <form asp-action="EnableAccount" asp-route-id="@c.Id" method="post"><input type="hidden" name="rowVersion" value="@a.RowVersion" /><button class="btn btn-outline-success" type="submit">Enable login</button></form>
+            }
+        </div></div></div>
+        <div class="col-12 col-lg-6"><div class="card h-100"><div class="card-header fw-semibold">Reset password</div><div class="card-body">
+            <form asp-action="ResetAccountPassword" asp-route-id="@c.Id" method="post">
+                <label class="form-label" for="newPassword">New password</label><input class="form-control mb-2" id="newPassword" name="newPassword" type="password" required minlength="12" autocomplete="new-password" />
+                <button class="btn btn-outline-primary" type="submit">Set password and end sessions</button></form>
+        </div></div></div>
+        @if (Ui.Has("portal.content.manage"))
+        {
+            <div class="col-12"><div class="card"><div class="card-header fw-semibold">Send an in-app notification</div><div class="card-body">
+                <form asp-action="SendNotification" asp-route-id="@c.Id" method="post"><div class="row g-2">
+                    <div class="col-12 col-lg-4"><label class="form-label" for="ntitle">Title</label><input class="form-control" id="ntitle" name="title" required maxlength="200" /></div>
+                    <div class="col-12 col-lg-6"><label class="form-label" for="nmessage">Message</label><input class="form-control" id="nmessage" name="message" required maxlength="2000" /></div>
+                    <div class="col-12 col-lg-2 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Send</button></div>
+                </div></form>
+            </div></div></div>
+        }
+    </div>
+}
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

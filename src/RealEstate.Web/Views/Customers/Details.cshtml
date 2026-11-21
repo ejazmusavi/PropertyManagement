@@ -11,6 +11,7 @@
         @if (Ui.Has("customers.manage")) { <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@c.Id">Edit</a> }
         <a class="btn btn-outline-secondary" asp-action="Documents" asp-route-id="@c.Id">Documents</a>
         @if (Ui.Has("ledgers.view")) { <a class="btn btn-outline-secondary" asp-controller="Ledgers" asp-action="Customer" asp-route-id="@c.Id">Ledger</a> }
+        @if (Ui.Has("portal.accounts.manage")) { <a class="btn btn-outline-secondary" asp-controller="CustomerApp" asp-action="Account" asp-route-id="@c.Id">App login</a> }
         <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
     </div>
 </div>

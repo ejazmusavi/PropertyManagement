@@ -1,0 +1,18 @@
+@model AnnouncementFormViewModel
+@{ ViewData["Title"] = Model.Id is null ? "New announcement" : "Edit announcement"; }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form asp-action="AnnouncementForm" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-8"><label asp-for="Title" class="form-label"></label><input asp-for="Title" class="form-control" maxlength="200" /><span asp-validation-for="Title" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="ProjectId" class="form-label"></label>
+            <select asp-for="ProjectId" class="form-select"><option value="">All customers</option>@foreach (var p in Model.Projects) { <option value="@p.Id" selected="@(Model.ProjectId == p.Id)">@p.ProjectCode - @p.ProjectName</option> }</select></div>
+        <div class="col-12"><label asp-for="Body" class="form-label"></label><textarea asp-for="Body" class="form-control" rows="5" maxlength="4000"></textarea><span asp-validation-for="Body" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="PublishFrom" class="form-label"></label><input asp-for="PublishFrom" type="datetime-local" class="form-control" /></div>
+        <div class="col-12 col-lg-4"><label asp-for="ExpiresAt" class="form-label"></label><input asp-for="ExpiresAt" type="datetime-local" class="form-control" /></div>
+        <div class="col-12 col-lg-4 d-flex align-items-end"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save</button><a class="btn btn-outline-secondary" asp-action="Announcements">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

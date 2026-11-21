@@ -31,6 +31,7 @@ public sealed class InfrastructureFixture : IAsyncLifetime
         services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
         services.AddDataProtection();
         services.AddInfrastructure(config);
+        services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(config);
         Root = services.BuildServiceProvider();
         using var scope = Root.CreateScope();
         await scope.ServiceProvider.GetRequiredService<DatabaseInitializer>().MigrateAsync();

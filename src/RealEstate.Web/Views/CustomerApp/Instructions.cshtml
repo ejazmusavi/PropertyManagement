@@ -1,0 +1,10 @@
+@model InstructionsViewModel
+@{ ViewData["Title"] = "Payment instructions"; }
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Payment instructions</h1><a class="btn btn-outline-secondary" asp-action="Announcements">Announcements</a></div>
+<p class="text-muted">This note is shown to customers in the application next to the company bank accounts (the active bank accounts of the accounting module are listed automatically).</p>
+<form asp-action="Instructions" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <div class="card mb-3"><div class="card-body"><label asp-for="Note" class="form-label"></label><textarea asp-for="Note" class="form-control" rows="6" maxlength="2000"></textarea><span asp-validation-for="Note" class="text-danger small"></span></div></div>
+    <button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save</button>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

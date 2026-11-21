@@ -144,7 +144,7 @@ public class Phase01ApiTests(ApiFactory factory)
     {
         var (c, _) = await ClientAsync();
         var roles = await c.GetFromJsonAsync<List<RoleDto>>("/api/v1/roles");
-        Assert.Equal(9, roles!.Count(r => r.IsSystem));
+        Assert.Equal(10, roles!.Count(r => r.IsSystem));
         var perms = await c.GetFromJsonAsync<List<PermissionDto>>("/api/v1/permissions");
         Assert.Contains(perms!, p => p.Code == "land.approve");
 

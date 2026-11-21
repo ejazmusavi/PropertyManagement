@@ -51,6 +51,18 @@
         <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Refunded</div><div class="fw-semibold">@s @p.Refunded.ToString("N2")</div></div></div></div>
     </div>
 }
+@inject RealEstate.Application.Portal.PaymentProofAdminService ProofAdmin
+@{ var proofFiles = Ui.Has(Permissions.PaymentsView) ? await ProofAdmin.ListAsync(p.Id) : []; }
+@if (proofFiles.Count > 0)
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Customer payment proof (attached in the customer application)</div><ul class="list-group list-group-flush">
+    @foreach (var f in proofFiles)
+    {
+        <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2"><span>@f.FileName <small class="text-muted">(@(f.SizeBytes / 1024) KB, @f.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC)</small></span>
+            <form asp-controller="PaymentProofs" asp-action="Download" method="post"><input type="hidden" name="paymentId" value="@p.Id" /><input type="hidden" name="documentId" value="@f.Id" /><button class="btn btn-sm btn-outline-primary" type="submit">Download</button></form></li>
+    }
+    </ul></div>
+}
 @if (p.Allocations.Count > 0)
 {
     <div class="card mb-3"><div class="card-header fw-semibold">Allocations (kept for history; reversed or released rows are never deleted)</div>
