@@ -67,6 +67,12 @@
         @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentFeeTypes")" asp-controller="GovernmentFeeTypes" asp-action="Index">Fee configuration</a></li> }
         @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentPayments")" asp-controller="GovernmentPayments" asp-action="Index">Government payments</a></li> }
     }
+    @if (Model.Contains("reports.view") || Model.Contains("accounting.reports"))
+    {
+        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Reports</li>
+        @if (Model.Contains("reports.view")) { <li class="nav-item"><a class="nav-link @Active("Dashboards")" asp-controller="Dashboards" asp-action="Company">Management dashboard</a></li> }
+        <li class="nav-item"><a class="nav-link @Active("Reports")" asp-controller="Reports" asp-action="Index">All reports</a></li>
+    }
     @if (Model.Contains("accounting.view") || Model.Contains("accounting.reports"))
     {
         <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Accounting</li>

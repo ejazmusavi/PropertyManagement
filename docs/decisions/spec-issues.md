@@ -16,7 +16,7 @@ Found while reorganizing the original specification. **No decision has been inve
 | 10 | Part 10 says "Do not stop after preparing documentation… continue sequentially" and "ask one focused question". This conflicts with the current instruction to run one phase per session. | Workflow | One phase per session now governs; the question rule is kept. |
 | 11 | Phase 11 has no acceptance criteria; Phase 9 has a single criterion. | 9, 11 | Use global definition of done; confirm with user before Phase 11. |
 | 12 | Phases are numbered 0–11 (12 phases); files are `phase-00.md`…`phase-11.md` to match the spec's numbering. | All | None needed. |
-| 13 | Customer-level "Block" filter in Phase 9 requires block data (Phase 2) – ok; but "agent commissions" (Phase 9.4) have no agent/salesperson entity defined earlier (Phase 7 has only an expense category "Agent commission"). | 4, 7, 9 | Confirm where salesperson/agent is modeled. |
+| 13 | Customer-level "Block" filter in Phase 9 requires block data (Phase 2) – ok; but "agent commissions" (Phase 9.4) have no agent/salesperson entity defined earlier (Phase 7 has only an expense category "Agent commission"). | 4, 7, 9 | Confirm where salesperson/agent is modeled. **Phase 9 (2026-11-21):** implemented without a new entity - agent commissions report lists approved expenses of category AGENT_COMMISSION (vendor = agent); salesperson = booking creator. Still open: commission rates/agent registry if the business wants them. |
 
 ---
 

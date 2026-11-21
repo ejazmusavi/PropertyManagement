@@ -1,0 +1,31 @@
+@using RealEstate.Application.Reporting
+@using System.Globalization
+@model ReportTableDto
+@functions {
+    static string Fmt(object? v, ReportColumnKind kind) => v switch
+    {
+        null => "",
+        DateOnly d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        decimal m when kind == ReportColumnKind.Percent => m.ToString("N2", CultureInfo.InvariantCulture) + "%",
+        decimal m => m.ToString("N2", CultureInfo.InvariantCulture),
+        int i => i.ToString("N0", CultureInfo.InvariantCulture),
+        long l => l.ToString("N0", CultureInfo.InvariantCulture),
+        _ => v.ToString() ?? "",
+    };
+    static bool Right(ReportColumnKind k) => k is ReportColumnKind.Money or ReportColumnKind.Number or ReportColumnKind.Percent;
+}
+<div class="table-responsive-md">
+    <table class="table table-sm table-striped align-middle report-table">
+        <thead><tr>@foreach (var c in Model.Columns) { <th scope="col" class="@(Right(c.Kind) ? "text-end" : "")">@c.Header</th> }</tr></thead>
+        <tbody>
+            @foreach (var row in Model.Rows)
+            {
+                <tr>@for (var i = 0; i < Model.Columns.Count; i++) { <td class="@(Right(Model.Columns[i].Kind) ? "text-end" : "")" data-label="@Model.Columns[i].Header">@Fmt(row[i], Model.Columns[i].Kind)</td> }</tr>
+            }
+        </tbody>
+        @if (Model.Totals is not null)
+        {
+            <tfoot><tr class="fw-semibold">@for (var i = 0; i < Model.Columns.Count; i++) { <td class="@(Right(Model.Columns[i].Kind) ? "text-end" : "")">@Fmt(Model.Totals[i], Model.Columns[i].Kind)</td> }</tr></tfoot>
+        }
+    </table>
+</div>

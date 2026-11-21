@@ -1,0 +1,67 @@
+@using RealEstate.Application.Reporting
+@model DashboardViewModel<CompanyDashboardDto>
+@{
+    ViewData["Title"] = "Company dashboard";
+    var d = Model.Data; var s = d.CurrencySymbol;
+    string M(decimal? v) => v is null ? "-" : s + " " + v.Value.ToString("N2");
+    string Area(decimal sqft) => sqft.ToString("N0") + " sq ft (" + (sqft / 5445m).ToString("N1") + " kanal)";
+}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+    <div><h1 class="h3 mb-0">Company dashboard</h1><p class="text-muted mb-0">@(d.From is null ? "All time" : "From " + d.From.Value.ToString("yyyy-MM-dd")) to @d.To.ToString("yyyy-MM-dd"). Figures are calculated from live business data and the general ledger.</p></div>
+    <a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="Index">Reports</a>
+</div>
+<partial name="_Filter" model='("Company", (long?)null, Model.From, Model.To)' />
+@if (d.LedgerNote is not null) { <div class="alert alert-info" role="status">@d.LedgerNote</div> }
+
+<h2 class="h5 mt-3">Land and inventory</h2>
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Total projects</div><div class="fs-5 fw-semibold">@d.TotalProjects</div><div class="small text-muted">@d.ActiveProjects active</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Total land area</div><div class="fw-semibold">@Area(d.TotalLandAreaSqFt)</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Total saleable area</div><div class="fw-semibold">@Area(d.TotalSaleableAreaSqFt)</div><div class="small text-muted">Residential + commercial land</div></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Total inventory</div><div class="fs-5 fw-semibold">@d.TotalInventory</div><div class="small text-muted">properties</div></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Available</div><div class="fs-5 fw-semibold">@d.AvailableProperties</div><div class="small text-muted">@d.ReservedProperties reserved</div></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Sold</div><div class="fs-5 fw-semibold">@d.SoldProperties</div><div class="small text-muted">@d.BookedProperties booked, not yet sold</div></div></div>
+</div>
+
+<h2 class="h5">Sales and receivables</h2>
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Total booking value</div><div class="fw-semibold">@M(d.TotalBookingValue)</div><div class="small text-muted">@d.BookingsCount confirmed bookings</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Total collections</div><div class="fw-semibold">@M(d.TotalCollections)</div><div class="small text-muted">posted payments</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Customer receivables</div><div class="fw-semibold">@M(d.CustomerReceivables)</div><div class="small text-muted">installments due and unpaid</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100 border-danger"><div class="small text-muted">Overdue amount</div><div class="fw-semibold text-danger">@M(d.OverdueAmount)</div><div class="small text-muted">due before @d.To.ToString("yyyy-MM-dd")</div></div></div>
+</div>
+
+<h2 class="h5">Financial position</h2>
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Cash balance</div><div class="fw-semibold">@M(d.CashBalance)</div><div class="small text-muted">ledger</div></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Bank balance</div><div class="fw-semibold">@M(d.BankBalance)</div><div class="small text-muted">ledger</div></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Revenue</div><div class="fw-semibold">@M(d.Revenue)</div><div class="small text-muted">ledger</div></div></div>
+    <div class="col-6 col-md-4 col-xl-2"><div class="card card-body py-2 h-100"><div class="small text-muted">Expenses</div><div class="fw-semibold">@M(d.ApprovedExpenses)</div><div class="small text-muted">approved; @M(d.ExpensesPaid) paid</div></div></div>
+    <div class="col-12 col-md-8 col-xl-4"><div class="card card-body py-2 h-100 @(d.ProfitLoss is < 0 ? "border-danger" : "")"><div class="small text-muted">Profit / (loss)</div><div class="fs-5 fw-semibold @(d.ProfitLoss is < 0 ? "text-danger" : "")">@M(d.ProfitLoss)</div><div class="small text-muted">revenue less expenses per the general ledger@(d.ExpensesPerLedger is { } le ? " (ledger expenses " + M(le) + ")" : "")</div></div></div>
+</div>
+
+<partial name="_Checks" model="(d.Checks, s)" />
+
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Projects</div>
+    @if (d.Projects.Count == 0) { <div class="card-body text-muted">No projects.</div> }
+    else
+    {
+        <div class="table-responsive-md">
+            <table class="table table-sm table-striped align-middle mb-0">
+                <thead><tr><th scope="col">Project</th><th scope="col" class="text-end">Area (sq ft)</th><th scope="col" class="text-end">Inventory</th><th scope="col" class="text-end">Sold</th><th scope="col" class="text-end">Available</th><th scope="col" class="text-end">Booking value</th><th scope="col" class="text-end">Collections</th><th scope="col" class="text-end">Outstanding</th><th scope="col" class="text-end">Overdue</th><th scope="col" class="text-end">Expenses</th></tr></thead>
+                <tbody>
+                    @foreach (var p in d.Projects)
+                    {
+                        <tr>
+                            <td data-label="Project"><a asp-action="Project" asp-route-id="@p.ProjectId">@p.ProjectCode</a> <span class="text-muted">@p.ProjectName</span></td>
+                            <td class="text-end" data-label="Area (sq ft)">@p.AreaSqFt.ToString("N0")</td><td class="text-end" data-label="Inventory">@p.Inventory</td><td class="text-end" data-label="Sold">@p.Sold</td><td class="text-end" data-label="Available">@p.Available</td>
+                            <td class="text-end" data-label="Booking value">@p.BookingValue.ToString("N2")</td><td class="text-end" data-label="Collections">@p.Collections.ToString("N2")</td><td class="text-end" data-label="Outstanding">@p.Outstanding.ToString("N2")</td><td class="text-end" data-label="Overdue">@p.Overdue.ToString("N2")</td><td class="text-end" data-label="Expenses">@p.Expenses.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+<p class="small text-muted">Revenue, expenses, profit, cash and bank balances are read from posted journals and appear only when the accounting policy is configured and approved. Receivables and overdue amounts are as of the end date.</p>

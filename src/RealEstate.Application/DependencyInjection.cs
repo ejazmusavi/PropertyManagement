@@ -66,6 +66,11 @@ public static class DependencyInjection
         services.AddScoped<Accounting.PostingEngineService>();
         services.AddScoped<Accounting.AccountingReportService>();
         services.AddScoped<Banking.BankingService>();
+        services.AddScoped<Reporting.ReportingSupport>();
+        services.AddScoped<Reporting.OperationalReportService>();
+        services.AddScoped<Reporting.FinancialReportTables>();
+        services.AddScoped<Reporting.ReportingService>();
+        services.AddScoped<Reporting.DashboardService>();
         services.AddScoped<UserAdministrationService>();
         services.AddScoped<RoleService>();
         services.AddScoped<ProjectAccessAdminService>();

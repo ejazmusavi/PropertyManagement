@@ -61,6 +61,7 @@ public static class DependencyInjection
         services.AddOptions<FileStorageOptions>().Bind(config.GetSection(FileStorageOptions.Section));
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddSingleton<RealEstate.Application.Payments.IReceiptPdfRenderer, RealEstate.Infrastructure.Documents.ReceiptPdfRenderer>();
+        services.AddSingleton<RealEstate.Application.Reporting.IReportExporter, RealEstate.Infrastructure.Documents.ReportExporter>();
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<AdminBootstrapper>();
 

@@ -1,0 +1,8 @@
+@model (string Action, long? Id, DateOnly? From, DateOnly? To)
+<form method="get" asp-action="@Model.Action" class="row g-2 mb-3 d-print-none" role="search">
+    @if (Model.Id is { } id) { <input type="hidden" name="id" value="@id" /> }
+    <div class="col-6 col-lg-2"><label class="form-label small" for="dbFrom">From</label><input id="dbFrom" type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-6 col-lg-2"><label class="form-label small" for="dbTo">To</label><input id="dbTo" type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-6 col-lg-1 d-flex align-items-end"><button class="btn btn-outline-primary w-100" type="submit">Apply</button></div>
+    <div class="col-6 col-lg-2 d-flex align-items-end"><a class="btn btn-outline-secondary w-100" asp-action="@Model.Action" asp-route-id="@Model.Id">All time</a></div>
+</form>

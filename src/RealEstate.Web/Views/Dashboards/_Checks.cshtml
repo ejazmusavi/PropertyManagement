@@ -1,0 +1,25 @@
+@using RealEstate.Application.Reporting
+@model (IReadOnlyList<DashboardCheckDto> Checks, string Symbol)
+@if (Model.Checks.Count > 0)
+{
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">Reconciliation with financial records</div>
+        <div class="table-responsive-md">
+            <table class="table table-sm align-middle mb-0">
+                <thead><tr><th scope="col">Check</th><th scope="col" class="text-end">Business data</th><th scope="col" class="text-end">Financial record</th><th scope="col" class="text-end">Difference</th><th scope="col">Result</th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model.Checks)
+                    {
+                        <tr>
+                            <td><span class="d-block">@c.Name</span><span class="small text-muted">@c.LeftLabel &rarr; @c.RightLabel. @c.Note</span></td>
+                            <td class="text-end" data-label="Business data">@Model.Symbol @c.Left.ToString("N2")</td>
+                            <td class="text-end" data-label="Financial record">@Model.Symbol @c.Right.ToString("N2")</td>
+                            <td class="text-end" data-label="Difference">@Model.Symbol @c.Difference.ToString("N2")</td>
+                            <td data-label="Result">@if (c.Reconciled) { <span class="badge text-bg-success">Reconciled</span> } else { <span class="badge text-bg-warning">Difference</span> }</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

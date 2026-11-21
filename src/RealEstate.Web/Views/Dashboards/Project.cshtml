@@ -1,0 +1,76 @@
+@using RealEstate.Application.Reporting
+@model DashboardViewModel<ProjectDashboardDto>
+@{
+    var d = Model.Data; var s = d.CurrencySymbol; ViewData["Title"] = d.ProjectCode + " dashboard";
+    string M(decimal? v) => v is null ? "-" : s + " " + v.Value.ToString("N2");
+}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+    <div><h1 class="h3 mb-0">@d.ProjectCode - @d.ProjectName</h1><p class="text-muted mb-0">@d.City &middot; @d.Status &middot; @(d.From is null ? "All time" : "From " + d.From.Value.ToString("yyyy-MM-dd")) to @d.To.ToString("yyyy-MM-dd")</p></div>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-action="Company">Company dashboard</a><a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="Index">Reports</a></div>
+</div>
+<partial name="_Filter" model='("Project", (long?)d.ProjectId, Model.From, Model.To)' />
+@if (d.LedgerNote is not null) { <div class="alert alert-info" role="status">@d.LedgerNote</div> }
+
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Project area</div><div class="fw-semibold">@d.ProjectArea.ToString("N2") @d.AreaUnit</div><div class="small text-muted">@d.AreaSqFt.ToString("N0") sq ft</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Inventory</div><div class="fs-5 fw-semibold">@d.TotalInventory</div><div class="small text-muted">@d.SoldProperties sold</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Sales</div><div class="fw-semibold">@M(d.SalesValue)</div><div class="small text-muted">@d.SalesCount confirmed bookings</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Bookings awaiting approval</div><div class="fs-5 fw-semibold">@d.PendingBookings</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Collections</div><div class="fw-semibold">@M(d.Collections)</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Outstanding</div><div class="fw-semibold">@M(d.Outstanding)</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100 border-danger"><div class="small text-muted">Overdue installments</div><div class="fw-semibold text-danger">@M(d.Overdue)</div><div class="small text-muted">@d.OverdueInstallments installments, @d.OverdueAgreements agreements</div></div></div>
+    <div class="col-6 col-md-4 col-xl-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Project expenses</div><div class="fw-semibold">@M(d.ApprovedExpenses)</div><div class="small text-muted">@M(d.ExpensesPaid) paid, @M(d.ExpensesOutstanding) payable</div></div></div>
+</div>
+
+<h2 class="h5">Project profitability</h2>
+<div class="row g-2 mb-3">
+    <div class="col-6 col-md-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Revenue (ledger)</div><div class="fw-semibold">@M(d.LedgerRevenue)</div></div></div>
+    <div class="col-6 col-md-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Expenses (ledger)</div><div class="fw-semibold">@M(d.LedgerExpenses)</div></div></div>
+    <div class="col-6 col-md-3"><div class="card card-body py-2 h-100 @(d.LedgerProfit is < 0 ? "border-danger" : "")"><div class="small text-muted">Profit / (loss) (ledger)</div><div class="fw-semibold @(d.LedgerProfit is < 0 ? "text-danger" : "")">@M(d.LedgerProfit)</div></div></div>
+    <div class="col-6 col-md-3"><div class="card card-body py-2 h-100"><div class="small text-muted">Collections less approved expenses</div><div class="fw-semibold @(d.OperationalResult < 0 ? "text-danger" : "")">@M(d.OperationalResult)</div><div class="small text-muted">operational view</div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-5">
+        <div class="card h-100"><div class="card-header fw-semibold">Land distribution</div>
+            @if (d.LandDistribution.Count == 0) { <div class="card-body text-muted">No land distribution recorded.</div> }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var l in d.LandDistribution)
+                    {
+                        <li class="list-group-item"><div class="d-flex justify-content-between"><span>@l.Category</span><span>@l.Area.ToString("N2") @d.AreaUnit (@l.Percent.ToString("N1")%)</span></div>
+                            <div class="progress mt-1" style="height:6px" role="progressbar" aria-label="@l.Category share" aria-valuenow="@l.Percent.ToString("0")" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width:@l.Percent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div></div></li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+    <div class="col-12 col-lg-7">
+        <div class="card h-100"><div class="card-header fw-semibold">Property inventory</div>
+            @if (d.InventoryByCategory.Count == 0) { <div class="card-body text-muted">No properties yet.</div> }
+            else
+            {
+                <div class="table-responsive-md">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th scope="col">Category</th><th scope="col" class="text-end">Total</th><th scope="col" class="text-end">Available</th><th scope="col" class="text-end">Reserved</th><th scope="col" class="text-end">Booked</th><th scope="col" class="text-end">Sold</th><th scope="col" class="text-end">Size (@d.AreaUnit)</th></tr></thead>
+                        <tbody>
+                            @foreach (var c in d.InventoryByCategory)
+                            {
+                                <tr><td data-label="Category">@c.Category</td><td class="text-end" data-label="Total">@c.Total</td><td class="text-end" data-label="Available">@c.Available</td><td class="text-end" data-label="Reserved">@c.Reserved</td><td class="text-end" data-label="Booked">@c.Booked</td><td class="text-end" data-label="Sold">@c.Sold</td><td class="text-end" data-label="Size">@c.TotalSize.ToString("N2")</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer small text-muted">By status: @string.Join(", ", d.InventoryByStatus.Select(x => x.Status + " " + x.Count))</div>
+            }
+        </div>
+    </div>
+</div>
+<partial name="_Checks" model="(d.Checks, s)" />
+<div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-primary" asp-controller="Reports" asp-action="Run" asp-route-key="project-sales" asp-route-projectId="@d.ProjectId">Project sales</a>
+    <a class="btn btn-outline-primary" asp-controller="Reports" asp-action="Run" asp-route-key="project-collection" asp-route-projectId="@d.ProjectId">Project collections</a>
+    <a class="btn btn-outline-primary" asp-controller="Reports" asp-action="Run" asp-route-key="overdue" asp-route-projectId="@d.ProjectId">Overdue report</a>
+    <a class="btn btn-outline-primary" asp-controller="Projects" asp-action="Details" asp-route-id="@d.ProjectId">Project details</a>
+</div>

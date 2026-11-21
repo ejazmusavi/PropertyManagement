@@ -109,6 +109,10 @@ public static class Permissions
     public const string AccountingReports = "accounting.reports";
     public const string AccountingBankReconcile = "accounting.bank.reconcile";
 
+    // Phase 9 - reports and dashboards
+    public const string ReportsView = "reports.view";
+    public const string ReportsExport = "reports.export";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -198,6 +202,8 @@ public static class Permissions
         new(AccountingPeriodsOverride, "Post into closed (not locked) accounting periods", "Accounting"),
         new(AccountingReports, "View financial reports and statements", "Accounting"),
         new(AccountingBankReconcile, "Import bank statements, match transactions and reconcile bank accounts", "Accounting"),
+        new(ReportsView, "View management dashboards and customer, sales and collection reports", "Reports"),
+        new(ReportsExport, "Export reports (including financial statements) to PDF and Excel", "Reports"),
     ];
 }
 
@@ -238,19 +244,20 @@ public static class DefaultRoles
              Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay,
              Permissions.AccountingView, Permissions.AccountingSetup, Permissions.AccountingJournalsManage, Permissions.AccountingJournalsApprove, Permissions.AccountingJournalsReverse,
              Permissions.AccountingJournalsControl, Permissions.AccountingRulesManage, Permissions.AccountingRulesApprove, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage,
-             Permissions.AccountingPeriodsOverride, Permissions.AccountingReports, Permissions.AccountingBankReconcile]),
+             Permissions.AccountingPeriodsOverride, Permissions.AccountingReports, Permissions.AccountingBankReconcile,
+             Permissions.ReportsView, Permissions.ReportsExport]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
              Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.CustomersView, Permissions.BookingsView,
              Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.PaymentsView, Permissions.LedgersView, Permissions.RecoveryView,
              Permissions.ExpensesView, Permissions.ExpensesManage, Permissions.VendorsView, Permissions.GovFeesView,
-             Permissions.AccountingView, Permissions.AccountingReports]),
+             Permissions.AccountingView, Permissions.AccountingReports, Permissions.ReportsView, Permissions.ReportsExport]),
         new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsCancel, Permissions.AgreementsDocuments,
              Permissions.InstallmentsView, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend,
              Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsReceipts, Permissions.RefundsRequest, Permissions.LedgersView, Permissions.RecoveryView, Permissions.RecoveryAssign,
-             Permissions.GovFeesView, Permissions.GovFeesAssess]),
+             Permissions.GovFeesView, Permissions.GovFeesAssess, Permissions.ReportsView, Permissions.ReportsExport]),
         new(RoleNames.Accountant, "Maintains company finances.", [Permissions.CompanyView, Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.PricingView,
              Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmendApprove,
              Permissions.PaymentsView, Permissions.PaymentsVerify, Permissions.PaymentsApprove, Permissions.PaymentsAllocate, Permissions.PaymentsReverse, Permissions.PaymentsReceipts,
@@ -258,7 +265,8 @@ public static class DefaultRoles
              Permissions.ExpensesView, Permissions.ExpensesApprove, Permissions.ExpensesPay, Permissions.ExpensesReverse, Permissions.ExpensesSetup,
              Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay,
              Permissions.AccountingView, Permissions.AccountingSetup, Permissions.AccountingJournalsManage, Permissions.AccountingJournalsApprove, Permissions.AccountingJournalsReverse,
-             Permissions.AccountingRulesManage, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage, Permissions.AccountingReports, Permissions.AccountingBankReconcile]),
+             Permissions.AccountingRulesManage, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage, Permissions.AccountingReports, Permissions.AccountingBankReconcile,
+             Permissions.ReportsView, Permissions.ReportsExport]),
         new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView,
              Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsAllocate, Permissions.PaymentsReceipts, Permissions.LedgersView]),
         new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmend,

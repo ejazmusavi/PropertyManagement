@@ -1,0 +1,113 @@
+@using RealEstate.Application.Reporting
+@model ReportRunViewModel
+@{
+    var d = Model.Definition; var f = Model.Filters; var r = Model.Report;
+    ViewData["Title"] = d.Title;
+    var route = new Dictionary<string, string?>
+    {
+        ["key"] = d.Key, ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd"), ["projectId"] = f.ProjectId?.ToString(), ["blockId"] = f.BlockId?.ToString(),
+        ["customerId"] = f.CustomerId?.ToString(), ["customerLabel"] = Model.CustomerLabel, ["transactionType"] = f.TransactionType, ["paymentMethodId"] = f.PaymentMethodId?.ToString(),
+        ["status"] = f.Status, ["accountId"] = f.AccountId?.ToString(), ["costCenterId"] = f.CostCenterId?.ToString(),
+    };
+    object ExportRoute(string format) => new { key = d.Key, format, from = f.From?.ToString("yyyy-MM-dd"), to = f.To?.ToString("yyyy-MM-dd"), projectId = f.ProjectId, blockId = f.BlockId, customerId = f.CustomerId,
+        transactionType = f.TransactionType, paymentMethodId = f.PaymentMethodId, status = f.Status, accountId = f.AccountId, costCenterId = f.CostCenterId };
+}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+    <div><h1 class="h3 mb-0">@d.Title</h1><p class="text-muted mb-0">@d.Description</p></div>
+    <div class="d-flex gap-2 d-print-none">
+        <a class="btn btn-outline-secondary" asp-action="Index">All reports</a>
+        @if (r is not null && Model.CanExport)
+        {
+            <a class="btn btn-outline-primary" href="@Url.Action("Export", ExportRoute("pdf"))">Export PDF</a>
+            <a class="btn btn-outline-primary" href="@Url.Action("Export", ExportRoute("xlsx"))">Export Excel</a>
+        }
+        @if (r is not null) { <button type="button" class="btn btn-outline-secondary" onclick="window.print()">Print</button> }
+    </div>
+</div>
+<form method="get" asp-action="Run" class="row g-2 mb-3 d-print-none" role="search">
+    <input type="hidden" name="key" value="@d.Key" /><input type="hidden" name="show" value="true" />
+    @if (d.Uses(ReportFilterNames.From)) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfFrom">From</label><input id="rfFrom" type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" /></div> }
+    @if (d.Uses(ReportFilterNames.To)) { <div class="col-6 col-lg-2"><label class="form-label small" for="rfTo">@(d.Uses(ReportFilterNames.From) ? "To" : "As of")</label><input id="rfTo" type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" /></div> }
+    @if (d.Uses(ReportFilterNames.Project))
+    {
+        <div class="col-12 col-lg-3"><label class="form-label small" for="rfProject">Project</label>
+            <select id="rfProject" name="projectId" class="form-select">
+                @if (!d.RequiresProject) { <option value="">All projects</option> } else { <option value="">Choose...</option> }
+                @foreach (var p in Model.Lookups.Projects) { <option value="@p.Id" selected="@(f.ProjectId == p.Id)">@p.Code - @p.Name</option> }
+            </select></div>
+    }
+    @if (d.Uses(ReportFilterNames.Block))
+    {
+        <div class="col-6 col-lg-2"><label class="form-label small" for="rfBlock">Block</label>
+            <select id="rfBlock" name="blockId" class="form-select"><option value="">All blocks</option>
+                @foreach (var b in Model.Lookups.Blocks) { <option value="@b.Id" data-project="@b.ProjectId" selected="@(f.BlockId == b.Id)">@b.Code - @b.Name</option> }
+            </select></div>
+    }
+    @if (d.Uses(ReportFilterNames.Customer))
+    {
+        <div class="col-12 col-lg-4"><label class="form-label small">Customer@(d.RequiresCustomer ? " (required)" : "")</label><partial name="_CustomerPicker" model='("customerId", f.CustomerId, Model.CustomerLabel, "customerLabel")' /></div>
+    }
+    @if (d.Uses(ReportFilterNames.TransactionType) && d.TransactionTypes.Count > 0)
+    {
+        <div class="col-6 col-lg-2"><label class="form-label small" for="rfType">@(d.Group == "Sales reports" || d.Key == "cancellations" ? "Sale type" : d.Group == "Customer reports" && d.Key != "payment-history" ? "Entry type" : "Source")</label>
+            <select id="rfType" name="transactionType" class="form-select"><option value="">All</option>@foreach (var o in d.TransactionTypes) { <option value="@o.Value" selected="@(f.TransactionType == o.Value)">@o.Label</option> }</select></div>
+    }
+    @if (d.Uses(ReportFilterNames.PaymentMethod))
+    {
+        <div class="col-6 col-lg-2"><label class="form-label small" for="rfMethod">Payment method</label>
+            <select id="rfMethod" name="paymentMethodId" class="form-select"><option value="">All</option>@foreach (var o in Model.Lookups.PaymentMethods) { <option value="@o.Value" selected="@(f.PaymentMethodId?.ToString() == o.Value)">@o.Label</option> }</select></div>
+    }
+    @if (d.Uses(ReportFilterNames.Status) && d.Statuses.Count > 0)
+    {
+        <div class="col-6 col-lg-2"><label class="form-label small" for="rfStatus">Status</label>
+            <select id="rfStatus" name="status" class="form-select"><option value="">Default</option>@foreach (var o in d.Statuses) { <option value="@o.Value" selected="@(f.Status == o.Value)">@o.Label</option> }</select></div>
+    }
+    @if (d.Uses(ReportFilterNames.Account))
+    {
+        <div class="col-12 col-lg-3"><label class="form-label small" for="rfAccount">Account</label>
+            <select id="rfAccount" name="accountId" class="form-select"><option value="">Choose...</option>@foreach (var o in Model.Accounts) { <option value="@o.Id" selected="@(f.AccountId == o.Id)">@o.Code - @o.Name</option> }</select></div>
+    }
+    @if (d.Uses(ReportFilterNames.CostCenter))
+    {
+        <div class="col-6 col-lg-2"><label class="form-label small" for="rfCc">Cost center</label>
+            <select id="rfCc" name="costCenterId" class="form-select"><option value="">All</option>@foreach (var o in Model.CostCenters) { <option value="@o.Id" selected="@(f.CostCenterId == o.Id)">@o.Code - @o.Name</option> }</select></div>
+    }
+    <div class="col-6 col-lg-1 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Show</button></div>
+</form>
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="alert alert-warning" role="alert">@Model.Message</div> }
+@if (r is null)
+{
+    <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">@(d.RequiresCustomer ? "Choose a customer and press Show." : d.RequiresProject ? "Choose a project and press Show." : "Set the filters and press Show.")</p></div>
+}
+else
+{
+    <div class="small text-muted mb-2">@string.Join("  |  ", r.Filters.Select(x => x.Label + ": " + x.Value)) @(r.Filters.Count > 0 ? "  |  " : "")Generated @r.GeneratedAtUtc.ToString("yyyy-MM-dd HH:mm") UTC · Currency @r.CurrencySymbol</div>
+    @if (r.Rows.Count == 0)
+    {
+        <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No data matches the filters.</p></div>
+    }
+    else
+    {
+        <partial name="_ReportTable" model="r" />
+        <partial name="_Pager" model='(r.Page, r.TotalPages, r.TotalRows, "rows", route, "page")' />
+    }
+    @foreach (var n in r.Notes) { <p class="small text-muted mb-1">@n</p> }
+}
+@section Scripts {
+    <script src="~/js/installments.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var p = document.getElementById('rfProject'), b = document.getElementById('rfBlock');
+            if (!p || !b) return;
+            function sync() {
+                Array.prototype.forEach.call(b.options, function (o) {
+                    if (!o.value) return;
+                    var hide = p.value && o.getAttribute('data-project') !== p.value;
+                    o.hidden = hide; o.disabled = hide;
+                    if (hide && o.selected) b.value = '';
+                });
+            }
+            p.addEventListener('change', sync); sync();
+        })();
+    </script>
+}
