@@ -272,3 +272,30 @@ public enum NotificationKind { General = 1, Payment = 2, Support = 3, Account = 
 public enum GatewayTransactionStatus { Initiated = 1, Pending = 2, Succeeded = 3, Failed = 4, Cancelled = 5, Refunded = 6 }
 
 public enum WebhookProcessingStatus { Received = 1, Processed = 2, Ignored = 3, Rejected = 4, Failed = 5, Duplicate = 6 }
+
+// ---------------------------------------------------------------------------------------------------------
+// Phase 11 - notifications, automation and GIS foundation
+// ---------------------------------------------------------------------------------------------------------
+public enum NotificationChannel { InApp = 1, Email = 2, Sms = 3, WhatsApp = 4, Push = 5 }
+
+public enum NotificationType
+{
+    InstallmentUpcoming = 1, InstallmentOverdue = 2, PaymentConfirmation = 3, BookingConfirmation = 4,
+    AgreementAmendment = 5, PossessionNotice = 6, CompanyAnnouncement = 7, StaffDigest = 8,
+}
+
+/// <summary>Pending (deliveries outstanding) -> Completed (every delivery sent or skipped) | PartiallyFailed | Failed (every delivery failed) | Cancelled.</summary>
+public enum NotificationStatus { Pending = 1, Completed = 2, PartiallyFailed = 3, Failed = 4, Cancelled = 5 }
+
+/// <summary>Pending -> Sent | Retrying (failed, will be tried again) -> Failed (attempts used up) | Skipped (channel off or not configured) | Cancelled.</summary>
+public enum DeliveryStatus { Pending = 1, Sent = 2, Retrying = 3, Failed = 4, Skipped = 5, Cancelled = 6 }
+
+public enum BackgroundJobRunStatus { Running = 1, Succeeded = 2, Failed = 3 }
+
+public enum BoundaryStatus { Draft = 1, Verified = 2, Superseded = 3, Rejected = 4 }
+
+public enum MapLayerKind { ProjectBoundary = 1, Blocks = 2, Streets = 3, Plots = 4, Amenities = 5, Other = 6 }
+
+public enum MapDocumentType { SurveyPlan = 1, GeoJson = 2, Shapefile = 3, Cad = 4, Orthophoto = 5, Other = 6 }
+
+public enum SpatialCoordinateKind { Geographic = 1, Projected = 2 }

@@ -123,6 +123,16 @@ public static class Permissions
     public const string GatewayView = "gateway.view";
     public const string GatewayManage = "gateway.manage";
 
+    // Phase 11 - notifications, background jobs, GIS
+    public const string NotificationsView = "notifications.view";
+    public const string NotificationsManage = "notifications.manage";
+    public const string NotificationsSend = "notifications.send";
+    public const string JobsView = "jobs.view";
+    public const string JobsManage = "jobs.manage";
+    public const string GisView = "gis.view";
+    public const string GisManage = "gis.manage";
+    public const string GisVerify = "gis.verify";
+
     public static readonly IReadOnlyList<PermissionDefinition> All =
     [
         new(UsersView, "View users", "Administration"),
@@ -221,6 +231,14 @@ public static class Permissions
         new(SupportManage, "Reply to and update customer support requests", "Customer app"),
         new(GatewayView, "View online payment (gateway) transactions and webhook logs", "Customer app"),
         new(GatewayManage, "Reconcile gateway transactions and request gateway refunds", "Customer app"),
+        new(NotificationsView, "View notifications, delivery logs and notification templates", "Notifications"),
+        new(NotificationsManage, "Edit notification templates and reminder settings, retry or cancel deliveries", "Notifications"),
+        new(NotificationsSend, "Send company announcements and ad-hoc notifications to customers", "Notifications"),
+        new(JobsView, "View background jobs and their run history", "Automation"),
+        new(JobsManage, "Run background jobs now", "Automation"),
+        new(GisView, "View spatial reference systems, boundaries, map layers and map documents", "GIS"),
+        new(GisManage, "Maintain boundaries (drafts), map layers, map documents and spatial reference systems", "GIS"),
+        new(GisVerify, "Verify or reject surveyed boundaries (a different user than the submitter)", "GIS"),
     ];
 }
 
@@ -265,14 +283,17 @@ public static class DefaultRoles
              Permissions.AccountingJournalsControl, Permissions.AccountingRulesManage, Permissions.AccountingRulesApprove, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage,
              Permissions.AccountingPeriodsOverride, Permissions.AccountingReports, Permissions.AccountingBankReconcile,
              Permissions.ReportsView, Permissions.ReportsExport,
-             Permissions.PortalAccountsManage, Permissions.PortalContentManage, Permissions.SupportView, Permissions.SupportManage, Permissions.GatewayView, Permissions.GatewayManage]),
+             Permissions.PortalAccountsManage, Permissions.PortalContentManage, Permissions.SupportView, Permissions.SupportManage, Permissions.GatewayView, Permissions.GatewayManage,
+             Permissions.NotificationsView, Permissions.NotificationsManage, Permissions.NotificationsSend, Permissions.JobsView, Permissions.JobsManage,
+             Permissions.GisView, Permissions.GisManage, Permissions.GisVerify]),
         new(RoleNames.ProjectManager, "Manages assigned projects and their land.",
             [Permissions.ProjectsView, Permissions.ProjectsEdit, Permissions.ProjectsDocuments, Permissions.LandView, Permissions.LandManage, Permissions.LandAdjust,
              Permissions.InventoryView, Permissions.InventoryManage, Permissions.InventorySetup, Permissions.InventoryDocuments,
              Permissions.PricingView, Permissions.PricingManage, Permissions.PricingRequest, Permissions.CustomersView, Permissions.BookingsView,
              Permissions.InstallmentsView, Permissions.InstallmentsManage, Permissions.PaymentsView, Permissions.LedgersView, Permissions.RecoveryView,
              Permissions.ExpensesView, Permissions.ExpensesManage, Permissions.VendorsView, Permissions.GovFeesView,
-             Permissions.AccountingView, Permissions.AccountingReports, Permissions.ReportsView, Permissions.ReportsExport]),
+             Permissions.AccountingView, Permissions.AccountingReports, Permissions.ReportsView, Permissions.ReportsExport,
+             Permissions.GisView, Permissions.GisManage]),
         new(RoleNames.SalesManager, "Oversees sales for assigned projects.", [Permissions.ProjectsView, Permissions.LandView, Permissions.InventoryView, Permissions.InventoryReserve, Permissions.PricingView, Permissions.PricingRequest,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.BookingsCreate, Permissions.BookingsCancel, Permissions.AgreementsDocuments,
              Permissions.InstallmentsView, Permissions.InstallmentsSchedule, Permissions.AgreementsAmend,
@@ -286,7 +307,7 @@ public static class DefaultRoles
              Permissions.VendorsView, Permissions.VendorsManage, Permissions.GovFeesView, Permissions.GovFeesSetup, Permissions.GovFeesAssess, Permissions.GovFeesPay,
              Permissions.AccountingView, Permissions.AccountingSetup, Permissions.AccountingJournalsManage, Permissions.AccountingJournalsApprove, Permissions.AccountingJournalsReverse,
              Permissions.AccountingRulesManage, Permissions.AccountingPostingsProcess, Permissions.AccountingPeriodsManage, Permissions.AccountingReports, Permissions.AccountingBankReconcile,
-             Permissions.ReportsView, Permissions.ReportsExport, Permissions.GatewayView, Permissions.GatewayManage]),
+             Permissions.ReportsView, Permissions.ReportsExport, Permissions.GatewayView, Permissions.GatewayManage, Permissions.NotificationsView]),
         new(RoleNames.Cashier, "Collects payments at the office.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView,
              Permissions.PaymentsView, Permissions.PaymentsCollect, Permissions.PaymentsAllocate, Permissions.PaymentsReceipts, Permissions.LedgersView]),
         new(RoleNames.RecoveryOfficer, "Follows up overdue installments.", [Permissions.ProjectsView, Permissions.CustomersView, Permissions.BookingsView, Permissions.InstallmentsView, Permissions.AgreementsAmend,
@@ -296,7 +317,8 @@ public static class DefaultRoles
              Permissions.InventoryReserve, Permissions.InventoryStatus, Permissions.PricingView]),
         new(RoleNames.CustomerSupport, "Assists customers.", [Permissions.ProjectsView, Permissions.InventoryView, Permissions.PricingView,
              Permissions.CustomersView, Permissions.CustomersManage, Permissions.CustomersDocuments, Permissions.BookingsView, Permissions.InstallmentsView,
-             Permissions.PaymentsView, Permissions.LedgersView, Permissions.PortalAccountsManage, Permissions.PortalContentManage, Permissions.SupportView, Permissions.SupportManage]),
+             Permissions.PaymentsView, Permissions.LedgersView, Permissions.PortalAccountsManage, Permissions.PortalContentManage, Permissions.SupportView, Permissions.SupportManage,
+             Permissions.NotificationsView, Permissions.NotificationsSend]),
         new(RoleNames.Customer, "Customer application account: sees only the records of the linked customer.", [Permissions.PortalAccess]),
     ];
 }

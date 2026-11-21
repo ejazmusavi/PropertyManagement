@@ -1,0 +1,40 @@
+@model NotificationDetailsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var d = Model.Detail; ViewData["Title"] = d.Title; await Ui.LoadAsync();
+   string Badge(DeliveryStatus x) => x switch { DeliveryStatus.Sent => "text-bg-success", DeliveryStatus.Pending => "text-bg-info", DeliveryStatus.Retrying => "text-bg-warning", DeliveryStatus.Failed => "text-bg-danger", _ => "text-bg-secondary" }; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@d.Title</h1><div class="text-muted">@d.Type &middot; @d.Status &middot; created @d.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")@(d.CreatedBy is null ? "" : " by " + d.CreatedBy)</div></div>
+    <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
+</div>
+<div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Recipient</dt><dd class="col-sm-9">@(d.CustomerId is null ? "Staff user" : d.CustomerName)</dd>
+    <dt class="col-sm-3">Message</dt><dd class="col-sm-9">@d.Body</dd>
+    <dt class="col-sm-3">Business key</dt><dd class="col-sm-9"><code>@d.DedupeKey</code></dd>
+    @if (d.CancelReason is not null) { <dt class="col-sm-3">Cancelled because</dt><dd class="col-sm-9">@d.CancelReason</dd> }
+</dl></div></div>
+<h2 class="h5">Deliveries</h2>
+@if (d.Deliveries.Count == 0) { <div class="empty-state card card-body text-center mb-3"><p class="mb-0 text-muted">No channel was active for this notification.</p></div> }
+else
+{
+    <div class="card mb-3"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+        <thead><tr><th>Channel</th><th>To</th><th>Status</th><th>Attempts</th><th>Last attempt</th><th>Detail</th><th></th></tr></thead><tbody>
+        @foreach (var x in d.Deliveries)
+        {
+            <tr><td data-label="Channel">@x.Channel</td><td data-label="To">@(x.Recipient ?? "-")</td><td data-label="Status"><span class="badge @Badge(x.Status)">@x.Status</span></td>
+                <td data-label="Attempts">@x.Attempts / @x.MaxAttempts</td><td data-label="Last attempt">@(x.LastAttemptAtUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+                <td data-label="Detail"><div class="small"><strong>@x.Subject</strong><br />@x.Body</div>@if (x.LastError is not null) { <div class="small text-danger">@x.LastError</div> }@if (x.Status == DeliveryStatus.Retrying) { <div class="small text-muted">Next attempt @x.NextAttemptAtUtc.ToString("yyyy-MM-dd HH:mm") UTC</div> }</td>
+                <td class="text-end">@if (x.Status == DeliveryStatus.Failed && Ui.Has("notifications.manage") && d.Status != NotificationStatus.Cancelled)
+                    { <form asp-action="Retry" method="post" class="d-inline"><input type="hidden" name="deliveryId" value="@x.Id" /><input type="hidden" name="id" value="@d.Id" /><button class="btn btn-sm btn-outline-primary" type="submit">Retry</button></form> }</td></tr>
+        }
+        </tbody></table></div></div>
+}
+@if (d.Status == NotificationStatus.Pending && Ui.Has("notifications.manage"))
+{
+    <div class="card"><div class="card-header fw-semibold">Cancel this notification</div><div class="card-body">
+        <form asp-action="Cancel" method="post" class="row g-2" onsubmit="return confirm('Cancel this notification? Deliveries not yet sent will not be sent.');">
+            <input type="hidden" name="id" value="@d.Id" /><input type="hidden" name="rowVersion" value="@d.RowVersion" />
+            <div class="col-12 col-lg-9"><input name="reason" class="form-control" maxlength="500" placeholder="Reason (at least 5 characters)" aria-label="Reason" required /></div>
+            <div class="col-12 col-lg-3"><button class="btn btn-outline-danger w-100" type="submit">Cancel notification</button></div>
+        </form></div></div>
+}

@@ -1,0 +1,14 @@
+@model ReminderSettingsViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Reminder settings"; await Ui.LoadAsync(); }
+<h1 class="h3 mb-3">Reminder settings</h1>
+<form asp-action="Settings" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="UpcomingDaysBefore" class="form-label"></label><input asp-for="UpcomingDaysBefore" type="number" min="0" max="60" class="form-control" /><span asp-validation-for="UpcomingDaysBefore" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="OverdueRepeatDays" class="form-label"></label><input asp-for="OverdueRepeatDays" type="number" min="1" max="60" class="form-control" /><span asp-validation-for="OverdueRepeatDays" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="EventLookbackDays" class="form-label"></label><input asp-for="EventLookbackDays" type="number" min="1" max="60" class="form-control" /><span asp-validation-for="EventLookbackDays" class="text-danger small"></span></div>
+    </div></div></div>
+    <div class="d-flex gap-2">@if (Ui.Has("notifications.manage")) { <button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save</button> }<a class="btn btn-outline-secondary" asp-action="Index">Back</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

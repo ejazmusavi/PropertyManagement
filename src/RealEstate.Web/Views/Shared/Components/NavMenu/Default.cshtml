@@ -5,6 +5,7 @@
 }
 <ul class="nav nav-pills flex-column gap-1">
     <li class="nav-item"><a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index">Dashboard</a></li>
+    <li class="nav-item"><a class="nav-link @Active("MyNotifications")" asp-controller="MyNotifications" asp-action="Index">My notifications</a></li>
     @if (Model.Contains("projects.view"))
     {
         <li class="nav-item"><a class="nav-link @Active("Projects", "Land")" asp-controller="Projects" asp-action="Index">Projects</a></li>
@@ -73,6 +74,13 @@
         @if (Model.Contains("support.view")) { <li class="nav-item"><a class="nav-link @Active("Support")" asp-controller="Support" asp-action="Index">Support requests</a></li> }
         @if (Model.Contains("portal.content.manage")) { <li class="nav-item"><a class="nav-link @Active("CustomerApp")" asp-controller="CustomerApp" asp-action="Announcements">Announcements</a></li> }
         @if (Model.Contains("gateway.view")) { <li class="nav-item"><a class="nav-link @Active("Gateway")" asp-controller="Gateway" asp-action="Index">Online payments</a></li> }
+    }
+    @if (Model.Contains("notifications.view") || Model.Contains("jobs.view") || Model.Contains("gis.view"))
+    {
+        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Automation and GIS</li>
+        @if (Model.Contains("notifications.view")) { <li class="nav-item"><a class="nav-link @Active("Notifications")" asp-controller="Notifications" asp-action="Index">Notifications</a></li> }
+        @if (Model.Contains("jobs.view")) { <li class="nav-item"><a class="nav-link @Active("Jobs")" asp-controller="Jobs" asp-action="Index">Background jobs</a></li> }
+        @if (Model.Contains("gis.view")) { <li class="nav-item"><a class="nav-link @Active("Gis")" asp-controller="Gis" asp-action="Index">GIS foundation</a></li> }
     }
     @if (Model.Contains("reports.view") || Model.Contains("accounting.reports"))
     {

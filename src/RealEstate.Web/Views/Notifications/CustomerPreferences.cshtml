@@ -1,0 +1,8 @@
+@model PreferencesViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = Model.Title; await Ui.LoadAsync(); Model.CanEdit = Ui.Has("notifications.manage"); }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@Model.Title</h1><div class="text-muted">@Model.Subtitle</div></div>
+    <a class="btn btn-outline-secondary" asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">Back to customer</a>
+</div>
+<partial name="_PreferenceGrid" model="Model" />

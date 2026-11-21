@@ -78,6 +78,14 @@ public static class DependencyInjection
         services.AddScoped<Portal.PortalContext>();
         services.AddScoped<Portal.CustomerPortalService>();
         services.AddScoped<Portal.CustomerAccountService>();
+        services.AddScoped<Notifications.NotificationQueue>();
+        services.AddScoped<Notifications.NotificationEventService>();
+        services.AddScoped<Notifications.NotificationDispatchService>();
+        services.AddScoped<Notifications.NotificationService>();
+        services.AddScoped<Notifications.NotificationPreferenceService>();
+        services.AddScoped<Notifications.INotificationChannelSender, Notifications.InAppNotificationSender>();
+        services.AddScoped<Jobs.ScheduledJobService>();
+        services.AddScoped<Gis.GisService>();
         services.AddScoped<Portal.SupportDeskService>();
         services.AddScoped<Portal.PortalContentService>();
         services.AddScoped<Portal.PaymentProofAdminService>();

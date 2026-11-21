@@ -122,6 +122,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser? 
     public DbSet<SupportRequestMessage> SupportRequestMessages => Set<SupportRequestMessage>();
     public DbSet<GatewayTransaction> GatewayTransactions => Set<GatewayTransaction>();
     public DbSet<PaymentWebhookLog> PaymentWebhookLogs => Set<PaymentWebhookLog>();
+    // Phase 11
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();
+    public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+    public DbSet<NotificationDeliveryLog> NotificationDeliveryLogs => Set<NotificationDeliveryLog>();
+    public DbSet<BackgroundJobRun> BackgroundJobRuns => Set<BackgroundJobRun>();
+    public DbSet<SpatialReferenceSystem> SpatialReferenceSystems => Set<SpatialReferenceSystem>();
+    public DbSet<ProjectBoundary> ProjectBoundaries => Set<ProjectBoundary>();
+    public DbSet<PropertyBoundary> PropertyBoundaries => Set<PropertyBoundary>();
+    public DbSet<MapLayer> MapLayers => Set<MapLayer>();
+    public DbSet<MapDocument> MapDocuments => Set<MapDocument>();
 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<Permission> Permissions => Set<Permission>();

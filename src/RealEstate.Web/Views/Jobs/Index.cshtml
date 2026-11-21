@@ -1,0 +1,25 @@
+@model JobsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Background jobs"; await Ui.LoadAsync();
+   string Badge(BackgroundJobRunStatus s) => s switch { BackgroundJobRunStatus.Succeeded => "text-bg-success", BackgroundJobRunStatus.Failed => "text-bg-danger", _ => "text-bg-info" }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Background jobs</h1>
+    <div class="d-flex gap-2"><a class="btn btn-outline-secondary" asp-action="Runs">Run history</a><a class="btn btn-outline-secondary" asp-controller="Notifications" asp-action="Index">Notifications</a></div>
+</div>
+@if (!Model.SchedulerEnabled)
+{
+    <div class="alert alert-warning" role="alert">Background processing is switched off on this server, so scheduled runs and "Run now" are unavailable here. Set <code>BackgroundProcessing:Enabled=true</code> (and run the API host as the worker) to turn it on.</div>
+}
+<div class="card"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>Job</th><th>Schedule</th><th>Next run (UTC)</th><th>Last run</th><th>Failures (7 days)</th><th></th></tr></thead><tbody>
+    @foreach (var j in Model.Jobs)
+    {
+        <tr><td data-label="Job"><div class="fw-semibold">@j.Name</div><div class="small text-muted">@j.Description</div>@if (j.NeedsServiceUser) { <div class="small text-muted">Runs as the configured service user.</div> }</td>
+            <td data-label="Schedule">@j.Schedule</td><td data-label="Next run">@(j.NextRunUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
+            <td data-label="Last run">@if (j.LastRun is { } r) { <span class="badge @Badge(r.Status)">@r.Status</span> <span class="small">@r.StartedAtUtc.ToString("yyyy-MM-dd HH:mm")</span><div class="small text-muted">@r.Message</div> } else { <span class="text-muted">Never</span> }</td>
+            <td data-label="Failures">@j.FailuresLast7Days</td>
+            <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-secondary" asp-action="Runs" asp-route-key="@j.Key">History</a>
+                @if (Ui.Has("jobs.manage") && Model.SchedulerEnabled) { <form asp-action="Run" method="post" class="d-inline"><input type="hidden" name="key" value="@j.Key" /><button class="btn btn-sm btn-outline-primary" type="submit">Run now</button></form> }</td></tr>
+    }
+    </tbody></table></div></div>

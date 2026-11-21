@@ -1,0 +1,20 @@
+@model SrsFormViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = Model.Id is null ? "New coordinate system" : "Edit coordinate system"; var locked = Model.Id is not null; }
+<h1 class="h3 mb-3">@ViewData["Title"]</h1>
+<form asp-action="SrsForm" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="RowVersion" />
+    @if (locked) { <div class="alert alert-info">Code, SRID and kind cannot change once created: boundaries refer to them.</div> }
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" maxlength="30" readonly="@locked" placeholder="EPSG:32643" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Srid" class="form-label"></label><input asp-for="Srid" type="number" min="1" class="form-control" readonly="@locked" /><span asp-validation-for="Srid" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Kind" class="form-label"></label><select asp-for="Kind" class="form-select" disabled="@locked">@foreach (var k in Enum.GetValues<SpatialCoordinateKind>()) { <option value="@k" selected="@(Model.Kind == k)">@k</option> }</select>@if (locked) { <input type="hidden" asp-for="Kind" /> }</div>
+        <div class="col-12 col-lg-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" maxlength="200" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Unit" class="form-label"></label><input asp-for="Unit" class="form-control" maxlength="30" /><span asp-validation-for="Unit" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="2" maxlength="1000"></textarea></div>
+        <div class="col-12"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save</button><a class="btn btn-outline-secondary" asp-action="Systems">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

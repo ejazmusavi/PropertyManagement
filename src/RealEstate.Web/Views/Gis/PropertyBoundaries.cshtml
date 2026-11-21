@@ -1,0 +1,25 @@
+@model PropertyBoundariesViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Boundaries - " + Model.PropertyCode; await Ui.LoadAsync();
+   string Badge(BoundaryStatus s) => s switch { BoundaryStatus.Verified => "text-bg-success", BoundaryStatus.Draft => "text-bg-warning", BoundaryStatus.Rejected => "text-bg-danger", _ => "text-bg-secondary" }; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">Boundaries of @Model.PropertyCode</h1><div class="text-muted">Surveyed outlines of this plot. Only a verified version is exact.</div></div>
+    <div class="d-flex gap-2">
+        @if (Ui.Has("gis.manage")) { <a class="btn btn-primary" asp-action="SubmitBoundary" asp-route-projectId="@Model.ProjectId" asp-route-propertyId="@Model.PropertyId">Submit new survey</a> }
+        <a class="btn btn-outline-secondary" asp-controller="Properties" asp-action="Details" asp-route-id="@Model.PropertyId">Back to property</a>
+    </div>
+</div>
+@if (Model.Boundaries.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No boundary has been submitted for this property.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+        <thead><tr><th>Version</th><th>Survey</th><th>Surveyed by</th><th>Geometry</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var b in Model.Boundaries)
+        {
+            <tr><td data-label="Version">v@(b.VersionNo)</td><td data-label="Survey">@b.SurveyReference (@b.SurveyDate.ToString("yyyy-MM-dd"))</td><td data-label="Surveyed by">@b.SurveyedBy</td>
+                <td data-label="Geometry">@b.GeometryType, @b.VertexCount points, @b.SrsCode</td><td data-label="Status"><span class="badge @Badge(b.Status)">@b.Status</span></td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="BoundaryDetails" asp-route-projectId="@b.ProjectId" asp-route-propertyId="@Model.PropertyId" asp-route-id="@b.Id">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+}

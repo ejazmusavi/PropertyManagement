@@ -1,3 +1,4 @@
+using RealEstate.Application.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RealEstate.Domain.Common;
@@ -70,6 +71,8 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
         await SeedExpenseCategoriesAsync(ct);
         await SeedGovernmentFeeTypesAsync(ct);
         await SeedAccountGroupsAsync(ct);
+        await SeedNotificationTemplatesAsync(ct);
+        await SeedSpatialReferenceSystemsAsync(ct);
     }
 
     /// <summary>
@@ -157,6 +160,31 @@ public class DatabaseInitializer(AppDbContext db, ILogger<DatabaseInitializer> l
     }
 
     /// <summary>Seeds the eleven standard charge components of spec 5.3 once (matched by code, so renames are kept).</summary>
+
+    /// <summary>Seeds the standard notification wording once per (type, channel, language); later edits are kept.</summary>
+    private async Task SeedNotificationTemplatesAsync(CancellationToken ct)
+    {
+        var existing = (await db.NotificationTemplates.Select(t => new { t.Type, t.Channel, t.Language }).ToListAsync(ct)).Select(t => (t.Type, t.Channel, t.Language)).ToHashSet();
+        foreach (var d in NotificationTemplateDefaults.All.Where(d => !existing.Contains((d.Type, d.Channel, "en"))))
+            db.NotificationTemplates.Add(new NotificationTemplate { Type = d.Type, Channel = d.Channel, Language = "en", Subject = d.Subject, Body = d.Body, IsActive = true });
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Seeds the coordinate systems of the GIS foundation (WGS 84, Web Mercator and the UTM zones covering Pakistan) once, matched by code.</summary>
+    private async Task SeedSpatialReferenceSystemsAsync(CancellationToken ct)
+    {
+        var codes = await db.SpatialReferenceSystems.Select(s => s.Code).ToListAsync(ct);
+        (string Code, int Srid, string Name, SpatialCoordinateKind Kind, string Unit, string Description)[] defaults =
+        [
+            ("EPSG:4326", 4326, "WGS 84", SpatialCoordinateKind.Geographic, "degree", "Longitude/latitude used by GPS, GeoJSON and OpenStreetMap."),
+            ("EPSG:3857", 3857, "WGS 84 / Pseudo-Mercator", SpatialCoordinateKind.Projected, "metre", "Web map tiles (OpenStreetMap, MapLibre)."),
+            ("EPSG:32642", 32642, "WGS 84 / UTM zone 42N", SpatialCoordinateKind.Projected, "metre", "Metric survey coordinates for western Pakistan."),
+            ("EPSG:32643", 32643, "WGS 84 / UTM zone 43N", SpatialCoordinateKind.Projected, "metre", "Metric survey coordinates for eastern Pakistan."),
+        ];
+        foreach (var d in defaults.Where(d => !codes.Contains(d.Code)))
+            db.SpatialReferenceSystems.Add(new SpatialReferenceSystem { Code = d.Code, Srid = d.Srid, Name = d.Name, Kind = d.Kind, Unit = d.Unit, Description = d.Description, IsSystem = true, IsActive = true });
+        await db.SaveChangesAsync(ct);
+    }
     private async Task SeedChargeTypesAsync(CancellationToken ct)
     {
         var codes = await db.ChargeTypes.Select(t => t.Code).ToListAsync(ct);

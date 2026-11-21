@@ -1,0 +1,20 @@
+@model JobRunsViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = "Job run history"; var p = Model.Runs; var route = new Dictionary<string, string?> { ["key"] = Model.Key };
+   string Badge(BackgroundJobRunStatus s) => s switch { BackgroundJobRunStatus.Succeeded => "text-bg-success", BackgroundJobRunStatus.Failed => "text-bg-danger", _ => "text-bg-info" }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Job run history@(Model.Key is null ? "" : " - " + Model.Key)</h1><a class="btn btn-outline-secondary" asp-action="Index">Back to jobs</a>
+</div>
+@if (p.Items.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No runs recorded yet.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+        <thead><tr><th>Job</th><th>Started (UTC)</th><th>Finished</th><th>Trigger</th><th>Status</th><th>Items</th><th>Result</th></tr></thead><tbody>
+        @foreach (var r in p.Items)
+        {
+            <tr><td data-label="Job">@r.JobKey</td><td data-label="Started">@r.StartedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td><td data-label="Finished">@(r.FinishedAtUtc?.ToString("HH:mm:ss") ?? "-")</td><td data-label="Trigger">@r.TriggeredBy</td>
+                <td data-label="Status"><span class="badge @Badge(r.Status)">@r.Status</span></td><td data-label="Items">@r.ItemsProcessed</td><td data-label="Result" class="small">@r.Message</td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "runs", route, "page")' />
+}

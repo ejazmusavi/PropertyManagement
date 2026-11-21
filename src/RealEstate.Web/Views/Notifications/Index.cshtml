@@ -1,0 +1,46 @@
+@model NotificationListViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Notifications"; await Ui.LoadAsync(); var f = Model.Filter; var p = Model.Result; var s = Model.Summary;
+   var route = new Dictionary<string, string?> { ["search"] = f.Search, ["type"] = f.Type?.ToString(), ["status"] = f.Status?.ToString(), ["channel"] = f.Channel?.ToString(), ["deliveryStatus"] = f.DeliveryStatus?.ToString(),
+       ["customerId"] = f.CustomerId?.ToString(), ["from"] = f.From?.ToString("yyyy-MM-dd"), ["to"] = f.To?.ToString("yyyy-MM-dd") };
+   string Badge(NotificationStatus x) => x switch { NotificationStatus.Completed => "text-bg-success", NotificationStatus.Pending => "text-bg-info", NotificationStatus.PartiallyFailed => "text-bg-warning", NotificationStatus.Failed => "text-bg-danger", _ => "text-bg-secondary" }; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Notifications</h1>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Ui.Has("notifications.send")) { <a class="btn btn-primary" asp-action="Send">Send a message</a> }
+        <a class="btn btn-outline-secondary" asp-action="Templates">Templates</a>
+        <a class="btn btn-outline-secondary" asp-action="Settings">Reminder settings</a>
+        @if (Ui.Has("jobs.view")) { <a class="btn btn-outline-secondary" asp-controller="Jobs" asp-action="Index">Background jobs</a> }
+    </div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Being delivered</div><div class="fs-4">@s.Pending</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Sent in the last 24 hours</div><div class="fs-4">@s.SentLast24Hours</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Waiting to retry</div><div class="fs-4">@s.RetryingDeliveries</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card"><div class="card-body"><div class="text-muted small">Failed deliveries</div><div class="fs-4 @(s.FailedDeliveries > 0 ? "text-danger" : "")">@s.FailedDeliveries</div></div></div></div>
+</div>
+<form method="get" asp-action="Index" class="row g-2 mb-3" role="search">
+    <div class="col-12 col-lg-3"><input type="search" name="search" value="@f.Search" class="form-control" placeholder="Title, customer, key" aria-label="Search notifications" /></div>
+    <div class="col-6 col-lg-2"><select name="type" class="form-select" aria-label="Type"><option value="">All types</option>@foreach (var t in Enum.GetValues<NotificationType>()) { <option value="@t" selected="@(f.Type == t)">@t</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="status" class="form-select" aria-label="Status"><option value="">All statuses</option>@foreach (var t in Enum.GetValues<NotificationStatus>()) { <option value="@t" selected="@(f.Status == t)">@t</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="channel" class="form-select" aria-label="Channel"><option value="">All channels</option>@foreach (var t in Enum.GetValues<NotificationChannel>()) { <option value="@t" selected="@(f.Channel == t)">@t</option> }</select></div>
+    <div class="col-6 col-lg-2"><select name="deliveryStatus" class="form-select" aria-label="Delivery status"><option value="">Any delivery</option>@foreach (var t in Enum.GetValues<DeliveryStatus>()) { <option value="@t" selected="@(f.DeliveryStatus == t)">@t</option> }</select></div>
+    <div class="col-6 col-lg-3"><input type="date" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control" aria-label="From date" /></div>
+    <div class="col-6 col-lg-3"><input type="date" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control" aria-label="To date" /></div>
+    <div class="col-12 col-lg-2"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+</form>
+@if (p.Items.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No notifications found.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Created</th><th>Type</th><th>Recipient</th><th>Title</th><th>Deliveries</th><th>Status</th><th></th></tr></thead><tbody>
+        @foreach (var x in p.Items)
+        {
+            <tr><td data-label="Created">@x.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</td><td data-label="Type">@x.Type</td><td data-label="Recipient">@(x.CustomerName ?? (x.RecipientUserId is null ? "-" : "Staff user"))</td>
+                <td data-label="Title">@x.Title</td><td data-label="Deliveries">@x.SentCount / @x.DeliveryCount sent@(x.FailedCount > 0 ? $", {x.FailedCount} failed" : "")</td>
+                <td data-label="Status"><span class="badge @Badge(x.Status)">@x.Status</span></td><td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Details" asp-route-id="@x.Id">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+    <partial name="_Pager" model='(p.Page, p.TotalPages, p.TotalCount, "notifications", route, "page")' />
+}

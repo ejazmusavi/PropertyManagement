@@ -4,6 +4,7 @@ using RealEstate.Api.Middleware;
 using RealEstate.Api.Swagger;
 using RealEstate.Application;
 using RealEstate.Infrastructure;
+using RealEstate.Infrastructure.Jobs;
 using RealEstate.Infrastructure.Identity;
 using RealEstate.Infrastructure.Persistence;
 using Serilog;
@@ -17,6 +18,7 @@ try
 
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddBackgroundProcessingServer(builder.Configuration);
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddRealEstateJwtBearer();
     builder.Services.ConfigureRealEstateJwtBearer();

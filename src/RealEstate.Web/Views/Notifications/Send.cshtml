@@ -1,0 +1,36 @@
+@model SendNotificationViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = "Send a message"; }
+<h1 class="h3 mb-3">Send a message to customers</h1>
+<form asp-action="Send" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="IdempotencyKey" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Type" class="form-label"></label>
+            <select asp-for="Type" class="form-select">
+                <option value="@NotificationType.CompanyAnnouncement">Company announcement</option><option value="@NotificationType.PossessionNotice">Possession notice</option>
+                <option value="@NotificationType.AgreementAmendment">Agreement amendment</option><option value="@NotificationType.BookingConfirmation">Booking message</option>
+            </select></div>
+        <div class="col-12 col-lg-4"><label asp-for="Audience" class="form-label"></label>
+            <select asp-for="Audience" class="form-select" id="audience">
+                <option value="all">All customers with a confirmed booking</option><option value="project">Owners in one project</option><option value="property">Owners of one property</option><option value="customer">One customer</option>
+            </select></div>
+        <div class="col-12 col-lg-4 aud aud-project d-none"><label asp-for="ProjectId" class="form-label"></label>
+            <select asp-for="ProjectId" class="form-select"><option value="">Choose...</option>@foreach (var p in Model.Projects) { <option value="@p.Id" selected="@(Model.ProjectId == p.Id)">@p.ProjectCode - @p.ProjectName</option> }</select><span asp-validation-for="ProjectId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4 aud aud-property d-none"><label asp-for="PropertyId" class="form-label"></label><input asp-for="PropertyId" class="form-control" inputmode="numeric" /><span asp-validation-for="PropertyId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4 aud aud-customer d-none"><label asp-for="CustomerId" class="form-label"></label><input asp-for="CustomerId" class="form-control" inputmode="numeric" /><span asp-validation-for="CustomerId" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="Title" class="form-label"></label><input asp-for="Title" class="form-control" maxlength="200" /><span asp-validation-for="Title" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="Message" class="form-label"></label><textarea asp-for="Message" class="form-control" rows="5" maxlength="2000"></textarea><span asp-validation-for="Message" class="text-danger small"></span></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Send</button><a class="btn btn-outline-secondary" asp-action="Index">Cancel</a></div>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var sel = document.getElementById('audience');
+            function show() { document.querySelectorAll('.aud').forEach(function (e) { e.classList.add('d-none'); }); var t = document.querySelector('.aud-' + sel.value); if (t) t.classList.remove('d-none'); }
+            sel.addEventListener('change', show); show();
+        })();
+    </script>
+}

@@ -1,0 +1,16 @@
+@model SrsListViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Coordinate systems"; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Coordinate systems</h1>
+    <div class="d-flex gap-2">@if (Ui.Has("gis.manage")) { <a class="btn btn-primary" asp-action="SrsForm">New system</a> }<a class="btn btn-outline-secondary" asp-action="Index">Back</a></div>
+</div>
+<div class="card"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>Code</th><th>Name</th><th>Kind</th><th>Unit</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var s in Model.Systems)
+    {
+        <tr><td data-label="Code">@s.Code</td><td data-label="Name">@s.Name<div class="small text-muted">@s.Description</div></td><td data-label="Kind">@s.Kind</td><td data-label="Unit">@s.Unit</td>
+            <td data-label="Status"><span class="badge @(s.IsActive ? "text-bg-success" : "text-bg-secondary")">@(s.IsActive ? "Active" : "Inactive")</span>@if (s.IsSystem) { <span class="badge text-bg-info">Standard</span> }</td>
+            <td class="text-end">@if (Ui.Has("gis.manage")) { <a class="btn btn-sm btn-outline-primary" asp-action="SrsForm" asp-route-id="@s.Id">Edit</a> }</td></tr>
+    }
+    </tbody></table></div></div>

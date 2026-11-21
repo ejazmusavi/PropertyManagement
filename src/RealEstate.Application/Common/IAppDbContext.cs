@@ -124,6 +124,17 @@ public interface IAppDbContext
     DbSet<SupportRequestMessage> SupportRequestMessages { get; }
     DbSet<GatewayTransaction> GatewayTransactions { get; }
     DbSet<PaymentWebhookLog> PaymentWebhookLogs { get; }
+    // Phase 11
+    DbSet<Notification> Notifications { get; }
+    DbSet<NotificationTemplate> NotificationTemplates { get; }
+    DbSet<NotificationPreference> NotificationPreferences { get; }
+    DbSet<NotificationDeliveryLog> NotificationDeliveryLogs { get; }
+    DbSet<BackgroundJobRun> BackgroundJobRuns { get; }
+    DbSet<SpatialReferenceSystem> SpatialReferenceSystems { get; }
+    DbSet<ProjectBoundary> ProjectBoundaries { get; }
+    DbSet<PropertyBoundary> PropertyBoundaries { get; }
+    DbSet<MapLayer> MapLayers { get; }
+    DbSet<MapDocument> MapDocuments { get; }
     DatabaseFacade Database { get; }
     EntityEntry<T> Entry<T>(T entity) where T : class;
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

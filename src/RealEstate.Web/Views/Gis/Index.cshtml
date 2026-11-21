@@ -1,0 +1,22 @@
+@model GisIndexViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "GIS foundation"; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">GIS foundation</h1>
+    <a class="btn btn-outline-secondary" asp-action="Systems">Coordinate systems</a>
+</div>
+<p class="text-muted">Surveyed boundaries, map layers and survey documents are prepared here for the future map. A boundary counts as exact only after someone other than the submitter has verified it against the survey.</p>
+@if (Model.Projects.Count == 0) { <div class="empty-state card card-body text-center"><p class="mb-0 text-muted">No projects available.</p></div> }
+else
+{
+    <div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+        <thead><tr><th>Project</th><th>Project boundary</th><th>Plot boundaries verified</th><th>Layers</th><th>Documents</th><th></th></tr></thead><tbody>
+        @foreach (var p in Model.Projects)
+        {
+            <tr><td data-label="Project">@p.ProjectCode - @p.ProjectName</td>
+                <td data-label="Project boundary">@if (p.HasVerifiedBoundary) { <span class="badge text-bg-success">Verified v@(p.VerifiedVersion)</span> } else { <span class="badge text-bg-secondary">None verified</span> }@if (p.DraftBoundaries > 0) { <span class="badge text-bg-warning">@p.DraftBoundaries draft</span> }</td>
+                <td data-label="Plot boundaries verified">@p.PropertyBoundariesVerified of @p.PropertiesTotal</td><td data-label="Layers">@p.Layers</td><td data-label="Documents">@p.Documents</td>
+                <td class="text-end"><a class="btn btn-sm btn-outline-primary" asp-action="Project" asp-route-id="@p.ProjectId">Open</a></td></tr>
+        }
+        </tbody></table></div></div>
+}

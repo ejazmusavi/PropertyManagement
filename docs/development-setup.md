@@ -53,3 +53,25 @@ dotnet user-secrets set "PaymentGateway:Enabled" "true" --project src/RealEstate
 dotnet user-secrets set "PaymentGateway:Sandbox:SigningSecret" "<random secret>" --project src/RealEstate.Api
 ```
 Callbacks are posted to `POST /api/v1/payment-webhooks/sandbox` with header `X-Signature` = hex HMAC-SHA256 of the raw body (JSON `eventId, reference, order, status[succeeded|failed|cancelled|pending], amount, currency`). Real providers (JazzCash, Easypaisa, banks) are added as `IPaymentGateway` adapters in Infrastructure once credentials, APIs and terms are available; nothing else changes.
+
+## Notifications, background jobs and GIS (Phase 11)
+**E-mail** (the only channel with a bundled provider) is off by default. Switch it on with user secrets or environment variables (never in files that are committed):
+```bash
+dotnet user-secrets set "Notifications:Email:Enabled" "true" --project src/RealEstate.Api
+dotnet user-secrets set "Notifications:Email:Host" "smtp.example.com" --project src/RealEstate.Api
+dotnet user-secrets set "Notifications:Email:Port" "587" --project src/RealEstate.Api
+dotnet user-secrets set "Notifications:Email:FromAddress" "office@example.com" --project src/RealEstate.Api
+dotnet user-secrets set "Notifications:Email:UserName" "<smtp user>" --project src/RealEstate.Api
+dotnet user-secrets set "Notifications:Email:Password" "<smtp password>" --project src/RealEstate.Api
+```
+SMS, WhatsApp and push have no provider yet: `Notifications:Channels:Sms:Mode` (also `WhatsApp`, `Push`) is `Off` (deliveries end as Skipped) or `Log` (development only: written to the log and marked sent).
+
+**Background jobs** (Hangfire, MySQL storage in the same database, tables prefixed `Hangfire`, created on first start) are off by default. The API host is the worker; the MVC host only queues jobs and shows `/Jobs`:
+```bash
+dotnet user-secrets set "BackgroundProcessing:Enabled" "true" --project src/RealEstate.Api
+dotnet user-secrets set "BackgroundProcessing:Enabled" "true" --project src/RealEstate.Web
+dotnet user-secrets set "BackgroundProcessing:RunAsUserName" "<automation user e-mail>" --project src/RealEstate.Api
+```
+`RunAsUserName` is a normal active user (for example with the Accountant role and all-project access) under which the online-payment reconciliation and automatic-posting jobs run; without it those two jobs record "Skipped". Only one API instance should run workers unless the database is shared (Hangfire coordinates through it). The job list, run history and "Run now" are under **Automation and GIS > Background jobs** (`jobs.view` / `jobs.manage`). Existing databases: grant the new `notifications.*`, `jobs.*` and `gis.*` permissions through the permission matrix (Administrator has all).
+
+**GIS foundation**: boundaries are pasted as GeoJSON on **Automation and GIS > GIS foundation** and need verification by a second user. To upload GeoJSON, shapefile (zip) or CAD files as map documents, add `geojson`, `zip` or `dxf` to the allowed file types in the company document settings.

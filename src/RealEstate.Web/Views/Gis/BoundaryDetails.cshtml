@@ -1,0 +1,37 @@
+@model BoundaryDetailsViewModel
+@using RealEstate.Domain.Enums
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ var b = Model.Boundary; ViewData["Title"] = "Boundary v" + b.VersionNo; await Ui.LoadAsync();
+   var scopeName = b.PropertyId is null ? "Project " + b.ProjectCode : "Property " + b.PropertyCode;
+   string Badge(BoundaryStatus s) => s switch { BoundaryStatus.Verified => "text-bg-success", BoundaryStatus.Draft => "text-bg-warning", BoundaryStatus.Rejected => "text-bg-danger", _ => "text-bg-secondary" }; }
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div><h1 class="h3 mb-1">@scopeName - boundary v@(b.VersionNo) <span class="badge @Badge(b.Status)">@b.Status</span></h1><div class="text-muted">@b.GeometryType, @b.VertexCount points, @b.SrsCode</div></div>
+    <a class="btn btn-outline-secondary" asp-action="@(b.PropertyId is null ? "Project" : "PropertyBoundaries")" asp-route-id="@b.ProjectId" asp-route-propertyId="@b.PropertyId">Back</a>
+</div>
+<div class="card mb-3"><div class="card-body"><dl class="row mb-0">
+    <dt class="col-sm-3">Survey</dt><dd class="col-sm-9">@b.SurveyReference, @b.SurveyDate.ToString("yyyy-MM-dd"), surveyed by @b.SurveyedBy</dd>
+    <dt class="col-sm-3">Extent (x, y)</dt><dd class="col-sm-9">@b.MinX.ToString("0.########") , @b.MinY.ToString("0.########") &rarr; @b.MaxX.ToString("0.########") , @b.MaxY.ToString("0.########")</dd>
+    <dt class="col-sm-3">Submitted</dt><dd class="col-sm-9">@b.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm") by @b.SubmittedBy</dd>
+    @if (b.VerifiedAtUtc is { } v) { <dt class="col-sm-3">@(b.Status == BoundaryStatus.Rejected ? "Rejected" : "Verified")</dt><dd class="col-sm-9">@v.ToString("yyyy-MM-dd HH:mm") by @b.VerifiedBy@(b.DecisionComment is null ? "" : " - " + b.DecisionComment)</dd> }
+    @if (b.SupersededAtUtc is { } s) { <dt class="col-sm-3">Superseded</dt><dd class="col-sm-9">@s.ToString("yyyy-MM-dd HH:mm")</dd> }
+    @if (b.Remarks is not null) { <dt class="col-sm-3">Remarks</dt><dd class="col-sm-9">@b.Remarks</dd> }
+</dl></div></div>
+@if (b.Status == BoundaryStatus.Draft && Ui.Has("gis.verify"))
+{
+    <div class="card mb-3"><div class="card-header fw-semibold">Verify against the survey</div><div class="card-body">
+        <p class="small text-muted">Compare the geometry below with survey @b.SurveyReference. Approving makes this the boundary in force and supersedes the previous verified version. You cannot verify your own submission.</p>
+        <form asp-action="DecideBoundary" method="post" class="row g-2">
+            <input type="hidden" name="projectId" value="@b.ProjectId" /><input type="hidden" name="propertyId" value="@b.PropertyId" /><input type="hidden" name="id" value="@b.Id" /><input type="hidden" name="rowVersion" value="@b.RowVersion" />
+            <div class="col-12"><label class="form-label" for="comment">Comment (required when rejecting)</label><input class="form-control" id="comment" name="comment" maxlength="500" /></div>
+            <div class="col-12 d-flex gap-2"><button class="btn btn-success" type="submit" name="approve" value="true">Verify and approve</button><button class="btn btn-outline-danger" type="submit" name="approve" value="false">Reject</button></div>
+        </form></div></div>
+}
+<div class="card mb-3"><div class="card-header fw-semibold">Geometry (GeoJSON)</div><div class="card-body"><pre class="mb-0 small" style="max-height: 24rem; overflow: auto;">@b.GeometryJson</pre></div></div>
+<div class="card"><div class="card-header fw-semibold">Versions</div><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+    <thead><tr><th>Version</th><th>Survey</th><th>Status</th><th>Submitted</th><th></th></tr></thead><tbody>
+    @foreach (var h in Model.History)
+    {
+        <tr><td data-label="Version">v@(h.VersionNo)</td><td data-label="Survey">@h.SurveyReference</td><td data-label="Status"><span class="badge @Badge(h.Status)">@h.Status</span></td><td data-label="Submitted">@h.CreatedAtUtc.ToString("yyyy-MM-dd")</td>
+            <td class="text-end">@if (h.Id != b.Id) { <a class="btn btn-sm btn-outline-primary" asp-action="BoundaryDetails" asp-route-projectId="@h.ProjectId" asp-route-propertyId="@h.PropertyId" asp-route-id="@h.Id">Open</a> }</td></tr>
+    }
+    </tbody></table></div></div>

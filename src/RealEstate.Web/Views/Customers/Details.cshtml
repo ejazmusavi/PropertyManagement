@@ -12,6 +12,7 @@
         <a class="btn btn-outline-secondary" asp-action="Documents" asp-route-id="@c.Id">Documents</a>
         @if (Ui.Has("ledgers.view")) { <a class="btn btn-outline-secondary" asp-controller="Ledgers" asp-action="Customer" asp-route-id="@c.Id">Ledger</a> }
         @if (Ui.Has("portal.accounts.manage")) { <a class="btn btn-outline-secondary" asp-controller="CustomerApp" asp-action="Account" asp-route-id="@c.Id">App login</a> }
+        @if (Ui.Has("notifications.view")) { <a class="btn btn-outline-secondary" asp-controller="Notifications" asp-action="CustomerPreferences" asp-route-id="@c.Id">Notification channels</a> }
         <a class="btn btn-outline-secondary" asp-action="Index">Back to list</a>
     </div>
 </div>

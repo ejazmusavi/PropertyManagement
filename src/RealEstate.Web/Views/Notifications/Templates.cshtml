@@ -1,0 +1,16 @@
+@model TemplateListViewModel
+@inject RealEstate.Web.Services.UiPermissions Ui
+@{ ViewData["Title"] = "Notification templates"; await Ui.LoadAsync(); }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Notification templates</h1><a class="btn btn-outline-secondary" asp-action="Index">Back to notifications</a>
+</div>
+<p class="text-muted">Placeholders: @string.Join(", ", RealEstate.Domain.Entities.NotificationRules.Placeholders.Select(p => "{{" + p + "}}")). Edits apply to messages queued from now on.</p>
+<div class="card"><div class="table-responsive-md"><table class="table table-hover align-middle mb-0 table-stack">
+    <thead><tr><th>Type</th><th>Channel</th><th>Subject</th><th>Body</th><th>Active</th><th></th></tr></thead><tbody>
+    @foreach (var t in Model.Templates)
+    {
+        <tr><td data-label="Type">@t.Type</td><td data-label="Channel">@t.Channel</td><td data-label="Subject">@t.Subject</td><td data-label="Body" class="small">@t.Body</td>
+            <td data-label="Active"><span class="badge @(t.IsActive ? "text-bg-success" : "text-bg-secondary")">@(t.IsActive ? "Yes" : "No")</span></td>
+            <td class="text-end">@if (Ui.Has("notifications.manage")) { <a class="btn btn-sm btn-outline-primary" asp-action="TemplateForm" asp-route-id="@t.Id">Edit</a> }</td></tr>
+    }
+    </tbody></table></div></div>

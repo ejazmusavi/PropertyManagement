@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using RealEstate.Infrastructure.Jobs;
 using RealEstate.Application.Administration;
 using RealEstate.Application.Audit;
 using RealEstate.Application.Documents;
@@ -62,7 +64,14 @@ public static class DependencyInjection
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddSingleton<RealEstate.Application.Payments.IReceiptPdfRenderer, RealEstate.Infrastructure.Documents.ReceiptPdfRenderer>();
         services.AddSingleton<RealEstate.Application.Reporting.IReportExporter, RealEstate.Infrastructure.Documents.ReportExporter>();
-        services.AddScoped<IPasswordResetNotifier, LoggingPasswordResetNotifier>();
+        services.AddScoped<IPasswordResetNotifier, EmailPasswordResetNotifier>();
+        services.AddScoped<RealEstate.Infrastructure.Notifications.SmtpEmailSender>();
+        services.AddScoped<BackgroundUserContext>();
+        services.AddScoped<RealEstate.Application.Jobs.IMaintenanceStore, MaintenanceStore>();
+        services.AddScoped<RealEstate.Application.Notifications.INotificationChannelSender>(sp => sp.GetRequiredService<RealEstate.Infrastructure.Notifications.SmtpEmailSender>());
+        foreach (var channel in new[] { RealEstate.Domain.Enums.NotificationChannel.Sms, RealEstate.Domain.Enums.NotificationChannel.WhatsApp, RealEstate.Domain.Enums.NotificationChannel.Push })
+            services.AddScoped<RealEstate.Application.Notifications.INotificationChannelSender>(sp => new RealEstate.Infrastructure.Notifications.ConfigurableChannelSender(channel, sp.GetRequiredService<IConfiguration>(), sp.GetRequiredService<ILogger<RealEstate.Infrastructure.Notifications.ConfigurableChannelSender>>()));
+        services.AddBackgroundProcessing(config);
         services.AddSingleton<RealEstate.Application.Gateway.IPaymentGateway, RealEstate.Infrastructure.Gateway.SandboxPaymentGateway>();
         services.AddSingleton<RealEstate.Application.Gateway.IPaymentGatewayRegistry, RealEstate.Infrastructure.Gateway.PaymentGatewayRegistry>();
         services.AddScoped<DatabaseInitializer>();

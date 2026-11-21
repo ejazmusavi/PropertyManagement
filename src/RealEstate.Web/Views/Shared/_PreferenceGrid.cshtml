@@ -1,0 +1,27 @@
+@model RealEstate.Web.ViewModels.PreferencesViewModel
+@using RealEstate.Domain.Enums
+@using RealEstate.Web.Controllers
+@{
+    var cells = Model.Cells.Where(c => !c.Locked).ToList();
+    var channels = cells.Select(c => c.Channel).Distinct().ToList();
+    var types = cells.Select(c => c.Type).Distinct().ToList();
+    string Label(NotificationType? t) => t is null ? "All" : System.Text.RegularExpressions.Regex.Replace(t.Value.ToString(), "(?<=[a-z])(?=[A-Z])", " ");
+}
+<form asp-action="@Model.FormAction" asp-route-id="@Model.CustomerId" method="post" data-loading-form>
+    <p class="text-muted small mb-2">In-app notifications are always on. Tick the other channels you want for each kind of message.</p>
+    <div class="card mb-3"><div class="table-responsive-md"><table class="table align-middle mb-0 table-stack">
+        <thead><tr><th>Message</th>@foreach (var ch in channels) { <th class="text-center">@ch</th> }</tr></thead>
+        <tbody>
+        @foreach (var t in types)
+        {
+            <tr><td data-label="Message">@Label(t)</td>
+            @foreach (var ch in channels)
+            {
+                var cell = cells.FirstOrDefault(c => c.Channel == ch && c.Type == t);
+                <td class="text-center" data-label="@ch">@if (cell is not null) { <input type="checkbox" class="form-check-input" name="enabled" value="@PreferenceForm.CellKey(cell)" checked="@cell.IsEnabled" disabled="@(!Model.CanEdit)" aria-label="@Label(t) by @ch" /> }</td>
+            }
+            </tr>
+        }
+        </tbody></table></div></div>
+    @if (Model.CanEdit) { <button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save</button> }
+</form>

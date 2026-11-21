@@ -1,0 +1,22 @@
+@model BoundaryFormViewModel
+@{ ViewData["Title"] = "Submit survey"; var target = Model.PropertyId is null ? "project " + Model.ProjectCode : "property " + Model.PropertyCode + " (" + Model.ProjectCode + ")"; }
+<h1 class="h3 mb-1">Submit a surveyed boundary</h1>
+<div class="text-muted mb-3">For @target. The boundary is stored as a new draft version; a different user verifies it against the survey before it counts as exact.</div>
+<form asp-action="SubmitBoundary" asp-route-projectId="@Model.ProjectId" asp-route-propertyId="@Model.PropertyId" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="SrsId" class="form-label"></label>
+            <select asp-for="SrsId" class="form-select"><option value="">Choose...</option>@foreach (var s in Model.Systems) { <option value="@s.Id" selected="@(Model.SrsId == s.Id)">@s.Code - @s.Name (@s.Unit)</option> }</select><span asp-validation-for="SrsId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="SurveyReference" class="form-label"></label><input asp-for="SurveyReference" class="form-control" maxlength="100" /><span asp-validation-for="SurveyReference" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="SurveyedBy" class="form-label"></label><input asp-for="SurveyedBy" class="form-control" maxlength="200" /><span asp-validation-for="SurveyedBy" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="SurveyDate" class="form-label"></label><input asp-for="SurveyDate" type="date" class="form-control" /><span asp-validation-for="SurveyDate" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="SourceDocumentId" class="form-label"></label>
+            <select asp-for="SourceDocumentId" class="form-select"><option value="">None</option>@foreach (var d in Model.Documents) { <option value="@d.Id" selected="@(Model.SourceDocumentId == d.Id)">@d.Title</option> }</select></div>
+        <div class="col-12"><label asp-for="GeometryJson" class="form-label"></label><textarea asp-for="GeometryJson" class="form-control font-monospace" rows="10" spellcheck="false"></textarea><span asp-validation-for="GeometryJson" class="text-danger small"></span>
+            <div class="form-text">Paste GeoJSON (a Polygon or MultiPolygon, or a Feature holding one). Coordinates are x,y (longitude,latitude for geographic systems); every ring must be closed.</div></div>
+        <div class="col-12"><label asp-for="Remarks" class="form-label"></label><textarea asp-for="Remarks" class="form-control" rows="2" maxlength="1000"></textarea></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Submit draft</button>
+        <a class="btn btn-outline-secondary" asp-action="Project" asp-route-id="@Model.ProjectId">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -140,3 +140,16 @@ public class PortalController(CustomerPortalService portal) : ControllerBase
         return NoContent();
     }
 }
+
+/// <summary>The customer's own notification channel choices (the in-app channel is always on).</summary>
+[ApiController, Authorize, HasPermission(Permissions.PortalAccess)]
+[Route("api/v1/portal/notification-preferences")]
+public class PortalNotificationPreferencesController(RealEstate.Application.Notifications.NotificationPreferenceService preferences) : ControllerBase
+{
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<RealEstate.Application.Notifications.PreferenceDto>>> Get(CancellationToken ct) => Ok(await preferences.GetMineAsCustomerAsync(ct));
+
+    [HttpPut]
+    public async Task<ActionResult<IReadOnlyList<RealEstate.Application.Notifications.PreferenceDto>>> Save(RealEstate.Application.Notifications.SavePreferencesRequest request, CancellationToken ct) =>
+        Ok(await preferences.SaveMineAsCustomerAsync(request, ct));
+}

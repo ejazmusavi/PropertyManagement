@@ -1,0 +1,25 @@
+@model LayerFormViewModel
+@using RealEstate.Domain.Enums
+@{ ViewData["Title"] = Model.Id is null ? "New map layer" : "Edit map layer"; }
+<h1 class="h3 mb-1">@ViewData["Title"]</h1>
+<div class="text-muted mb-3">Project @Model.ProjectCode</div>
+<form asp-action="LayerForm" asp-route-projectId="@Model.ProjectId" method="post" data-loading-form>
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    <input type="hidden" asp-for="Id" /><input type="hidden" asp-for="RowVersion" />
+    <div class="card mb-3"><div class="card-body"><div class="row g-3">
+        <div class="col-12 col-lg-4"><label asp-for="Code" class="form-label"></label><input asp-for="Code" class="form-control" maxlength="40" readonly="@(Model.Id is not null)" /><span asp-validation-for="Code" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-8"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" maxlength="200" /><span asp-validation-for="Name" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="Kind" class="form-label"></label><select asp-for="Kind" class="form-select">@foreach (var k in Enum.GetValues<MapLayerKind>()) { <option value="@k" selected="@(Model.Kind == k)">@k</option> }</select></div>
+        <div class="col-12 col-lg-4"><label asp-for="SrsId" class="form-label"></label>
+            <select asp-for="SrsId" class="form-select"><option value="">Choose...</option>@foreach (var s in Model.Systems) { <option value="@s.Id" selected="@(Model.SrsId == s.Id)">@s.Code - @s.Name</option> }</select><span asp-validation-for="SrsId" class="text-danger small"></span></div>
+        <div class="col-12 col-lg-4"><label asp-for="SortOrder" class="form-label"></label><input asp-for="SortOrder" type="number" min="0" max="10000" class="form-control" /></div>
+        <div class="col-12 col-lg-6"><label asp-for="SourceDocumentId" class="form-label"></label>
+            <select asp-for="SourceDocumentId" class="form-select"><option value="">None</option>@foreach (var d in Model.Documents) { <option value="@d.Id" selected="@(Model.SourceDocumentId == d.Id)">@d.Title</option> }</select></div>
+        <div class="col-12 col-lg-6"><label asp-for="StyleJson" class="form-label"></label><input asp-for="StyleJson" class="form-control font-monospace" maxlength="2000" placeholder='{"fill":"#cfe8cf","stroke":"#2d6a2d"}' /><span asp-validation-for="StyleJson" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="Description" class="form-label"></label><textarea asp-for="Description" class="form-control" rows="2" maxlength="1000"></textarea></div>
+        <div class="col-12 col-lg-6"><div class="form-check"><input asp-for="IsVisibleByDefault" class="form-check-input" /><label asp-for="IsVisibleByDefault" class="form-check-label"></label></div></div>
+        <div class="col-12 col-lg-6"><div class="form-check"><input asp-for="IsActive" class="form-check-input" /><label asp-for="IsActive" class="form-check-label"></label></div></div>
+    </div></div></div>
+    <div class="d-flex gap-2"><button type="submit" class="btn btn-primary"><span class="spinner-border spinner-border-sm d-none me-1" aria-hidden="true"></span>Save</button><a class="btn btn-outline-secondary" asp-action="Project" asp-route-id="@Model.ProjectId">Cancel</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
