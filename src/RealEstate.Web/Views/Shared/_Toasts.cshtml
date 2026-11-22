@@ -6,13 +6,13 @@
         @if (success is not null)
         {
             <div class="toast align-items-center text-bg-success border-0" role="status" data-auto-show>
-                <div class="d-flex"><div class="toast-body">@success</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
+                <div class="d-flex"><div class="toast-body"><i class="bi bi-check-circle-fill me-2"></i>@success</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
             </div>
         }
         @if (error is not null)
         {
             <div class="toast align-items-center text-bg-danger border-0" role="alert" data-auto-show data-bs-autohide="false">
-                <div class="d-flex"><div class="toast-body">@error</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
+                <div class="d-flex"><div class="toast-body"><i class="bi bi-exclamation-triangle-fill me-2"></i>@error</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>
             </div>
         }
     </div>

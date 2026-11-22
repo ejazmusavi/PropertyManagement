@@ -3,119 +3,166 @@
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
     string Active(params string[] c) => c.Any(x => string.Equals(controller, x, StringComparison.OrdinalIgnoreCase)) ? "active" : "";
 }
-<ul class="nav nav-pills flex-column gap-1">
-    <li class="nav-item"><a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index">Dashboard</a></li>
-    <li class="nav-item"><a class="nav-link @Active("MyNotifications")" asp-controller="MyNotifications" asp-action="Index">My notifications</a></li>
-    @if (Model.Contains("projects.view"))
-    {
-        <li class="nav-item"><a class="nav-link @Active("Projects", "Land")" asp-controller="Projects" asp-action="Index">Projects</a></li>
-    }
+<nav class="side-nav" aria-label="Main navigation">
+    <ul class="nav flex-column side-nav-top">
+        <li class="nav-item"><a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+        <li class="nav-item"><a class="nav-link @Active("MyNotifications")" asp-controller="MyNotifications" asp-action="Index"><i class="bi bi-bell"></i><span>My notifications</span></a></li>
+        @if (Model.Contains("projects.view"))
+        {
+            <li class="nav-item"><a class="nav-link @Active("Projects", "Land")" asp-controller="Projects" asp-action="Index"><i class="bi bi-buildings"></i><span>Projects</span></a></li>
+        }
+    </ul>
+
     @if (Model.Contains("inventory.view"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Inventory</li>
-        <li class="nav-item"><a class="nav-link @Active("Inventory")" asp-controller="Inventory" asp-action="Index">Property dashboard</a></li>
-        <li class="nav-item"><a class="nav-link @Active("Properties")" asp-controller="Properties" asp-action="Index">Properties</a></li>
-        <li class="nav-item"><a class="nav-link @Active("PropertySetup")" asp-controller="PropertySetup" asp-action="Types">Types &amp; blocks</a></li>
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-houses"></i><span>Inventory</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                <li class="nav-item"><a class="nav-link @Active("Inventory")" asp-controller="Inventory" asp-action="Index"><i class="bi bi-grid-1x2"></i><span>Property dashboard</span></a></li>
+                <li class="nav-item"><a class="nav-link @Active("Properties")" asp-controller="Properties" asp-action="Index"><i class="bi bi-house-door"></i><span>Properties</span></a></li>
+                <li class="nav-item"><a class="nav-link @Active("PropertySetup")" asp-controller="PropertySetup" asp-action="Types"><i class="bi bi-diagram-3"></i><span>Types &amp; blocks</span></a></li>
+            </ul>
+        </div>
     }
     @if (Model.Contains("pricing.view"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Pricing</li>
-        <li class="nav-item"><a class="nav-link @Active("Pricing")" asp-controller="Pricing" asp-action="Rules">Pricing engine</a></li>
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-tag"></i><span>Pricing</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                <li class="nav-item"><a class="nav-link @Active("Pricing")" asp-controller="Pricing" asp-action="Rules"><i class="bi bi-sliders"></i><span>Pricing engine</span></a></li>
+            </ul>
+        </div>
     }
     @if (Model.Contains("customers.view") || Model.Contains("bookings.view"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Sales</li>
-        @if (Model.Contains("customers.view")) { <li class="nav-item"><a class="nav-link @Active("Customers")" asp-controller="Customers" asp-action="Index">Customers</a></li> }
-        @if (Model.Contains("bookings.view")) { <li class="nav-item"><a class="nav-link @Active("Bookings")" asp-controller="Bookings" asp-action="Index">Bookings</a></li> }
-        @if (Model.Contains("bookings.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Bookings" asp-action="Approvals">Booking approvals</a></li> }
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-people"></i><span>Sales</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("customers.view")) { <li class="nav-item"><a class="nav-link @Active("Customers")" asp-controller="Customers" asp-action="Index"><i class="bi bi-person-lines-fill"></i><span>Customers</span></a></li> }
+                @if (Model.Contains("bookings.view")) { <li class="nav-item"><a class="nav-link @Active("Bookings")" asp-controller="Bookings" asp-action="Index"><i class="bi bi-journal-bookmark"></i><span>Bookings</span></a></li> }
+                @if (Model.Contains("bookings.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Bookings" asp-action="Approvals"><i class="bi bi-patch-check"></i><span>Booking approvals</span></a></li> }
+            </ul>
+        </div>
     }
     @if (Model.Contains("installments.view"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Installments</li>
-        <li class="nav-item"><a class="nav-link @Active("InstallmentAgreements")" asp-controller="InstallmentAgreements" asp-action="Index">Agreement schedules</a></li>
-        <li class="nav-item"><a class="nav-link @Active("InstallmentPlans")" asp-controller="InstallmentPlans" asp-action="Index">Installment plans</a></li>
-        <li class="nav-item"><a class="nav-link @Active("LateFeeRules")" asp-controller="LateFeeRules" asp-action="Index">Late fee rules</a></li>
-        <li class="nav-item"><a class="nav-link @Active("AgreementAmendments")" asp-controller="AgreementAmendments" asp-action="Pending">Amendments and waivers</a></li>
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-calendar2-check"></i><span>Installments</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                <li class="nav-item"><a class="nav-link @Active("InstallmentAgreements")" asp-controller="InstallmentAgreements" asp-action="Index"><i class="bi bi-file-earmark-text"></i><span>Agreement schedules</span></a></li>
+                <li class="nav-item"><a class="nav-link @Active("InstallmentPlans")" asp-controller="InstallmentPlans" asp-action="Index"><i class="bi bi-list-check"></i><span>Installment plans</span></a></li>
+                <li class="nav-item"><a class="nav-link @Active("LateFeeRules")" asp-controller="LateFeeRules" asp-action="Index"><i class="bi bi-hourglass-split"></i><span>Late fee rules</span></a></li>
+                <li class="nav-item"><a class="nav-link @Active("AgreementAmendments")" asp-controller="AgreementAmendments" asp-action="Pending"><i class="bi bi-pencil-square"></i><span>Amendments and waivers</span></a></li>
+            </ul>
+        </div>
     }
     @if (Model.Contains("payments.view") || Model.Contains("ledgers.view") || Model.Contains("recovery.view") || Model.Contains("recovery.followup"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Payments</li>
-        @if (Model.Contains("payments.collect")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Create">Collect payment</a></li> }
-        @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Payments")" asp-controller="Payments" asp-action="Index">Payments</a></li> }
-        @if (Model.Contains("payments.verify")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index" asp-route-status="PendingVerification">Payment verification</a></li> }
-        @if (Model.Contains("payments.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index" asp-route-status="PendingApproval">Payment approval</a></li> }
-        @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Receipts")" asp-controller="Receipts" asp-action="Index">Receipts</a></li> }
-        @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Refunds")" asp-controller="Refunds" asp-action="Index">Refunds</a></li> }
-        @if (Model.Contains("recovery.view")) { <li class="nav-item"><a class="nav-link @Active("Recovery")" asp-controller="Recovery" asp-action="Index">Recovery dashboard</a></li> }
-        @if (Model.Contains("recovery.view") || Model.Contains("recovery.followup"))
-        {
-            <li class="nav-item"><a class="nav-link" asp-controller="Recovery" asp-action="Overdue">Overdue installments</a></li>
-            <li class="nav-item"><a class="nav-link" asp-controller="Recovery" asp-action="FollowUps">Follow-up history</a></li>
-        }
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-wallet2"></i><span>Payments</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("payments.collect")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Create"><i class="bi bi-cash-coin"></i><span>Collect payment</span></a></li> }
+                @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Payments")" asp-controller="Payments" asp-action="Index"><i class="bi bi-credit-card"></i><span>Payments</span></a></li> }
+                @if (Model.Contains("payments.verify")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index" asp-route-status="PendingVerification"><i class="bi bi-shield-check"></i><span>Payment verification</span></a></li> }
+                @if (Model.Contains("payments.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Payments" asp-action="Index" asp-route-status="PendingApproval"><i class="bi bi-check2-circle"></i><span>Payment approval</span></a></li> }
+                @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Receipts")" asp-controller="Receipts" asp-action="Index"><i class="bi bi-receipt"></i><span>Receipts</span></a></li> }
+                @if (Model.Contains("payments.view")) { <li class="nav-item"><a class="nav-link @Active("Refunds")" asp-controller="Refunds" asp-action="Index"><i class="bi bi-arrow-counterclockwise"></i><span>Refunds</span></a></li> }
+                @if (Model.Contains("recovery.view")) { <li class="nav-item"><a class="nav-link @Active("Recovery")" asp-controller="Recovery" asp-action="Index"><i class="bi bi-life-preserver"></i><span>Recovery dashboard</span></a></li> }
+                @if (Model.Contains("recovery.view") || Model.Contains("recovery.followup"))
+                {
+                    <li class="nav-item"><a class="nav-link" asp-controller="Recovery" asp-action="Overdue"><i class="bi bi-exclamation-triangle"></i><span>Overdue installments</span></a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Recovery" asp-action="FollowUps"><i class="bi bi-telephone-outbound"></i><span>Follow-up history</span></a></li>
+                }
+            </ul>
+        </div>
     }
     @if (Model.Contains("expenses.view") || Model.Contains("vendors.view") || Model.Contains("govfees.view"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Expenses</li>
-        @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link @Active("Expenses")" asp-controller="Expenses" asp-action="Dashboard">Expense dashboard</a></li> }
-        @if (Model.Contains("expenses.manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Expenses" asp-action="Create">Register expense</a></li> }
-        @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Expenses" asp-action="Index">Expenses</a></li> }
-        @if (Model.Contains("expenses.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Expenses" asp-action="Approvals">Expense approvals</a></li> }
-        @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link @Active("ExpenseCategories")" asp-controller="ExpenseCategories" asp-action="Index">Expense categories</a></li> }
-        @if (Model.Contains("vendors.view")) { <li class="nav-item"><a class="nav-link @Active("Vendors")" asp-controller="Vendors" asp-action="Index">Vendors</a></li> }
-        @if (Model.Contains("vendors.view")) { <li class="nav-item"><a class="nav-link @Active("VendorInvoices")" asp-controller="VendorInvoices" asp-action="Index">Vendor invoices</a></li> }
-        @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link @Active("VendorPayments")" asp-controller="VendorPayments" asp-action="Index">Vendor payments</a></li> }
-        @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentFees")" asp-controller="GovernmentFees" asp-action="Index">Government fees</a></li> }
-        @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentFeeTypes")" asp-controller="GovernmentFeeTypes" asp-action="Index">Fee configuration</a></li> }
-        @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentPayments")" asp-controller="GovernmentPayments" asp-action="Index">Government payments</a></li> }
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-receipt-cutoff"></i><span>Expenses</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link @Active("Expenses")" asp-controller="Expenses" asp-action="Dashboard"><i class="bi bi-pie-chart"></i><span>Expense dashboard</span></a></li> }
+                @if (Model.Contains("expenses.manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Expenses" asp-action="Create"><i class="bi bi-plus-circle"></i><span>Register expense</span></a></li> }
+                @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Expenses" asp-action="Index"><i class="bi bi-list-ul"></i><span>Expenses</span></a></li> }
+                @if (Model.Contains("expenses.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Expenses" asp-action="Approvals"><i class="bi bi-check2-square"></i><span>Expense approvals</span></a></li> }
+                @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link @Active("ExpenseCategories")" asp-controller="ExpenseCategories" asp-action="Index"><i class="bi bi-tags"></i><span>Expense categories</span></a></li> }
+                @if (Model.Contains("vendors.view")) { <li class="nav-item"><a class="nav-link @Active("Vendors")" asp-controller="Vendors" asp-action="Index"><i class="bi bi-truck"></i><span>Vendors</span></a></li> }
+                @if (Model.Contains("vendors.view")) { <li class="nav-item"><a class="nav-link @Active("VendorInvoices")" asp-controller="VendorInvoices" asp-action="Index"><i class="bi bi-file-earmark-ruled"></i><span>Vendor invoices</span></a></li> }
+                @if (Model.Contains("expenses.view")) { <li class="nav-item"><a class="nav-link @Active("VendorPayments")" asp-controller="VendorPayments" asp-action="Index"><i class="bi bi-send"></i><span>Vendor payments</span></a></li> }
+                @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentFees")" asp-controller="GovernmentFees" asp-action="Index"><i class="bi bi-bank"></i><span>Government fees</span></a></li> }
+                @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentFeeTypes")" asp-controller="GovernmentFeeTypes" asp-action="Index"><i class="bi bi-gear"></i><span>Fee configuration</span></a></li> }
+                @if (Model.Contains("govfees.view")) { <li class="nav-item"><a class="nav-link @Active("GovernmentPayments")" asp-controller="GovernmentPayments" asp-action="Index"><i class="bi bi-building-check"></i><span>Government payments</span></a></li> }
+            </ul>
+        </div>
     }
     @if (Model.Contains("support.view") || Model.Contains("portal.content.manage") || Model.Contains("gateway.view"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Customer app</li>
-        @if (Model.Contains("support.view")) { <li class="nav-item"><a class="nav-link @Active("Support")" asp-controller="Support" asp-action="Index">Support requests</a></li> }
-        @if (Model.Contains("portal.content.manage")) { <li class="nav-item"><a class="nav-link @Active("CustomerApp")" asp-controller="CustomerApp" asp-action="Announcements">Announcements</a></li> }
-        @if (Model.Contains("gateway.view")) { <li class="nav-item"><a class="nav-link @Active("Gateway")" asp-controller="Gateway" asp-action="Index">Online payments</a></li> }
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-phone"></i><span>Customer app</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("support.view")) { <li class="nav-item"><a class="nav-link @Active("Support")" asp-controller="Support" asp-action="Index"><i class="bi bi-headset"></i><span>Support requests</span></a></li> }
+                @if (Model.Contains("portal.content.manage")) { <li class="nav-item"><a class="nav-link @Active("CustomerApp")" asp-controller="CustomerApp" asp-action="Announcements"><i class="bi bi-megaphone"></i><span>Announcements</span></a></li> }
+                @if (Model.Contains("gateway.view")) { <li class="nav-item"><a class="nav-link @Active("Gateway")" asp-controller="Gateway" asp-action="Index"><i class="bi bi-globe2"></i><span>Online payments</span></a></li> }
+            </ul>
+        </div>
     }
     @if (Model.Contains("notifications.view") || Model.Contains("jobs.view") || Model.Contains("gis.view"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Automation and GIS</li>
-        @if (Model.Contains("notifications.view")) { <li class="nav-item"><a class="nav-link @Active("Notifications")" asp-controller="Notifications" asp-action="Index">Notifications</a></li> }
-        @if (Model.Contains("jobs.view")) { <li class="nav-item"><a class="nav-link @Active("Jobs")" asp-controller="Jobs" asp-action="Index">Background jobs</a></li> }
-        @if (Model.Contains("gis.view")) { <li class="nav-item"><a class="nav-link @Active("Gis")" asp-controller="Gis" asp-action="Index">GIS foundation</a></li> }
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-cpu"></i><span>Automation and GIS</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("notifications.view")) { <li class="nav-item"><a class="nav-link @Active("Notifications")" asp-controller="Notifications" asp-action="Index"><i class="bi bi-envelope-paper"></i><span>Notifications</span></a></li> }
+                @if (Model.Contains("jobs.view")) { <li class="nav-item"><a class="nav-link @Active("Jobs")" asp-controller="Jobs" asp-action="Index"><i class="bi bi-clock-history"></i><span>Background jobs</span></a></li> }
+                @if (Model.Contains("gis.view")) { <li class="nav-item"><a class="nav-link @Active("Gis")" asp-controller="Gis" asp-action="Index"><i class="bi bi-geo-alt"></i><span>GIS foundation</span></a></li> }
+            </ul>
+        </div>
     }
     @if (Model.Contains("reports.view") || Model.Contains("accounting.reports"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Reports</li>
-        @if (Model.Contains("reports.view")) { <li class="nav-item"><a class="nav-link @Active("Dashboards")" asp-controller="Dashboards" asp-action="Company">Management dashboard</a></li> }
-        <li class="nav-item"><a class="nav-link @Active("Reports")" asp-controller="Reports" asp-action="Index">All reports</a></li>
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-bar-chart-line"></i><span>Reports</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("reports.view")) { <li class="nav-item"><a class="nav-link @Active("Dashboards")" asp-controller="Dashboards" asp-action="Company"><i class="bi bi-graph-up-arrow"></i><span>Management dashboard</span></a></li> }
+                <li class="nav-item"><a class="nav-link @Active("Reports")" asp-controller="Reports" asp-action="Index"><i class="bi bi-files"></i><span>All reports</span></a></li>
+            </ul>
+        </div>
     }
     @if (Model.Contains("accounting.view") || Model.Contains("accounting.reports"))
     {
-        <li class="nav-item mt-2 px-2 text-uppercase small text-muted">Accounting</li>
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Accounting")" asp-controller="Accounting" asp-action="Index">Accounting dashboard</a></li> }
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Accounting" asp-action="Accounts">Chart of accounts</a></li> }
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Accounting" asp-action="Groups">Account groups</a></li> }
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Journals")" asp-controller="Journals" asp-action="Index">Journal entries</a></li> }
-        @if (Model.Contains("accounting.journals.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Journals" asp-action="Approvals">Journal approvals</a></li> }
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("PostingRules")" asp-controller="PostingRules" asp-action="Index">Posting rules</a></li> }
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="PostingRules" asp-action="Queue">Automatic postings</a></li> }
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Banking")" asp-controller="Banking" asp-action="Index">Bank reconciliation</a></li> }
-        @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("FiscalYears")" asp-controller="FiscalYears" asp-action="Index">Financial years and periods</a></li> }
-        @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link" asp-controller="FinancialReports" asp-action="TrialBalance">Trial balance</a></li> }
-        @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link" asp-controller="FinancialReports" asp-action="GeneralLedger">General ledger</a></li> }
-        @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link @Active("FinancialReports")" asp-controller="FinancialReports" asp-action="Index">Financial statements</a></li> }
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-calculator"></i><span>Accounting</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Accounting")" asp-controller="Accounting" asp-action="Index"><i class="bi bi-speedometer"></i><span>Accounting dashboard</span></a></li> }
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Accounting" asp-action="Accounts"><i class="bi bi-diagram-2"></i><span>Chart of accounts</span></a></li> }
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="Accounting" asp-action="Groups"><i class="bi bi-collection"></i><span>Account groups</span></a></li> }
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Journals")" asp-controller="Journals" asp-action="Index"><i class="bi bi-journal-text"></i><span>Journal entries</span></a></li> }
+                @if (Model.Contains("accounting.journals.approve")) { <li class="nav-item"><a class="nav-link" asp-controller="Journals" asp-action="Approvals"><i class="bi bi-journal-check"></i><span>Journal approvals</span></a></li> }
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("PostingRules")" asp-controller="PostingRules" asp-action="Index"><i class="bi bi-signpost-split"></i><span>Posting rules</span></a></li> }
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link" asp-controller="PostingRules" asp-action="Queue"><i class="bi bi-arrow-repeat"></i><span>Automatic postings</span></a></li> }
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("Banking")" asp-controller="Banking" asp-action="Index"><i class="bi bi-bank2"></i><span>Bank reconciliation</span></a></li> }
+                @if (Model.Contains("accounting.view")) { <li class="nav-item"><a class="nav-link @Active("FiscalYears")" asp-controller="FiscalYears" asp-action="Index"><i class="bi bi-calendar3"></i><span>Financial years and periods</span></a></li> }
+                @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link" asp-controller="FinancialReports" asp-action="TrialBalance"><i class="bi bi-layout-split"></i><span>Trial balance</span></a></li> }
+                @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link" asp-controller="FinancialReports" asp-action="GeneralLedger"><i class="bi bi-book"></i><span>General ledger</span></a></li> }
+                @if (Model.Contains("accounting.reports")) { <li class="nav-item"><a class="nav-link @Active("FinancialReports")" asp-controller="FinancialReports" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i><span>Financial statements</span></a></li> }
+            </ul>
+        </div>
     }
-    @if (Model.Contains("company.view"))
+    @if (Model.Contains("company.view") || Model.Contains("users.view") || Model.Contains("roles.view"))
     {
-        <li class="nav-item"><a class="nav-link @Active("Company")" asp-controller="Company" asp-action="Index">Company</a></li>
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false"><i class="bi bi-gear-wide-connected"></i><span>Administration</span><i class="bi bi-chevron-right chev"></i></button>
+            <ul class="nav flex-column nav-group-items">
+                @if (Model.Contains("company.view")) { <li class="nav-item"><a class="nav-link @Active("Company")" asp-controller="Company" asp-action="Index"><i class="bi bi-building"></i><span>Company</span></a></li> }
+                @if (Model.Contains("users.view")) { <li class="nav-item"><a class="nav-link @Active("Users")" asp-controller="Users" asp-action="Index"><i class="bi bi-person-gear"></i><span>Users</span></a></li> }
+                @if (Model.Contains("roles.view"))
+                {
+                    <li class="nav-item"><a class="nav-link @Active("Roles")" asp-controller="Roles" asp-action="Index"><i class="bi bi-person-badge"></i><span>Roles</span></a></li>
+                    <li class="nav-item"><a class="nav-link @Active("Permissions")" asp-controller="Permissions" asp-action="Index"><i class="bi bi-key"></i><span>Permissions</span></a></li>
+                }
+            </ul>
+        </div>
     }
-    @if (Model.Contains("users.view"))
-    {
-        <li class="nav-item"><a class="nav-link @Active("Users")" asp-controller="Users" asp-action="Index">Users</a></li>
-    }
-    @if (Model.Contains("roles.view"))
-    {
-        <li class="nav-item"><a class="nav-link @Active("Roles")" asp-controller="Roles" asp-action="Index">Roles</a></li>
-        <li class="nav-item"><a class="nav-link @Active("Permissions")" asp-controller="Permissions" asp-action="Index">Permissions</a></li>
-    }
-    <li class="nav-item"><a class="nav-link @Active("Profile")" asp-controller="Profile" asp-action="Index">My profile</a></li>
-</ul>
+    <ul class="nav flex-column side-nav-top mt-1">
+        <li class="nav-item"><a class="nav-link @Active("Profile")" asp-controller="Profile" asp-action="Index"><i class="bi bi-person-circle"></i><span>My profile</span></a></li>
+    </ul>
+</nav>
