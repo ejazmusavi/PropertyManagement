@@ -1,0 +1,86 @@
+# Production stack: Caddy (HTTPS) + MySQL + API + Web on one Linux server.
+# Guide: docs/deployment-linux-docker.md
+# Run with: docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+# Only Caddy publishes ports (80/443). MySQL, API and Web are reachable only inside the Docker network.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [web, api]
+    environment:
+      WEB_DOMAIN: ${WEB_DOMAIN:?set in .env}
+      API_DOMAIN: ${API_DOMAIN:?set in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set in .env}
+      MYSQL_DATABASE: realestate
+      MYSQL_USER: realestate
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD:?set in .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=realestate;User=realestate;Password=${MYSQL_APP_PASSWORD};"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set in .env (min 32 chars)}
+      Database__MigrateOnStartup: "true"
+      Swagger__Enabled: "false"
+      FileStorage__RootPath: /var/realestate/storage
+    volumes:
+      - document-storage:/var/realestate/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/8080 && printf \"GET /api/v1/health HTTP/1.0\r\n\r\n\" >&3 && grep -q \" 200 \" <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=realestate;User=realestate;Password=${MYSQL_APP_PASSWORD};"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?set in .env (min 32 chars)}
+      REALESTATE_ADMIN_PASSWORD: ${REALESTATE_ADMIN_PASSWORD:-}
+      FileStorage__RootPath: /var/realestate/storage
+    volumes:
+      - document-storage:/var/realestate/storage
+      # keeps login cookies valid across container restarts/redeploys
+      - web-dataprotection:/home/app/.aspnet/DataProtection-Keys
+
+volumes:
+  mysql-data:
+  document-storage:
+  web-dataprotection:
+  caddy-data:
+  caddy-config:

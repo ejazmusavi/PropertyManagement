@@ -6,7 +6,7 @@ RUN dotnet publish src/RealEstate.Web/RealEstate.Web.csproj -c Release -o /app -
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-RUN adduser --disabled-password --gecos "" app && mkdir -p /app/logs && chown -R app /app
+RUN mkdir -p /app/logs /home/app/.aspnet/DataProtection-Keys && chown -R app /app /home/app
 USER app
 COPY --from=build /app .
 ENV ASPNETCORE_URLS=http://+:8080

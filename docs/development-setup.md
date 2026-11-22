@@ -29,6 +29,8 @@ dotnet user-secrets set TestMySql "Server=localhost;Port=3306;User=<user>;Passwo
 (or env var `REALESTATE_TEST_MYSQL`). Without it those tests are reported as Skipped. Only `realestate_test_*` databases created by the tests are dropped.
 
 ## Docker
+Production on a Linux server: see `docs/deployment-linux-docker.md`.
+
 Copy `.env.example` to `.env`, fill values, then `docker compose up --build` (MySQL 3307, API 5008, Web 5080). Create the admin with the command shown at the top of `docker-compose.yml`.
 
 ## Document storage (Phase 1)
