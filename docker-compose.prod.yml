@@ -2,6 +2,7 @@
 # Guide: docs/deployment-linux-docker.md
 # Run with: docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 # Only Caddy publishes ports (80/443). MySQL, API and Web are reachable only inside the Docker network.
+name: realestate   # fixed project name keeps volume names (realestate_*) stable wherever the folder lives
 services:
   caddy:
     image: caddy:2

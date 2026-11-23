@@ -1,0 +1,54 @@
+# Deploys main to the production Linux server over SSH.
+# Setup (once): GitHub repo > Settings > Secrets and variables > Actions > New repository secret:
+#   SSH_HOST         server IP or host name
+#   SSH_USER         login user (e.g. ubuntu)
+#   SSH_PRIVATE_KEY  full contents of the private key file
+#   SSH_KNOWN_HOSTS  output of: ssh-keyscan -t ed25519 <SSH_HOST>   (pins the server identity)
+# Guide: docs/deployment-linux-docker.md
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload code (keeps .env, Docker volumes and ~/backups untouched)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          tar czf - --exclude=.git --exclude=.github --exclude=mobile --exclude=.env . \
+            | ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" \
+              'mkdir -p ~/realestate && cd ~/realestate && find . -mindepth 1 -maxdepth 1 ! -name .env -exec rm -rf {} + && tar xzf - && chmod +x deploy/*.sh'
+
+      - name: Deploy (backup, build, restart, smoke test)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 \
+            "$SSH_USER@$SSH_HOST" '~/realestate/deploy/deploy.sh'

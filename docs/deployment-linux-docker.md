@@ -75,27 +75,44 @@ unset REALESTATE_ADMIN_PASSWORD
 ```
 Then sign in at `https://<WEB_DOMAIN>`.
 
-## 7. Update to a new version
-```bash
-cd realestate
-git pull
-docker compose -f docker-compose.prod.yml up -d --build
-docker image prune -f
-```
-Back up before upgrades that include migrations (step 8).
+## 7. Update to a new version (automatic: GitHub Actions)
+`.github/workflows/deploy.yaml` deploys every push to `main` (or run it manually from the Actions tab). It uploads the code, then runs `deploy/deploy.sh` on the server, which:
+1. takes a **pre-deploy backup** of the database and documents,
+2. rebuilds and restarts the containers (volumes are kept, `.env` is never overwritten, migrations apply automatically),
+3. waits for the API to be healthy and smoke-tests the web login page and `/api/v1/health` over HTTPS.
 
-## 8. Backups (do this before go-live)
-```bash
-# database
-docker compose -f docker-compose.prod.yml exec -T mysql \
-  sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines realestate' \
-  | gzip > ~/backup-db-$(date +%F).sql.gz
+One-time setup: GitHub repo > Settings > Secrets and variables > Actions > New repository secret:
 
-# uploaded documents
-docker run --rm -v realestate_document-storage:/data -v ~:/backup alpine \
-  tar czf /backup/backup-docs-$(date +%F).tar.gz -C /data .
+| Secret | Value |
+|---|---|
+| `SSH_HOST` | server IP or host name |
+| `SSH_USER` | `ubuntu` |
+| `SSH_PRIVATE_KEY` | full contents of the private key file |
+| `SSH_KNOWN_HOSTS` | output of `ssh-keyscan -t ed25519 <server-ip>` (pins the server identity) |
+
+Prefer a dedicated deploy key: create it with `ssh-keygen -t ed25519 -f deploy_key -N ""` and append `deploy_key.pub` to `~/.ssh/authorized_keys` on the server.
+
+Manual deploy from your PC is also possible: copy the code to `~/realestate` (never overwrite `.env`) and run `~/realestate/deploy/deploy.sh`.
+
+## 8. Backups
+Daily backups run from `cron` at 02:00 server time (UTC) via `deploy/backup.sh`; the deploy script also runs it before every deploy. Files go to `~/backups` (`db-*.sql.gz`, `docs-*.tar.gz`, mode 600) and are deleted after 14 days. Log: `~/backups/backup.log`.
+
+Install the cron job (once; already done on the current server):
+```bash
+chmod +x ~/realestate/deploy/*.sh
+( crontab -l 2>/dev/null | grep -v deploy/backup.sh; echo "0 2 * * * $HOME/realestate/deploy/backup.sh daily >> $HOME/backups/backup.log 2>&1" ) | crontab -
 ```
-(The volume prefix `realestate_` is the folder name you cloned into; check with `docker volume ls`.) Schedule these with `cron` and copy them off the server.
+Run one now: `~/realestate/deploy/backup.sh`. Backups do **not** contain `.env` (secrets): keep that in a password manager. Also copy `~/backups` off the server regularly (e.g. `scp` or object storage); backups on the same disk do not survive losing the server.
+
+### Restore
+```bash
+cd ~/realestate
+# database (replaces current data!)
+gzip -dc ~/backups/db-daily-<time>.sql.gz | docker compose -f docker-compose.prod.yml exec -T mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot realestate'
+# documents
+docker run --rm --volumes-from "$(docker compose -f docker-compose.prod.yml ps -q api)" -v ~/backups:/backup:ro alpine \
+  sh -c 'cd /var/realestate/storage && tar xzf /backup/docs-daily-<time>.tar.gz'
+```
 
 ## Troubleshooting
 | Symptom | Check |
