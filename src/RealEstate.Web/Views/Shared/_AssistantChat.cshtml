@@ -1,0 +1,27 @@
+@* Shared chat markup for the floating widget and the full page. Model: (string mode, bool voice). *@
+@model (string Mode, bool Voice)
+@{ var userKey = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "anon"; }
+<div class="assistant-chat" data-assistant="@Model.Mode" data-user="@userKey" data-voice="@(Model.Voice ? "1" : "0")">
+    @Html.AntiForgeryToken()
+    <div class="assistant-messages" data-role="messages" aria-live="polite">
+        <div class="assistant-hint text-muted small" data-role="hint">
+            Ask a question or give a command, by typing or with the microphone. Try: <em>"How many plots are available in each project?"</em>, <em>"Show overdue installments"</em>, <em>"Open customer Ali Khan"</em>.
+        </div>
+    </div>
+    <div class="assistant-status small text-muted" data-role="status" role="status"></div>
+    <form class="assistant-form" data-role="form" autocomplete="off">
+        @if (Model.Voice)
+        {
+            <button type="button" class="btn btn-outline-secondary assistant-mic" data-role="mic" aria-label="Speak" title="Speak (click again to send)"><i class="bi bi-mic"></i></button>
+        }
+        <textarea class="form-control" data-role="input" rows="1" maxlength="2000" placeholder="Ask or tell me what to open…" aria-label="Message"></textarea>
+        <button type="submit" class="btn btn-primary" data-role="send" aria-label="Send"><i class="bi bi-send"></i></button>
+    </form>
+    <div class="assistant-tools small">
+        @if (Model.Voice)
+        {
+            <label class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" data-role="speak" /> <span class="form-check-label">Read answers aloud</span></label>
+        }
+        <button type="button" class="btn btn-link btn-sm p-0 ms-auto" data-role="clear">Clear chat</button>
+    </div>
+</div>

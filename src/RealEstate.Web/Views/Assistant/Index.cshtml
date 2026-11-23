@@ -1,0 +1,28 @@
+@model RealEstate.Web.Controllers.AssistantPageViewModel
+@{ ViewData["Title"] = "AI assistant"; }
+<div class="d-flex align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">AI assistant</h1>
+    <span class="badge text-bg-secondary">Read-only</span>
+</div>
+@if (!Model.Enabled)
+{
+    <div class="alert alert-info">The assistant is not switched on. An administrator can enable it in the <code>Assistant</code> settings (provider URL and API key).</div>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-12 col-xl-8">
+            <div class="card assistant-page-card"><div class="card-body p-0"><partial name="_AssistantChat" model='("page", Model.VoiceEnabled)' /></div></div>
+        </div>
+        <div class="col-12 col-xl-4">
+            <div class="card"><div class="card-header fw-semibold">What it can do</div><div class="card-body small">
+                <ul class="mb-2 ps-3">
+                    <li><strong>Answer questions</strong> about projects, inventory, customers, bookings, payments, overdue and upcoming installments, expenses and reports.</li>
+                    <li><strong>Open pages</strong>: "open bookings", "go to overdue installments", "show customer 12".</li>
+                    <li><strong>Voice</strong>: press the microphone, speak, press again to send@(Model.VoiceEnabled ? "" : " (not enabled)").</li>
+                </ul>
+                <p class="text-muted mb-0">It only reads data you are already allowed to see and never changes anything. Question text and the data needed to answer it are sent to the configured AI provider. Your conversation is kept in this browser only.</p>
+            </div></div>
+        </div>
+    </div>
+}

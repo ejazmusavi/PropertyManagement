@@ -95,6 +95,8 @@ public static class DependencyInjection
         services.AddScoped<Gateway.GatewayReconciliationService>();
         services.AddScoped<Gateway.GatewayRefundService>();
         services.AddScoped<Gateway.GatewayQueryService>();
+        services.AddScoped<Assistant.AssistantTools>();
+        services.AddScoped<Assistant.AssistantService>();
         return services;
     }
 }
