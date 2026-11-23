@@ -77,3 +77,11 @@ dotnet user-secrets set "BackgroundProcessing:RunAsUserName" "<automation user e
 `RunAsUserName` is a normal active user (for example with the Accountant role and all-project access) under which the online-payment reconciliation and automatic-posting jobs run; without it those two jobs record "Skipped". Only one API instance should run workers unless the database is shared (Hangfire coordinates through it). The job list, run history and "Run now" are under **Automation and GIS > Background jobs** (`jobs.view` / `jobs.manage`). Existing databases: grant the new `notifications.*`, `jobs.*` and `gis.*` permissions through the permission matrix (Administrator has all).
 
 **GIS foundation**: boundaries are pasted as GeoJSON on **Automation and GIS > GIS foundation** and need verification by a second user. To upload GeoJSON, shapefile (zip) or CAD files as map documents, add `geojson`, `zip` or `dxf` to the allowed file types in the company document settings.
+
+## AI assistant (optional)
+Off by default. To enable, set the provider in user-secrets (never in a project file) and restart the Web app:
+```powershell
+dotnet user-secrets --project src/RealEstate.Web set "Assistant:Enabled" "true"
+dotnet user-secrets --project src/RealEstate.Web set "Assistant:ApiKey" "<your key>"
+```
+Optional: `Assistant:BaseUrl` (any OpenAI-compatible endpoint incl. the `/v1` segment), `Assistant:ChatModel`, `Assistant:TranscriptionModel`, `Assistant:SpeechModel`, `Assistant:Voice`, `Assistant:VoiceEnabled`. In Docker use `Assistant__ApiKey`. Voice recording needs HTTPS or localhost.

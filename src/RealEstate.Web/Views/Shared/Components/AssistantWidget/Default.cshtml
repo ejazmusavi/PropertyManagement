@@ -1,0 +1,12 @@
+@model bool
+<button type="button" class="assistant-fab" id="assistantFab" aria-label="Open AI assistant" aria-expanded="false" aria-controls="assistantPanel"><i class="bi bi-stars"></i></button>
+<section class="assistant-panel" id="assistantPanel" role="dialog" aria-label="AI assistant" hidden>
+    <header class="assistant-panel-head">
+        <span class="fw-semibold"><i class="bi bi-stars me-1"></i>Assistant</span>
+        <span class="ms-auto d-flex gap-1">
+            <a class="icon-btn" asp-controller="Assistant" asp-action="Index" id="assistantExpand" aria-label="Open full page" title="Open full page"><i class="bi bi-arrows-fullscreen"></i></a>
+            <button type="button" class="icon-btn" id="assistantCollapse" aria-label="Collapse assistant" title="Collapse"><i class="bi bi-chevron-down"></i></button>
+        </span>
+    </header>
+    <partial name="_AssistantChat" model='("widget", Model)' />
+</section>

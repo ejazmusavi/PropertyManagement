@@ -72,6 +72,7 @@ public static class DependencyInjection
         foreach (var channel in new[] { RealEstate.Domain.Enums.NotificationChannel.Sms, RealEstate.Domain.Enums.NotificationChannel.WhatsApp, RealEstate.Domain.Enums.NotificationChannel.Push })
             services.AddScoped<RealEstate.Application.Notifications.INotificationChannelSender>(sp => new RealEstate.Infrastructure.Notifications.ConfigurableChannelSender(channel, sp.GetRequiredService<IConfiguration>(), sp.GetRequiredService<ILogger<RealEstate.Infrastructure.Notifications.ConfigurableChannelSender>>()));
         services.AddBackgroundProcessing(config);
+        RealEstate.Infrastructure.Assistant.AssistantRegistration.AddAssistant(services, config);
         services.AddSingleton<RealEstate.Application.Gateway.IPaymentGateway, RealEstate.Infrastructure.Gateway.SandboxPaymentGateway>();
         services.AddSingleton<RealEstate.Application.Gateway.IPaymentGatewayRegistry, RealEstate.Infrastructure.Gateway.PaymentGatewayRegistry>();
         services.AddScoped<DatabaseInitializer>();
